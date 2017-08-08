@@ -1,10 +1,13 @@
 import copy
 
 from . import config
+from .model import ParaphraserModel
+from .utils import load_embeddings
 
 from parlai.core.agents import Agent
 from parlai.core.dict import DictionaryAgent
 from parlai.core.params import class2str
+
 
 
 class ParaphraserDictionaryAgent(DictionaryAgent):
@@ -39,6 +42,10 @@ class ParaphraserAgent(Agent):
         self.id = 'ParaphraserAgent'
         self.episode_done = True
         super().__init__(opt, shared)
+        self.word_dict = ParaphraserAgent.dictionary_class()(opt)
+        embedding_matrix = load_embeddings(opt, self.word_dict)
+        pfm = ParaphraserModel(self.word_dict, embedding_matrix, el)
+        model = pfm.create_bmwacor_model()
 
     def observe(self, observation):
         observation = copy.deepcopy(observation)
