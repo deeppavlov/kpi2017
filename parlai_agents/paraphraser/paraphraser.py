@@ -83,6 +83,8 @@ class ParaphraserAgent(Agent):
         # initialize a table of replies with this agent's id
         batch_reply = [{'id': self.getID()} for _ in range(batch_size)]
         examples = [self._build_ex(obs) for obs in observations]
+        valid_inds = [i for i in range(batch_size) if examples[i] is not None]
+        examples = [ex for ex in examples if ex is not None]
         batch = self._batchify(examples)
 
         if 'labels' in observations[0]:
@@ -92,11 +94,14 @@ class ParaphraserAgent(Agent):
             predictions = self.model.predict(batch)
             predictions = self._predictions2text(predictions)
             for i in range(len(predictions)):
-                batch_reply[i]['text'] = predictions[i]
+                batch_reply[valid_inds[i]]['text'] = predictions[i]
 
         return batch_reply
 
     def _build_ex(self, ex):
+        if 'text' not in ex:
+            return
+
         """Find the token span of the answer in the context for this example.
         """
         inputs = dict()
