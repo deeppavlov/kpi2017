@@ -4,4 +4,6 @@ python3 ./train_model.py -t parlai_tasks.paraphrases.agents \
                          -mf /tmp/paraphraser \
                          --batchsize 16 \
                          --display-examples True \
-                         --max-train-time 10
+                         --max-train-time 10\
+                         --embedding_file 'yalen_sg_word_vectors_300.txt'\
+                         --model_file 'tmp/my_model'

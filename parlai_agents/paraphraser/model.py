@@ -1,35 +1,102 @@
+from .metrics import fbeta_score
+
+import os
 import numpy as np
+import copy
+import tensorflow as tf
+from keras.backend.tensorflow_backend import set_session
+from keras.models import load_model
 from keras.layers import Dense, Activation, Input, Embedding, LSTM, Dropout, multiply, Lambda
 from keras.models import Model
 from keras.layers.wrappers import Bidirectional
 from keras.initializers import glorot_uniform, Orthogonal
 from keras import backend as K
+from keras.optimizers import Adam
 
 
 class ParaphraserModel(object):
 
-    def __init__(self, word_index, embedding_matrix,
-                 hyper_params):
+    def __init__(self, word_index, embedding_matrix, opt):
         self.word_index = word_index
         self.embedding_matrix = embedding_matrix
-        self.max_sequence_length = max_sequence_length
-        self.embedding_dim = embedding_dim
-        self.seed = hyper_params[0]
-        self.hidden_dim = hyper_params[1]
-        self.attention_dim = hyper_params[2]
-        self.perspective_num = hyper_params[3]
-        self.aggregation_dim = hyper_params[4]
-        self.dense_dim = hyper_params[5]
-        self.ldrop_val = hyper_params[6]
-        self.dropout_val = hyper_params[7]
-        self.recdrop_val = hyper_params[8]
-        self.inpdrop_val = hyper_params[9]
-        self.ldropagg_val = hyper_params[10]
-        self.dropoutagg_val = hyper_params[11]
-        self.recdropagg_val = hyper_params[12]
-        self.inpdropagg_val = hyper_params[13]
-        self.max_sequence_length = hyper_params[14]
-        self.embedding_dim = hyper_params[15]
+        self.opt = copy.deepcopy(opt)
+        self.max_sequence_length = opt['max_sequence_length']
+        self.embedding_dim = opt['embedding_dim']
+        self.learning_rate = opt['learning_rate']
+        self.batch_size = opt['batch_size']
+        self.epoch_num = opt['epoch_num']
+        self.seed = opt['seed']
+        self.hidden_dim = opt['hidden_dim']
+        self.attention_dim = opt['attention_dim']
+        self.perspective_num = opt['perspective_num']
+        self.aggregation_dim = opt['aggregation_dim']
+        self.dense_dim = opt['dense_dim']
+        self.ldrop_val = opt['ldrop_val']
+        self.dropout_val = opt['dropout_val']
+        self.recdrop_val = opt['recdrop_val']
+        self.inpdrop_val = opt['inpdrop_val']
+        self.ldropagg_val = opt['ldropagg_val']
+        self.dropoutagg_val = opt['dropoutagg_val']
+        self.recdropagg_val = opt['recdropagg_val']
+        self.inpdropagg_val = opt['inpdropagg_val']
+        self.model_name = opt['model_name']
+
+        if self.opt.get('model_file') and os.path.isfile(opt['model_file']):
+            self._init_from_saved(opt['model_file'])
+        else:
+            if self.opt.get('pretrained_model'):
+                self._init_from_saved(opt['pretrained_model'])
+            else:
+                self._init_from_scratch()
+        self.opt['cuda'] = not self.opt['no_cuda']
+        if self.opt['cuda']:
+            print('[ Using CUDA (GPU %d) ]' % opt['gpu'])
+            config = tf.ConfigProto()
+            config.gpu_options.per_process_gpu_memory_fraction = 0.45
+            config.gpu_options.visible_device_list = str(opt['gpu'])
+            set_session(tf.Session(config=config))
+
+        self.n_examples = 0
+
+    def _init_from_scratch(self):
+        print('[ Initializing model from scratch ]')
+        if self.model_name == 'bmwacor':
+            self.model = self.bmwacor_model()
+        if self.model_name == 'bmwacor1':
+            self.model = self.bmwacor1_model()
+        if self.model_name == 'bilstm_split':
+            self.model = self.bilstm_split_model()
+        if self.model_name == 'bilstm_split1':
+            self.model = self.bilstm_split1_model()
+        if self.model_name == 'full_match':
+            self.model = self.full_match_model()
+        if self.model_name == 'maxpool_match':
+            self.model = self.maxpool_match_model()
+        if self.model_name == 'att_match':
+            self.model = self.att_match_model()
+        if self.model_name == 'maxatt_match':
+            self.model = self.maxatt_match_model()
+        optimizer = Adam(lr=self.learning_rate)
+        self.model.compile(loss='binary_crossentropy',
+                           optimizer=optimizer,
+                           metrics=['accuracy', fbeta_score])
+
+    def save(self, fname=None):
+        """Save the parameters of the agent to a file."""
+        fname = self.opt.get('model_file', None) if fname is None else fname
+        if fname:
+            print("[ saving model: " + fname + " ]")
+            self.model.save(fname+'.h5')
+
+    def _init_from_saved(self, fname):
+        print('[ Loading model %s ]' % fname)
+        self.model = load_model(fname)
+
+    def update(self, batch):
+        self.model.train_on_batch(batch)
+
+    def predict(self, batch):
+        self.model.predict_on_batch(batch)
 
     def create_embedding_layer(self, input_dim):
         inp = Input(shape=(input_dim,))
@@ -754,27 +821,3 @@ class ParaphraserModel(object):
     #    model.compile(loss='binary_crossentropy',
     #                  optimizer=optimizer,
     #                  metrics=['accuracy', metrics.fbeta_score])
-
-
-    def get_model(self, m):
-        if m == 0:
-            return self.bmwacor_model()
-        if m == 1:
-            return self.bmwacor1_model()
-        if m == 2:
-            return self.bilstm_split_model()
-        if m == 3:
-            return self.bilstm_split1_model()
-        if m == 4:
-            return self.full_match_model()
-        if m == 5:
-            return self.maxpool_match_model()
-        if m == 6:
-            return self.att_match_model()
-        if m == 7:
-            return self.maxatt_match_model()
-
-    def get_model_name(self, m):
-        names = ['bmwacor', 'bmwacor1', 'bilstm_split', 'bilstm_split1',
-                 'full_match', 'maxpool_match', 'att_match', 'maxatt_match']
-        return names[m]

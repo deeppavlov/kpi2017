@@ -11,6 +11,30 @@ def add_cmdline_args(parser):
     agent.add_argument('--pretrained_model', type=str, default=None,
                        help='Load dict/features/weights/opts from this file')
     agent.add_argument('--log_file', type=str, default=None)
+    agent.add_argument('--model_file', type=str, default=None)
+
+
+    # Model details
+    agent.add_argument('--model_name', default='maxpool_match')
+    agent.add_argument('--max_sequence_length', type=int, default=24)
+    agent.add_argument('--embedding_dim', type=int, default=300)
+    agent.add_argument('--learning_rate', type=float, default=1e-5)
+    agent.add_argument('--batch_size', type=int, default=256)
+    agent.add_argument('--epoch_num', type=int, default=1)
+    agent.add_argument('--seed', type=int, default=243)
+    agent.add_argument('--hidden_dim', type=int, default=200)
+    agent.add_argument('--attention_dim', type=int, default=25)
+    agent.add_argument('--perspective_num', type=int, default=10)
+    agent.add_argument('--aggregation_dim', type=int, default=200)
+    agent.add_argument('--dense_dim', type=int, default=50)
+    agent.add_argument('--ldrop_val', type=float, default=0.0)
+    agent.add_argument('--dropout_val', type=float, default=0.0)
+    agent.add_argument('--recdrop_val', type=float, default=0.0)
+    agent.add_argument('--inpdrop_val', type=float, default=0.0)
+    agent.add_argument('--ldropagg_val', type=float, default=0.0)
+    agent.add_argument('--dropoutagg_val', type=float, default=0.0)
+    agent.add_argument('--recdropagg_val', type=float, default=0.0)
+    agent.add_argument('--inpdropagg_val', type=float, default=0.0)
 
     # Model details
     # agent.add_argument('--fix_embeddings', type='bool', default=True)
