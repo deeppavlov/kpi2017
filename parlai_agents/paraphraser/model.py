@@ -57,6 +57,7 @@ class ParaphraserModel(object):
             set_session(tf.Session(config=config))
 
         self.n_examples = 0
+        self.updates = 0
 
     def _init_from_scratch(self):
         print('[ Initializing model from scratch ]')
@@ -93,7 +94,9 @@ class ParaphraserModel(object):
         self.model = load_model(fname)
 
     def update(self, batch):
-        self.model.train_on_batch(batch)
+        x, y = batch
+        self.model.train_on_batch(x, y)
+        self.updates += 1
 
     def predict(self, batch):
         self.model.predict_on_batch(batch)

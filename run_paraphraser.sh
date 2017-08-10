@@ -6,4 +6,5 @@ python3 ./train_model.py -t parlai_tasks.paraphrases.agents \
                          --display-examples True \
                          --max-train-time 10\
                          --embedding_file 'yalen_sg_word_vectors_300.txt'\
-                         --model_file 'tmp/my_model'
+                         --model_file '/tmp/my_model'\
+                         --no_cuda True

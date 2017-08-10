@@ -44,8 +44,18 @@ class ParaphraserAgent(Agent):
         self.id = 'ParaphraserAgent'
         self.episode_done = True
         super().__init__(opt, shared)
+        if shared is not None:
+            self.is_shared = True
+            return
+
+        # Set up params/logging/dicts
+        self.is_shared = False
+
+        print('create word dict')
         self.word_dict = ParaphraserAgent.dictionary_class()(opt)
+        print('create embedding matrix')
         self.embedding_matrix = load_embeddings(opt, self.word_dict.tok2ind)
+        print('create model')
         self.model = ParaphraserModel(self.word_dict, self.embedding_matrix, opt)
         self.n_examples = 0
 
@@ -65,6 +75,10 @@ class ParaphraserAgent(Agent):
         return self.batch_act([self.observation])[0]
 
     def batch_act(self, observations):
+
+        if self.is_shared:
+            raise RuntimeError("Parallel act is not supported.")
+
         batch_size = len(observations)
         # initialize a table of replies with this agent's id
         batch_reply = [{'id': self.getID()} for _ in range(batch_size)]
