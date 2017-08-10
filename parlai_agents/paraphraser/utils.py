@@ -1,3 +1,4 @@
+import os
 import numpy as np
 
 
@@ -6,11 +7,12 @@ def load_embeddings(opt, word_dict):
     embeddings_index = {}
 
     # Fill in embeddings
-    if not opt.get('embedding_file'):
+    embedding_file = os.path.join(opt['datapath'], 'paraphrases', opt.get('embedding_file'))
+    if not embedding_file:
         raise RuntimeError('Tried to load embeddings with no embedding file.')
-    with open(opt['embedding_file']) as f:
+    with open(embedding_file) as f:
         for line in f:
-            values = line.rsplit(sep=' ', maxsplit=opt['embedding_dim'] + 1)
+            values = line.rsplit(sep=' ', maxsplit=opt['embedding_dim'])
             assert(len(values) == opt['embedding_dim'] + 1)
             word = values[0]
             coefs = np.asarray(values[1:-1], dtype='float32')
