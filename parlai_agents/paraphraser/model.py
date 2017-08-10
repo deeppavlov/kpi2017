@@ -58,6 +58,14 @@ class ParaphraserModel(object):
 
         self.n_examples = 0
         self.updates = 0
+        self.train_loss = 0.0
+        self.train_acc = 0.0
+        self.train_f1 = 0.0
+        self.train_metrics = [self.train_loss, self.train_acc, self.train_f1]
+        self.val_loss = 0.0
+        self.val_acc = 0.0
+        self.val_f1 = 0.0
+
 
     def _init_from_scratch(self):
         print('[ Initializing model from scratch ]')
@@ -95,11 +103,11 @@ class ParaphraserModel(object):
 
     def update(self, batch):
         x, y = batch
-        self.model.train_on_batch(x, y)
+        self.metrics = self.model.train_on_batch(x, y)
         self.updates += 1
 
     def predict(self, batch):
-        self.model.predict_on_batch(batch)
+        return self.model.predict_on_batch(batch)
 
     def create_embedding_layer(self, input_dim):
         inp = Input(shape=(input_dim,))

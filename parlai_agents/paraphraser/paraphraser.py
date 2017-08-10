@@ -90,6 +90,7 @@ class ParaphraserAgent(Agent):
             self.model.update(batch)
         else:
             predictions = self.model.predict(batch)
+            predictions = self._predictions2text(predictions)
             for i in range(len(predictions)):
                 batch_reply[i]['text'] = predictions[i]
 
@@ -99,8 +100,9 @@ class ParaphraserAgent(Agent):
         """Find the token span of the answer in the context for this example.
         """
         inputs = dict()
-        inputs['question1'] = ex['text'].split('\n')[1]
-        inputs['question2'] = ex['text'].split('\n')[2]
+        texts = ex['text'].split('\n')
+        inputs['question1'] = texts[1]
+        inputs['question2'] = texts[2]
         if 'labels' in ex:
             inputs['labels'] = ex['labels']
 
@@ -123,7 +125,6 @@ class ParaphraserAgent(Agent):
 
     def report(self):
         return (
-            '[train] updates = %d | train loss = %.2f | exs = %d' %
-            (self.model.updates, self.model.train_loss.avg, self.n_examples)
-            )
+            '[train] updates = %d | exs = %d | loss = %.2f | acc = %.2f | f1 = %.2f'%
+            (self.model.updates, self.n_examples, self.model.train_loss, self.model.train_acc, self.model.train_f1))
 
