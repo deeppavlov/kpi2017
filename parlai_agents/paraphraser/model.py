@@ -49,12 +49,12 @@ class ParaphraserModel(object):
             else:
                 self._init_from_scratch()
         self.opt['cuda'] = not self.opt['no_cuda']
-        if self.opt['cuda']:
-            print('[ Using CUDA (GPU %d) ]' % opt['gpu'])
-            config = tf.ConfigProto()
-            config.gpu_options.per_process_gpu_memory_fraction = 0.45
-            config.gpu_options.visible_device_list = str(opt['gpu'])
-            set_session(tf.Session(config=config))
+        # if self.opt['cuda']:
+        #     print('[ Using CUDA (GPU %d) ]' % opt['gpu'])
+        #     config = tf.ConfigProto()
+        #     config.gpu_options.per_process_gpu_memory_fraction = 0.45
+        #     config.gpu_options.visible_device_list = str(opt['gpu'])
+        #     set_session(tf.Session(config=config))
 
         self.n_examples = 0
         self.updates = 0
