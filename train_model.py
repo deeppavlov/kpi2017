@@ -139,7 +139,7 @@ def main():
             print('[ max_train_time elapsed: {} ]'.format(train_time.time()))
             break
         if (0 < opt['log_every_n_secs'] < log_time.time()) or \
-                (opt['log_every_n_epochs'] > 0 and new_epoch > 0 and (epochs_done // opt['log_every_n_epochs']) == 0):
+                (opt['log_every_n_epochs'] > 0 and new_epoch > 0 and (epochs_done % opt['log_every_n_epochs']) == 0):
             if opt['display_examples']:
                 print(world.display() + '\n~~')
 
