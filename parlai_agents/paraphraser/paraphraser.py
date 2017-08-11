@@ -130,6 +130,7 @@ class ParaphraserAgent(Agent):
 
     def report(self):
         return (
-            '[train] updates = %d | exs = %d | loss = %.2f | acc = %.2f | f1 = %.2f'%
-            (self.model.updates, self.n_examples, self.model.train_loss, self.model.train_acc, self.model.train_f1))
+            '[train] updates = %d | exs = %d | loss = %.4f | acc = %.4f | f1 = %.4f'%
+            (self.model.updates, self.n_examples,
+             self.model.train_loss, self.model.train_acc, self.model.train_f1))
 
