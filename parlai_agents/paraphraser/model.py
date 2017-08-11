@@ -61,7 +61,6 @@ class ParaphraserModel(object):
         self.train_loss = 0.0
         self.train_acc = 0.0
         self.train_f1 = 0.0
-        self.train_metrics = [self.train_loss, self.train_acc, self.train_f1]
         self.val_loss = 0.0
         self.val_acc = 0.0
         self.val_f1 = 0.0
@@ -92,7 +91,7 @@ class ParaphraserModel(object):
 
     def save(self, fname=None):
         """Save the parameters of the agent to a file."""
-        fname = self.opt.get('model_file', None) if fname is None else fname
+        fname = self.opt.get('model_file', None) if fname is None else fnamebv
         if fname:
             print("[ saving model: " + fname + " ]")
             self.model.save(fname+'.h5')
@@ -103,7 +102,8 @@ class ParaphraserModel(object):
 
     def update(self, batch):
         x, y = batch
-        self.metrics = self.model.train_on_batch(x, y)
+        self.train_loss, self.train_acc, self.train_f1 = self.model.train_on_batch(x, y)
+        print(self.train_loss, self.train_acc, self.train_f1)
         self.updates += 1
 
     def predict(self, batch):
