@@ -6,8 +6,8 @@ python3 ./train_model.py -t parlai_tasks.paraphrases.agents \
                          --display-examples False \
                          --max-train-time -1 \
                          --num-epochs 200 \
-                         --log-every-n-secs 5 \
+                         --log-every-n-secs -1 \
                          --log-every-n-epochs 1 \
                          --embedding_file 'yalen_sg_word_vectors_300.txt'\
                          --model_file '/tmp/my_model'\
-                         --hidden-dim 50
+                         --hidden_dim 50
