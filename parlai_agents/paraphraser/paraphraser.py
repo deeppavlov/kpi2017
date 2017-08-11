@@ -114,8 +114,11 @@ class ParaphraserAgent(Agent):
         return inputs
 
     def _batchify(self, batch):
-        question1 = [self.word_dict.txt2vec(ex['question1']) for ex in batch]
-        question2 = [self.word_dict.txt2vec(ex['question2']) for ex in batch]
+        question1 = []
+        question2 = []
+        for ex in batch:
+            question1.append(self.word_dict.txt2vec(ex['question1']))
+            question2.append(self.word_dict.txt2vec(ex['question2']))
         question1 = pad_sequences(question1, maxlen=self.opt['max_sequence_length'])
         question2 = pad_sequences(question2, maxlen=self.opt['max_sequence_length'])
         if len(batch[0]) == 3:
@@ -125,7 +128,7 @@ class ParaphraserAgent(Agent):
             return [question1, question2]
 
     def _predictions2text(self, predictions):
-        y = ['Да' if ex == 1 else 'Нет' for ex in predictions]
+        y = ['Да' if ex > 0.5 else 'Нет' for ex in predictions]
         return y
 
     def report(self):
