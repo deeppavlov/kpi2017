@@ -91,7 +91,7 @@ class ParaphraserModel(object):
 
     def save(self, fname=None):
         """Save the parameters of the agent to a file."""
-        fname = self.opt.get('model_file', None) if fname is None else fnamebv
+        fname = self.opt.get('model_file', None) if fname is None else fname
         if fname:
             print("[ saving model: " + fname + " ]")
             self.model.save(fname+'.h5')
