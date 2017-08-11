@@ -8,6 +8,6 @@ python3 ./train_model.py -t parlai_tasks.paraphrases.agents \
                          --num-epochs 200 \
                          --log-every-n-secs -1 \
                          --log-every-n-epochs 1 \
-                         --embedding_file 'yalen_sg_word_vectors_300.txt'\
+                         --embedding_file './yalen_sg_word_vectors_300.txt'\
                          --model_file '/tmp/my_model'\
                          --hidden_dim 50
