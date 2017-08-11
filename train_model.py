@@ -129,7 +129,7 @@ def main():
     while True:
         world.parley()
         parleys += 1
-        new_epoch = parleys // len(world) - epochs_done
+        new_epoch = (parleys * opt['batchsize']) // len(world) - epochs_done
         epochs_done += new_epoch
 
         if opt['num_epochs'] > 0 and parleys >= max_parleys:
