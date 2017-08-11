@@ -112,9 +112,9 @@ class ParaphraserModel(object):
         inp = Input(shape=(input_dim,))
         out = Embedding(len(self.word_index) + 1,
                         self.embedding_dim,
-                        weights=[self.embedding_matrix],
+                        weights=[self.embedding_matrix] if self.embedding_matrix is not None else None,
                         input_length=input_dim,
-                        trainable=False)(inp)
+                        trainable=self.embedding_matrix is None)(inp)
         model = Model(inputs=inp, outputs=out, name="word_embedding_model")
         return model
 

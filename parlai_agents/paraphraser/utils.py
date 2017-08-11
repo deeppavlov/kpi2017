@@ -6,12 +6,14 @@ def load_embeddings(opt, word_dict):
     """Initialize embeddings from file of pretrained vectors."""
     embeddings_index = {}
 
-    if 'embedding_file' not in opt:
-        raise RuntimeError('No embeddings file set')
+    if not opt.get('embedding_file'):
+        print('WARNING: No embeddings file set, turning trainable embeddings on')
+        return None
     # Fill in embeddings
     embedding_file = os.path.join(opt['datapath'], 'paraphrases', opt.get('embedding_file'))
     if not os.path.isfile(embedding_file):
-        raise RuntimeError('Tried to load embeddings with no embedding file.')
+        print('WARNING: Tried to load embeddings with no embedding file, turning trainable embeddings on')
+        return None
     with open(embedding_file) as f:
         for line in f:
             values = line.rsplit(sep=' ', maxsplit=opt['embedding_dim'])
