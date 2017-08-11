@@ -103,7 +103,6 @@ class ParaphraserModel(object):
     def update(self, batch):
         x, y = batch
         self.train_loss, self.train_acc, self.train_f1 = self.model.train_on_batch(x, y)
-        print(self.train_loss, self.train_acc, self.train_f1)
         self.updates += 1
 
     def predict(self, batch):
