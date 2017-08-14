@@ -41,3 +41,6 @@ class POSDictionaryAgent(DictionaryAgent):
         filename = self.opt['model_file'] if filename is None else filename
         self.labels_dict.save(os.path.splitext(filename)[0] + '.labels.dict')
         return super().save(filename, append, sort)
+
+    def tokenize(self, text, building=False):
+        return text.split(' ')
