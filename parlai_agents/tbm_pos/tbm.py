@@ -5,10 +5,8 @@ import torch
 from parlai.core.agents import Agent
 
 from .dictionary import POSDictionaryAgent
-from .model import POSTagger
+from .model import POSTaggerModel
 from . import config
-
-import torch.nn as nn
 
 
 class NaiveAgent(Agent):
@@ -44,10 +42,10 @@ class NaiveAgent(Agent):
 
     def _init_from_saved(self, opt, fname):
         data = torch.load(fname)
-        self.model = POSTagger(opt, self.word_dict, data['state_dict'])
+        self.model = POSTaggerModel(opt, self.word_dict, data['state_dict'])
 
     def _init_from_scratch(self, opt):
-        self.model = POSTagger(opt, self.word_dict)
+        self.model = POSTaggerModel(opt, self.word_dict)
 
     def observe(self, observation):
         observation = copy.deepcopy(observation)
@@ -72,20 +70,14 @@ class NaiveAgent(Agent):
         batch_response = []
 
         if 'labels' in observations[0]:
-            optimizer = self.model.optimizer
-            optimizer.zero_grad()
-            loss, paths = self.train_batch(batch, self.train_naive)
-            self.loss = loss
-            # loss.backward()
-            # optimizer.step(lambda: self.train_batch(batch, self.train_naive))
-            optimizer.step()
+            self.loss, paths = self.model.train_batch(batch)
             batch_response = [{
                 'id': self.id,
                 'text': self.word_dict.labels_dict.vec2txt(path)
             } for path in paths]
         else:
             for sentence, labels in batch:
-                path = self.forward_naive(sentence)
+                path = self.model.forward(sentence)
                 text = self.word_dict.labels_dict.vec2txt(path)
                 batch_response.append({
                     'id': self.id,
@@ -101,42 +93,6 @@ class NaiveAgent(Agent):
             tags = self.word_dict.labels_dict.txt2vec(observation['labels'][0]) if 'labels' in observation else None
             batch.append((words, tags))
         return batch
-
-    def train_naive(self, input_seq, gold_path):
-        state = self.model.set_input(input_seq)
-        path = []
-        loss = self.model.zero_loss()
-        for x, y in zip(input_seq, gold_path):
-            output = self.model.forward(state)
-            best_action = output.max(1)[1].data[0][0]
-            path.append(best_action)
-            softmax_output = nn.LogSoftmax()(output)
-            loss = loss - softmax_output[0, y]
-            state = self.model.act(state, y, output)
-
-        loss = loss / len(input_seq)
-        # loss.backward()
-        return loss, path
-
-    def forward_naive(self, input_seq):
-        state = self.model.set_input(input_seq)
-        path = []
-        while True:
-            output = self.model.forward(state)
-            best_action = output.max(1)[1].data[0][0]
-            path.append(best_action)
-            state = self.model.act(state, best_action, output)
-            if state.terminated:
-                break
-
-        return path
-
-    def train_batch(self, batch, train_func, *args, **kwargs):
-        res = [train_func(*args, **kwargs, input_seq=x, gold_path=y) for x, y in batch]
-        losses, paths = zip(*res)
-        batch_loss = torch.cat(losses).mean()
-        batch_loss.backward()
-        return batch_loss, paths
 
     def save(self, fname=None):
         """Save the parameters of the agent to a file."""
