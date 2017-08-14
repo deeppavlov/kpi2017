@@ -30,7 +30,7 @@ class DefaultTeacher(DialogTeacher):
     def observe(self, observation):
         """Process observation for metrics. """
         if self.lastY is not None:
-            if 'text' in observation:
+            if observation.get('text'):
                 ys = self.lastY[0].split(' ')
                 xs = [{'text': x} for x in observation['text'].split(' ')]
                 for x, y in zip(xs, ys):

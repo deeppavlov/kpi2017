@@ -29,11 +29,12 @@ class POSTagger(nn.Module):
         self.word_emb = self.gpu(nn.Embedding(len(word_dict), 20))
         self.pos_emb = self.gpu(nn.Embedding(len(word_dict.labels_dict), 5))
         self.linear = self.gpu(nn.Linear(25, len(word_dict.labels_dict)))
+        self.m = self.gpu(nn.Softmax())
 
         if state_dict:
             self.load_state_dict(state_dict)
 
-    def zero_loss(self):
+    def zero_var(self):
         return self.gpu(Variable(torch.FloatTensor([0])))
 
     def set_input(self, input_seq):
@@ -61,6 +62,20 @@ class POSTagger(nn.Module):
         pos_embedding = self.pos_emb(self.gpu(Variable(torch.LongTensor([state.prev_pos]))))
         x_vec = torch.cat([word.unsqueeze(0), pos_embedding], dim=1)
         output = self.linear(x_vec)
+        output = self.m(output)
+        return output
+
+    def forward_batch(self, states):
+        words = []
+        prev_pos = []
+        for state in states:
+            words.append(state.words[state.input_index].unsqueeze(0))
+            prev_pos.append(state.prev_pos)
+        words = torch.cat(words, dim=0)
+        pos_embeddings = self.pos_emb(self.gpu(Variable(torch.LongTensor(prev_pos))))
+        x_vec = torch.cat([words, pos_embeddings], dim=1)
+        output = self.linear(x_vec)
+        output = self.m(output)
         return output
 
     def calculate_gold_path(self, seq):

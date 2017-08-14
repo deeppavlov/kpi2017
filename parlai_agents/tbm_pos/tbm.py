@@ -73,7 +73,7 @@ class NaiveAgent(Agent):
             self.loss, paths = self.model.train_batch(batch)
             batch_response = [{
                 'id': self.id,
-                'text': self.word_dict.labels_dict.vec2txt(path)
+                'text': self.word_dict.labels_dict.vec2txt(path) if path else None
             } for path in paths]
         else:
             for sentence, labels in batch:
@@ -101,8 +101,8 @@ class NaiveAgent(Agent):
             print("[ saving model: " + fname + " ]")
             self.model.save(fname)
 
-    # def report(self):
-    #     if self.loss is not None:
-    #         return '[train] train loss = %.2f' % self.loss.data[0]
-    #     else:
-    #         return '[train] Nothing to report'
+    def report(self):
+        if self.loss is not None:
+            return '[train] train loss = %.2f' % self.loss.data[0]
+        else:
+            return '[train] Nothing to report'

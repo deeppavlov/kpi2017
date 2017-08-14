@@ -1,17 +1,31 @@
+from collections import namedtuple
+
 from .dictionary import POSDictionaryAgent
 from .pos_tagger import POSTagger
 
 import torch
 import torch.nn as nn
 
+import timeit
+
+
+State = namedtuple('State', 'inner_state output path score_sum terminated')
+
 
 class POSTaggerModel(object):
 
     def __init__(self, opt, word_dict, state_dict=None):
         self.opt = opt
+        self.times = []
 
-        self.train_func = self.train_naive
-        self.forward = self.forward_naive
+        if self.opt['model_type'] == 'naive':
+            self.train_func = self.train_naive
+            self.forward = self.forward_naive
+        elif self.opt['model_type'] == 'beam':
+            self.train_func = self.train_beam
+            self.forward = self.forward_beam
+        else:
+            raise RuntimeError('not applicable model type')
 
         self.word_dict = word_dict  # type: POSDictionaryAgent
         self.state_dict = state_dict
@@ -35,7 +49,7 @@ class POSTaggerModel(object):
     def train_naive(self, input_seq, gold_path):
         state = self.network.set_input(input_seq)
         path = []
-        loss = self.network.zero_loss()
+        loss = self.network.zero_var()
         for x, y in zip(input_seq, gold_path):
             output = self.network.forward(state)
             best_action = output.max(1)[1].data[0][0]
@@ -60,6 +74,78 @@ class POSTaggerModel(object):
                 break
 
         return path
+
+    def compute_beam_scores(self, states):
+        new_states = []
+        # start_time = timeit.default_timer()
+        output = self.network.forward_batch([s.inner_state for s in states])
+        for i in range(len(states)):
+            s = states[i]
+            # output = self.network.forward(s.inner_state)
+            for a in range(len(self.word_dict.labels_dict)):
+                o = output[i, a]
+                inner_state = self.network.act(s.inner_state, a, output)
+                state = State(inner_state, output, s.path + [a], s.score_sum + o,
+                              inner_state.terminated)
+                new_states.append(state)
+        # self.times.append(timeit.default_timer() - start_time)
+        # print(sum(self.times)/len(self.times))
+        return new_states
+
+    def train_beam(self, input_seq, gold_path):
+        beam_size = self.opt['beam_size']
+        initial_state = State(inner_state=self.network.set_input(input_seq), output=[], path=[],
+                              score_sum=self.network.zero_var(), terminated=False)
+        states = [initial_state]
+        finished_path = []
+        step = 0
+        gold_score = None
+        stop_flag = False
+        while not stop_flag:
+            step += 1
+            states = self.compute_beam_scores(states)
+            gold_score = next(state.score_sum for state in states if state.path == gold_path[:step])
+            finished_path += [state for state in states if state.terminated is True]
+            states = [state for state in states if state.terminated is False]
+            if len(states) == 0:
+                # stop_flag = True
+                break
+            states.sort(key=lambda state: state.score_sum.data[0], reverse=True)
+            states = states[:beam_size]
+            # allow not to stop when gold_path is in finished, but there are other paths remaining
+            if gold_path[:step] not in [state.path for state in states]:
+                # print(step, "out of", len(gold_path))
+                stop_flag = True
+
+        states += finished_path
+        loss = torch.cat([torch.exp(state.score_sum) for state in states]).sum().log() - gold_score
+        return loss, None
+
+    def forward_beam(self, input_seq):
+        beam_size = self.opt['beam_size']
+        initial_state = State(inner_state=self.network.set_input(input_seq), output=[], path=[],
+                              score_sum=self.network.zero_var(), terminated=False)
+        finished_states = []
+        states = [initial_state]
+        step = 0
+        stop_flag = False
+        while not stop_flag:
+            step += 1
+            states = self.compute_beam_scores(states)
+            finished_states += [state for state in states if state.terminated is True]
+            states = [state for state in states if state.terminated is False]
+            if len(states) == 0:
+                # stop_flag = True
+                break
+            states.sort(key=lambda state: state.score_sum.data[0], reverse=True)
+            states = states[:beam_size]
+            # allow not to stop when gold_path is in finished, but there are other paths remaining
+
+        states = finished_states
+        states.sort(key=lambda state: state.score_sum.data[0], reverse=True)
+        states = states[:beam_size]
+
+        return states[0].path
 
     def train_batch(self, batch, *args, **kwargs):
         self.optimizer.zero_grad()
