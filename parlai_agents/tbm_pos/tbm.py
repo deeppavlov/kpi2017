@@ -5,7 +5,7 @@ import torch
 from parlai.core.agents import Agent
 
 from .dictionary import POSDictionaryAgent
-from .model import POSTaggerModel
+from .model import MachineTrainer
 from . import config
 
 
@@ -42,10 +42,10 @@ class NaiveAgent(Agent):
 
     def _init_from_saved(self, opt, fname):
         data = torch.load(fname)
-        self.model = POSTaggerModel(opt, self.word_dict, data['state_dict'])
+        self.model = MachineTrainer(opt, self.word_dict, data['state_dict'])
 
     def _init_from_scratch(self, opt):
-        self.model = POSTaggerModel(opt, self.word_dict)
+        self.model = MachineTrainer(opt, self.word_dict)
 
     def observe(self, observation):
         observation = copy.deepcopy(observation)
@@ -67,22 +67,16 @@ class NaiveAgent(Agent):
             raise RuntimeError("Parallel act is not supported.")
 
         batch = self.batchify(observations)
-        batch_response = []
 
         if 'labels' in observations[0]:
-            self.loss, paths = self.model.train_batch(batch)
-            batch_response = [{
-                'id': self.id,
-                'text': self.word_dict.labels_dict.vec2txt(path) if path else None
-            } for path in paths]
+            self.loss, paths = self.model.train(batch)
         else:
-            for sentence, labels in batch:
-                path = self.model.forward(sentence)
-                text = self.word_dict.labels_dict.vec2txt(path)
-                batch_response.append({
-                    'id': self.id,
-                    'text': text
-                })
+            paths = self.model.forward(batch)
+
+        batch_response = [{
+            'id': self.id,
+            'text': self.word_dict.labels_dict.vec2txt(path) if path else None
+        } for path in paths]
 
         return batch_response
 
@@ -101,8 +95,8 @@ class NaiveAgent(Agent):
             print("[ saving model: " + fname + " ]")
             self.model.save(fname)
 
-    def report(self):
-        if self.loss is not None:
-            return '[train] train loss = %.2f' % self.loss.data[0]
-        else:
-            return '[train] Nothing to report'
+    # def report(self):
+    #     if self.loss is not None:
+    #         return '[train] train loss = %.2f' % self.loss.data[0]
+    #     else:
+    #         return '[train] Nothing to report'

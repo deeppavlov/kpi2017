@@ -62,7 +62,7 @@ class POSTagger(nn.Module):
         pos_embedding = self.pos_emb(self.gpu(Variable(torch.LongTensor([state.prev_pos]))))
         x_vec = torch.cat([word.unsqueeze(0), pos_embedding], dim=1)
         output = self.linear(x_vec)
-        output = self.m(output)
+        # output = self.m(output)
         return output
 
     def forward_batch(self, states):
@@ -75,7 +75,7 @@ class POSTagger(nn.Module):
         pos_embeddings = self.pos_emb(self.gpu(Variable(torch.LongTensor(prev_pos))))
         x_vec = torch.cat([words, pos_embeddings], dim=1)
         output = self.linear(x_vec)
-        output = self.m(output)
+        # output = self.m(output)
         return output
 
     def calculate_gold_path(self, seq):
