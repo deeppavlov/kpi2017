@@ -1,0 +1,8 @@
+python 3.5
+
+numpy
+parlai
+
+paraphraser:
+ tensorflow(-gpu)
+ keras
