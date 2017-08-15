@@ -2,7 +2,7 @@ import os
 import numpy as np
 
 
-def load_embeddings(opt, word_dict):
+def load_embeddings(opt, dict):
     """Initialize embeddings from file of pretrained vectors."""
     embeddings_index = {}
 
@@ -16,15 +16,15 @@ def load_embeddings(opt, word_dict):
         return None
     with open(embedding_file) as f:
         for line in f:
-            values = line.rsplit(sep=' ', maxsplit=opt['embedding_dim'])
-            assert(len(values) == opt['embedding_dim'] + 1)
+            values = line.rsplit(sep=' ', maxsplit=opt['embedding_dim'] + 1)
+            assert(len(values) == opt['embedding_dim'] + 2)
             word = values[0]
             coefs = np.asarray(values[1:-1], dtype='float32')
             embeddings_index[word] = coefs
 
     # prepare embedding matrix
-    embedding_matrix = np.zeros((len(word_dict) + 1, opt['embedding_dim']))
-    for word, i in word_dict.items():
+    embedding_matrix = np.zeros((len(dict), opt['embedding_dim']))
+    for word, i in dict.items():
         embedding_vector = embeddings_index.get(word)
         if embedding_vector is not None:
             # words not found in embedding index will be all-zeros.

@@ -22,6 +22,13 @@ python examples/train_model.py -m drqa -t babi:Task10k:1 -mf /tmp/model -bs 10
 TODO List:
 - More logging (e.g. to files), make things prettier.
 """
+import tensorflow as tf
+from keras.backend.tensorflow_backend import set_session
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.95
+config.gpu_options.visible_device_list = '1'
+set_session(tf.Session(config=config))
+
 
 from parlai.core.agents import create_agent
 from parlai.core.worlds import create_task
@@ -91,6 +98,8 @@ def main():
                         type=int, default=0)
     train.add_argument('-vtim', '--validation-every-n-secs',
                         type=float, default=-1)
+    train.add_argument('-ve', '--validation-every-n-epochs',
+                        type=int, default=0)
     train.add_argument('-vme', '--validation-max-exs',
                         type=int, default=-1,
                         help='max examples to use during validation (default ' +
@@ -181,7 +190,10 @@ def main():
             print(log)
             log_time.reset()
 
-        if 0 < opt['validation_every_n_secs'] < validate_time.time():
+        if 0 < opt['validation_every_n_secs'] < validate_time.time() or \
+                    (opt['validation_every_n_epochs'] > 0 and new_epoch > 0 and (
+                        epochs_done % opt['validation_every_n_epochs']) == 0):
+
             valid_report, valid_world = run_eval(agent, opt, 'valid', opt['validation_max_exs'], valid_world=valid_world)
             if valid_report['accuracy'] > best_accuracy:
                 best_accuracy = valid_report['accuracy']

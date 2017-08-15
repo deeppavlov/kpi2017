@@ -11,7 +11,6 @@ from parlai.core.dict import DictionaryAgent
 from parlai.core.params import class2str
 
 
-
 class ParaphraserDictionaryAgent(DictionaryAgent):
 
     @staticmethod
@@ -27,6 +26,16 @@ class ParaphraserDictionaryAgent(DictionaryAgent):
         if text:
             self.add_to_dict(self.tokenize(text))
         return {'id': 'ParaphraserDictionary'}
+
+    def tokenize(self, text, building=False):
+        """Returns a sequence of tokens from the iterable."""
+        questions = (' ').join(text.split('\n')[1:])
+        return questions.split(' ')
+
+    def txt2vec(self, text, vec_type=list):
+        tokens = text.split()
+        sequence = [self.tok2ind.get(token, 0) for token in tokens]
+        return sequence
 
 
 class ParaphraserAgent(Agent):
@@ -56,7 +65,7 @@ class ParaphraserAgent(Agent):
         print('create embedding matrix')
         self.embedding_matrix = load_embeddings(opt, self.word_dict.tok2ind)
         print('create model')
-        self.model = ParaphraserModel(self.word_dict, self.embedding_matrix, opt)
+        self.model = ParaphraserModel(self.word_dict.tok2ind, self.embedding_matrix, opt)
         self.n_examples = 0
 
     def observe(self, observation):

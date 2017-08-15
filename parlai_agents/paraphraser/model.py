@@ -110,7 +110,7 @@ class ParaphraserModel(object):
 
     def create_embedding_layer(self, input_dim):
         inp = Input(shape=(input_dim,))
-        out = Embedding(len(self.word_index) + 1,
+        out = Embedding(len(self.word_index),
                         self.embedding_dim,
                         weights=[self.embedding_matrix] if self.embedding_matrix is not None else None,
                         input_length=input_dim,
