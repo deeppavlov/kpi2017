@@ -1,8 +1,4 @@
-python 3.5
-
-numpy
-parlai
-
-paraphraser:
- tensorflow(-gpu)
- keras
+numpy==1.13.0
+-e git+https://github.com/facebookresearch/ParlAI.git@9800a9241dbb89ae2ce4b51653ec158ebce799d4#egg=parlai
+tensorflow==1.2.1
+keras==2.0.6
