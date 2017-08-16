@@ -22,11 +22,9 @@ class Trainer:
 
 class NaiveTrainer(Trainer):
 
-    def __init__(self, learning_rate, word_dict, network):
+    def __init__(self, learning_rate, network):
         self.times = []
 
-        self.word_dict = word_dict  # type: POSDictionaryAgent
-        self.labels_len = len(self.word_dict.labels_dict)
         self.network = network
 
         parameters = [p for p in self.network.parameters() if p.requires_grad]
@@ -80,12 +78,10 @@ class NaiveTrainer(Trainer):
 
 class BeamTrainer(Trainer):
 
-    def __init__(self, learning_rate, beam_size, word_dict, network):
+    def __init__(self, learning_rate, beam_size, network):
         self.beam_size = beam_size
         self.times = []
 
-        self.word_dict = word_dict  # type: POSDictionaryAgent
-        self.labels_len = len(self.word_dict.labels_dict)
         # todo: purge network from self
         self.network = network
 

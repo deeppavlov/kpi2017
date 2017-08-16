@@ -51,9 +51,9 @@ class NaiveAgent(Agent):
             self.network.load_state_dict(state_dict['network'])
 
         if opt['trainer_type'] == 'naive':
-            self.model = NaiveTrainer(opt['learning_rate'], self.word_dict, self.network)
+            self.model = NaiveTrainer(opt['learning_rate'], self.network)
         elif opt['trainer_type'] == 'beam':
-            self.model = BeamTrainer(opt['learning_rate'], opt['beam'], self.word_dict, self.network)
+            self.model = BeamTrainer(opt['learning_rate'], opt['beam'], self.network)
         else:
             raise RuntimeError('not applicable model type')
 

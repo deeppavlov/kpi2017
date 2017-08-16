@@ -20,10 +20,11 @@ class POSTagger(nn.Module):
         else:
             return obj
 
-    def __init__(self, opt, word_dict, state_dict=None, word_embeddings_size=50, pos_embedding_size=15):
+    def __init__(self, opt, word_dict, state_dict=None, word_embeddings_size=50, word_window_size=0, pos_embedding_size=15, prev_pos_count=2):
         super(POSTagger, self).__init__()
 
         self.word_embedding_size = word_embeddings_size
+        self.prev_pos_count = prev_pos_count
         self.pos_embedding_size = pos_embedding_size
 
         self.opt = copy.deepcopy(opt)
@@ -32,7 +33,7 @@ class POSTagger(nn.Module):
 
         self.word_emb = self.gpu(nn.Embedding(len(word_dict), self.word_embedding_size))
         self.pos_emb = self.gpu(nn.Embedding(len(word_dict.labels_dict), self.pos_embedding_size))
-        self.linear = self.gpu(nn.Linear(self.word_embedding_size + self.pos_embedding_size,
+        self.linear = self.gpu(nn.Linear(self.word_embedding_size + self.pos_embedding_size*self.prev_pos_count,
                                          len(word_dict.labels_dict)))
         self.softmax = self.gpu(nn.Softmax())
 
@@ -48,7 +49,7 @@ class POSTagger(nn.Module):
         words_ids = self.word_dict.txt2vec(input_seq)
         words_count = len(words_ids)
         words = self.word_emb(self.gpu(Variable(torch.LongTensor(words_ids))))
-        start = self.word_dict.labels_dict[self.word_dict.labels_dict.start_token]
+        start = [self.word_dict.labels_dict[self.word_dict.labels_dict.start_token]]*self.prev_pos_count
         return POS_Tagger_State(words, 0, words_count, start, None, words_count == 0)
 
     def act(self, state=None, action=None, output=None):
@@ -59,7 +60,7 @@ class POSTagger(nn.Module):
         assert action is not None
         assert output is not None
         terminated = state.input_index + 1 >= state.words_count
-        return POS_Tagger_State(state.words, state.input_index + 1, state.words_count, action, output, terminated)
+        return POS_Tagger_State(state.words, state.input_index + 1, state.words_count, (state.prev_pos + [action])[-self.prev_pos_count:], output, terminated)
 
     def embed_states(self, states):
         words = []
@@ -69,12 +70,10 @@ class POSTagger(nn.Module):
             prev_pos.append(state.prev_pos)
         word_embeddings = torch.cat(words, dim=0)
         prev_pos = self.gpu(Variable(torch.LongTensor(prev_pos)))
-        return word_embeddings, prev_pos
+        return word_embeddings, self.pos_emb(prev_pos).view(len(states), -1)
 
     def forward(self, states):
-        word_embeddings, prev_pos = self.embed_states(states)
-        pos_embeddings = self.pos_emb(prev_pos)  # prev_pos:64x20
-        # words_embeddings = self.word_emb(words)
+        word_embeddings, pos_embeddings = self.embed_states(states)
         x = torch.cat([word_embeddings, pos_embeddings], dim=1)
         scores = self.linear(x)
         return scores
