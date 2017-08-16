@@ -56,8 +56,8 @@ def add_cmdline_args(parser):
     #                     help='Optimizer: sgd or adamax (default)')
     #
     # Model-specific
-    agent.add_argument('--model_type', type=str, default='naive',
-                       help='Computation model: beam or naive (default)')
+    agent.add_argument('--trainer_type', type=str, default='naive',
+                       help='Training algorithm: beam or naive (default)')
     agent.add_argument('--beam_size', type=int, default=8)
     # agent.add_argument('--concat_rnn_layers', type='bool', default=True)
     # agent.add_argument('--question_merge', type=str, default='self_attn',

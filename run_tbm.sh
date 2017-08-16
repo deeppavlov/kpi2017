@@ -10,4 +10,4 @@ python3 train_model.py -t parlai_tasks.ud_pos_english.agents \
                        --batchsize 64 \
                        --learning_rate 1 \
                        --beam_size 8 \
-                       --model_type naive
+                       --trainer_type naive

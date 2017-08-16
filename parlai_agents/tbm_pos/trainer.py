@@ -12,58 +12,28 @@ import timeit
 State = namedtuple('State', 'inner_state output path score_sum terminated')
 
 
-class MachineTrainer(object):
+class Trainer:
+    def train(self, batch):
+        raise NotImplemented()
 
-    def __init__(self, opt, word_dict, state_dict=None):
-        self.opt = opt
+    def forward(self, batch):
+        raise NotImplemented()
+
+
+class NaiveTrainer(Trainer):
+
+    def __init__(self, learning_rate, word_dict, network):
         self.times = []
-
-        if self.opt['model_type'] == 'naive':
-            self.train = self.train_naive_batch
-            self.forward = self.forward_naive_batch
-        elif self.opt['model_type'] == 'beam':
-            self.train = self.train_beam
-            self.forward = self.forward_beam
-        else:
-            raise RuntimeError('not applicable model type')
 
         self.word_dict = word_dict  # type: POSDictionaryAgent
         self.labels_len = len(self.word_dict.labels_dict)
-        self.state_dict = state_dict
-        self.network = POSTagger(opt, word_dict)
-        if state_dict:
-            new_state = set(self.network.state_dict().keys())
-            for k in list(state_dict['network'].keys()):
-                if k not in new_state:
-                    del state_dict['network'][k]
-            self.network.load_state_dict(state_dict['network'])
+        self.network = network
+
         parameters = [p for p in self.network.parameters() if p.requires_grad]
 
-        self.optimizer = torch.optim.Adam(parameters, self.opt['learning_rate'])
-        # if state_dict:
-        #     new_state = set(self.optimizer.state_dict().keys())
-        #     for k in list(state_dict['optimizer'].keys()):
-        #         if k not in new_state:
-        #             del state_dict['optimizer'][k]
-        #     self.optimizer.load_state_dict(state_dict['optimizer'])
+        self.optimizer = torch.optim.Adam(parameters, learning_rate)
 
-    def train_naive(self, input_seq, gold_path):
-        state = self.network.set_input(input_seq)
-        path = []
-        loss = self.network.zero_var()
-        for y in gold_path:
-            output = self.network.forward(state)
-            output = self.network.m(output)
-            best_action = output.max(1)[1].data[0][0]
-            path.append(best_action)
-            loss = loss - output[0, y]
-            state = self.network.act(state, y, output)
-
-        loss = loss / len(input_seq)
-        # loss.backward()
-        return loss, path
-
-    def train_naive_batch(self, batch):
+    def train(self, batch):
         self.optimizer.zero_grad()
         x, ys = zip(*batch)
         states = [self.network.set_input(input_seq) for input_seq in x]
@@ -75,8 +45,8 @@ class MachineTrainer(object):
             indexes = [i for i in range(len(states)) if not states[i].terminated]
             if not indexes:
                 break
-            output = self.network.forward_batch([states[i] for i in indexes])  # 64x21
-            output = self.network.m(output)
+            output = self.network.forward([states[i] for i in indexes])  # 64x21
+            output = self.network.softmax(output)
             best_actions = output.max(1)[1].data.squeeze(1).tolist()  # 64
             for i in range(len(best_actions)):
                 loss_cnt += 1
@@ -91,21 +61,7 @@ class MachineTrainer(object):
         self.optimizer.step()
         return loss, paths
 
-    def forward_naive(self, input_seq):
-        state = self.network.set_input(input_seq)
-        path = []
-        while True:
-            output = self.network.forward(state)
-            output = self.network.m(output)
-            best_action = output.max(1)[1].data[0][0]
-            path.append(best_action)
-            state = self.network.act(state, best_action, output)
-            if state.terminated:
-                break
-
-        return path
-
-    def forward_naive_batch(self, batch):
+    def forward(self, batch):
         x, _ = zip(*batch)
         states = [self.network.set_input(input_seq) for input_seq in x]
         paths = [[] for _ in states]
@@ -113,7 +69,7 @@ class MachineTrainer(object):
             indexes = [i for i in range(len(states)) if not states[i].terminated]
             if not indexes:
                 break
-            output = self.network.forward_batch([states[i] for i in indexes])
+            output = self.network.forward([states[i] for i in indexes])
             best_actions = output.max(1)[1].data.squeeze(1).tolist()
             for i in range(len(best_actions)):
                 index = indexes[i]
@@ -121,10 +77,26 @@ class MachineTrainer(object):
                 states[index] = self.network.act(states[index], best_actions[i], output[i])
         return paths
 
+
+class BeamTrainer(Trainer):
+
+    def __init__(self, learning_rate, beam_size, word_dict, network):
+        self.beam_size = beam_size
+        self.times = []
+
+        self.word_dict = word_dict  # type: POSDictionaryAgent
+        self.labels_len = len(self.word_dict.labels_dict)
+        # todo: purge network from self
+        self.network = network
+
+        parameters = [p for p in self.network.parameters() if p.requires_grad]
+
+        self.optimizer = torch.optim.Adam(parameters, learning_rate)
+
     def compute_beam_scores(self, states):
         new_states = []
         # start_time = timeit.default_timer()
-        output = self.network.forward_batch([s.inner_state for s in states])
+        output = self.network.forward([s.inner_state for s in states])
         for i in range(len(states)):
             s = states[i]
             # output = self.network.forward(s.inner_state)
@@ -139,8 +111,7 @@ class MachineTrainer(object):
         # print(sum(self.times)/len(self.times))
         return new_states
 
-    def train_beam(self, input_seq, gold_path):
-        beam_size = self.opt['beam_size']
+    def train(self, input_seq, gold_path):
         initial_state = State(inner_state=self.network.set_input(input_seq), output=[], path=[],
                               score_sum=self.network.zero_var(), terminated=False)
         states = [initial_state]
@@ -155,7 +126,7 @@ class MachineTrainer(object):
             if len(states) == 0:
                 break
             states.sort(key=lambda state: state.score_sum.data[0], reverse=True)
-            states = states[:beam_size]
+            states = states[:self.beam_size]
             # todo: allow not to stop when gold_path is in finished, but there are other paths remaining
             if gold_path[:step] not in [state.path for state in states]:
                 # print(step, "out of", len(gold_path))
@@ -165,7 +136,7 @@ class MachineTrainer(object):
         loss = torch.cat([torch.exp(state.score_sum) for state in states]).sum().log() - gold_score
         return loss, None
 
-    def train_beam_batch(self, batch):
+    def train_batch(self, batch):
         x, ys = zip(*batch)
         beam_size = self.opt['beam_size']
         states = [State(inner_state=self.network.set_input(input_seq), output=[], path=[],
@@ -177,7 +148,7 @@ class MachineTrainer(object):
                 sorted(new_states[i*self.labels_len:(i+1)*self.labels_len], key=lambda state: state.score_sum.data[0],
                        reverse=True)
 
-    def forward_beam(self, input_seq):
+    def forward(self, input_seq):
         beam_size = self.opt['beam_size']
         initial_state = State(inner_state=self.network.set_input(input_seq), output=[], path=[],
                               score_sum=self.network.zero_var(), terminated=False)
@@ -211,17 +182,3 @@ class MachineTrainer(object):
         batch_loss.backward()
         self.optimizer.step()
         return batch_loss, paths
-
-    def save(self, fname):
-        params = {
-            'state_dict': {
-                'network': self.network.state_dict(),
-                'optimizer': self.optimizer.state_dict()
-            },
-            'word_dict': self.word_dict,
-            'config': self.opt,
-        }
-        try:
-            torch.save(params, fname)
-        except BaseException:
-            print('[ WARN: Saving failed... continuing anyway. ]')

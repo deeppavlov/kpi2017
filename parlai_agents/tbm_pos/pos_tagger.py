@@ -20,16 +20,21 @@ class POSTagger(nn.Module):
         else:
             return obj
 
-    def __init__(self, opt, word_dict, state_dict=None):
+    def __init__(self, opt, word_dict, state_dict=None, word_embeddings_size=50, pos_embedding_size=15):
         super(POSTagger, self).__init__()
+
+        self.word_embedding_size = word_embeddings_size
+        self.pos_embedding_size = pos_embedding_size
+
         self.opt = copy.deepcopy(opt)
         self.opt['cuda'] = self.opt.get('cuda') and torch.cuda.is_available()
         self.word_dict = word_dict  # type: POSDictionaryAgent
 
-        self.word_emb = self.gpu(nn.Embedding(len(word_dict), 20))
-        self.pos_emb = self.gpu(nn.Embedding(len(word_dict.labels_dict), 5))
-        self.linear = self.gpu(nn.Linear(25, len(word_dict.labels_dict)))
-        self.m = self.gpu(nn.Softmax())
+        self.word_emb = self.gpu(nn.Embedding(len(word_dict), self.word_embedding_size))
+        self.pos_emb = self.gpu(nn.Embedding(len(word_dict.labels_dict), self.pos_embedding_size))
+        self.linear = self.gpu(nn.Linear(self.word_embedding_size + self.pos_embedding_size,
+                                         len(word_dict.labels_dict)))
+        self.softmax = self.gpu(nn.Softmax())
 
         if state_dict:
             self.load_state_dict(state_dict)
@@ -43,7 +48,7 @@ class POSTagger(nn.Module):
         words_ids = self.word_dict.txt2vec(input_seq)
         words_count = len(words_ids)
         words = self.word_emb(self.gpu(Variable(torch.LongTensor(words_ids))))
-        start = self.word_dict.labels_dict.__getitem__(self.word_dict.labels_dict.start_token)
+        start = self.word_dict.labels_dict[self.word_dict.labels_dict.start_token]
         return POS_Tagger_State(words, 0, words_count, start, None, words_count == 0)
 
     def act(self, state=None, action=None, output=None):
@@ -56,27 +61,23 @@ class POSTagger(nn.Module):
         terminated = state.input_index + 1 >= state.words_count
         return POS_Tagger_State(state.words, state.input_index + 1, state.words_count, action, output, terminated)
 
-    def forward(self, state):
-        assert state.words, 'Supply input data!'
-        word = state.words[state.input_index]
-        pos_embedding = self.pos_emb(self.gpu(Variable(torch.LongTensor([state.prev_pos]))))
-        x_vec = torch.cat([word.unsqueeze(0), pos_embedding], dim=1)
-        output = self.linear(x_vec)
-        # output = self.m(output)
-        return output
-
-    def forward_batch(self, states):
+    def embed_states(self, states):
         words = []
         prev_pos = []
         for state in states:
             words.append(state.words[state.input_index].unsqueeze(0))
             prev_pos.append(state.prev_pos)
-        words = torch.cat(words, dim=0)
-        pos_embeddings = self.pos_emb(self.gpu(Variable(torch.LongTensor(prev_pos))))
-        x_vec = torch.cat([words, pos_embeddings], dim=1)
-        output = self.linear(x_vec)
-        # output = self.m(output)
-        return output
+        word_embeddings = torch.cat(words, dim=0)
+        prev_pos = self.gpu(Variable(torch.LongTensor(prev_pos)))
+        return word_embeddings, prev_pos
+
+    def forward(self, states):
+        word_embeddings, prev_pos = self.embed_states(states)
+        pos_embeddings = self.pos_emb(prev_pos)  # prev_pos:64x20
+        # words_embeddings = self.word_emb(words)
+        x = torch.cat([word_embeddings, pos_embeddings], dim=1)
+        scores = self.linear(x)
+        return scores
 
     def calculate_gold_path(self, seq):
         words, pos_tags = zip(*seq)

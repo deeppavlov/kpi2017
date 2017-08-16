@@ -4,8 +4,9 @@ import os
 import torch
 from parlai.core.agents import Agent
 
+from .pos_tagger import POSTagger
 from .dictionary import POSDictionaryAgent
-from .model import MachineTrainer
+from .trainer import NaiveTrainer, BeamTrainer
 from . import config
 
 
@@ -31,21 +32,32 @@ class NaiveAgent(Agent):
             return
         self.is_shared = False
         self.word_dict = NaiveAgent.dictionary_class()(opt)
+
+        self.network = POSTagger(opt, self.word_dict)
+
+        state_dict = None
         if opt.get('model_file') and os.path.isfile(opt['model_file']):
-            self._init_from_saved(opt, opt['model_file'])
+            data = torch.load(opt['model_file'])
+            state_dict = data['state_dict']
+        elif opt.get('pretrained_model'):
+            data = torch.load(opt['pretrained_model'])
+            state_dict = data['state_dict']
+
+        if state_dict:
+            new_state = set(self.network.state_dict().keys())
+            for k in list(state_dict['network'].keys()):
+                if k not in new_state:
+                    del state_dict['network'][k]
+            self.network.load_state_dict(state_dict['network'])
+
+        if opt['trainer_type'] == 'naive':
+            self.model = NaiveTrainer(opt['learning_rate'], self.word_dict, self.network)
+        elif opt['trainer_type'] == 'beam':
+            self.model = BeamTrainer(opt['learning_rate'], opt['beam'], self.word_dict, self.network)
         else:
-            if opt.get('pretrained_model'):
-                self._init_from_saved(opt, opt['pretrained_model'])
-            else:
-                self._init_from_scratch(opt)
+            raise RuntimeError('not applicable model type')
+
         super().__init__(opt, shared)
-
-    def _init_from_saved(self, opt, fname):
-        data = torch.load(fname)
-        self.model = MachineTrainer(opt, self.word_dict, data['state_dict'])
-
-    def _init_from_scratch(self, opt):
-        self.model = MachineTrainer(opt, self.word_dict)
 
     def observe(self, observation):
         observation = copy.deepcopy(observation)
@@ -93,7 +105,19 @@ class NaiveAgent(Agent):
         fname = self.opt.get('model_file', None) if fname is None else fname
         if fname:
             print("[ saving model: " + fname + " ]")
-            self.model.save(fname)
+
+            params = {
+                'state_dict': {
+                    'network': self.network.state_dict()
+                    # 'optimizer': self.model.state_dict()
+                },
+                'word_dict': self.word_dict,
+                'config': self.opt,
+            }
+            try:
+                torch.save(params, fname)
+            except BaseException:
+                print('[ WARN: Saving failed... continuing anyway. ]')
 
     # def report(self):
     #     if self.loss is not None:
