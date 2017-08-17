@@ -43,4 +43,4 @@ class POSDictionaryAgent(DictionaryAgent):
         return super().save(filename, append, sort)
 
     def tokenize(self, text, building=False):
-        return text.split(' ')
+        return text.split(' ') if text else []

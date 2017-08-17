@@ -6,7 +6,7 @@ from parlai.core.agents import Agent
 
 from .pos_tagger import POSTagger
 from .dictionary import POSDictionaryAgent
-from .trainer import NaiveTrainer, BeamTrainer
+from .trainer import TeacherForcingTrainer, BeamTrainer
 from . import config
 
 
@@ -51,7 +51,7 @@ class NaiveAgent(Agent):
             self.network.load_state_dict(state_dict['network'])
 
         if opt['trainer_type'] == 'naive':
-            self.model = NaiveTrainer(opt['learning_rate'], self.network)
+            self.model = TeacherForcingTrainer(opt['learning_rate'], self.network)
         elif opt['trainer_type'] == 'beam':
             self.model = BeamTrainer(opt['learning_rate'], opt['beam'], self.network)
         else:

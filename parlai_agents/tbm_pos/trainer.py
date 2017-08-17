@@ -20,7 +20,7 @@ class Trainer:
         raise NotImplemented()
 
 
-class NaiveTrainer(Trainer):
+class TeacherForcingTrainer(Trainer):
 
     def __init__(self, learning_rate, network):
         self.times = []
@@ -61,8 +61,8 @@ class NaiveTrainer(Trainer):
 
     def forward(self, batch):
         x, _ = zip(*batch)
-        states = [self.network.set_input(input_seq) for input_seq in x]
-        paths = [[] for _ in states]
+        states = [self.network.set_input(input_seq) for input_seq in x if input_seq]
+        paths = [[] for _ in x]
         while True:
             indexes = [i for i in range(len(states)) if not states[i].terminated]
             if not indexes:
