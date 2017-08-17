@@ -137,3 +137,4 @@ class ParaphraserAgent(Agent):
             (self.model.updates, self.n_examples,
              self.model.train_loss, self.model.train_acc, self.model.train_f1))
 
+

@@ -2,39 +2,42 @@ from parlai.core.dialog_teacher import DialogTeacher
 from .build import build
 import os
 import xml.etree.ElementTree as ET
+import random
 
-## ПЕРЕПЕШИ!
+
 def _path(opt):
     # ensure data is built
     build(opt)
-
-    # set up paths to data (specific to each dataset)
-    dt = opt['datatype'].split(':')[0]
-    fname = 'paraphrases'
-    if dt == 'valid':
-        fname += '_gold'
-    elif dt == 'test':
-        fname += '_test'
-    fname += '.xml'
-    datafile = os.path.join(opt['datapath'], 'paraphrases', fname)
+    fname = 'heap.txt'
+    datafile = os.path.join(opt['datapath'], fname)
     return datafile
 
 
 class DefaultTeacher(DialogTeacher):
     def __init__(self, opt, shared=None):
+        assert opt['train_part'] + opt['test_part'] + opt['valid_part'] == 1
+        self.parts = [opt['train_part'], opt['valid_part'], opt['test_part']]
+        random.seed(opt['teacher_seed'])
         # store datatype
         self.datatype = opt['datatype'].split(':')[0]
-
+        self.opt = opt
         opt['datafile'] = _path(opt)
 
         # store identifier for the teacher in the dialog
         self.id = 'ner_teacher'
-
         # define standard question, since it doesn't change for this task
-
         super().__init__(opt, shared)
 
-    ## ПЕРЕПЕШИ!
+    @staticmethod
+    def add_cmdline_args(argparser):
+        group = argparser.add_argument_group('NER Teacher')
+        group.add_argument('--raw-data-path', default=None,
+                           help='path to Gareev dataset')
+        group.add_argument('--teacher-seed', type=int, default=42)
+        group.add_argument('--train-part', type=int, default=0.8)
+        group.add_argument('--valid-part', type=int, default=0.1)
+        group.add_argument('--test-part', type=int, default=0.1)
+
     def setup_data(self, path):
         print('loading: ' + path)
 
@@ -43,29 +46,39 @@ class DefaultTeacher(DialogTeacher):
 
         # open data file with labels
         # (path will be provided to setup_data from opt['datafile'] defined above)
-        with open(path) as labels_file:
-            context = ET.iterparse(labels_file, events=("start", "end"))
 
-            # turn it into an iterator
-            context = iter(context)
+        with open(path) as heap_file:
+            tokens = []
+            tags = []
+            for line in heap_file:
+                if len(line) > 2:
+                    token, tag = line.split()
+                    tokens.append(token)
+                    tags.append(tag)
+                else:
+                    questions.append(' '.join(tokens))
+                    y.append([' '.join(tags)])
+                    tokens = []
+                    tags = []
 
-            # get the root element
-            event, root = next(context)
+        questions_and_ys = list(zip(questions, y))
+        random.shuffle(questions_and_ys)
+        questions, y = list(zip(*questions_and_ys))
 
-            for event, elem in context:
-                if event == "end" and elem.tag == "paraphrase":
-                    question = []
-                    for child in elem.iter():
-                        if child.get('name') == 'text_1':
-                            question.append(child.text)
-                        if child.get('name') == 'text_2':
-                            question.append(child.text)
-                        if child.get('name') == 'class':
-                            y.append(['Да' if int(child.text) >= 0 else 'Нет'])
-                    root.clear()
-                    questions.append("\n".join(question))
-
+        if self.datatype == 'train':
+            part = [0, self.parts[0]]
+        elif self.datatype == 'test':
+            part = [self.parts[0], sum(self.parts[0:2])]
+        elif self.datatype == 'valid':
+            part = [sum(self.parts[0:2]), 1]
         episode_done = True
+
+        n_docs = len(questions)
+        start_ind = int(n_docs * part[0])
+        end_ind = int(n_docs * part[1])
+        questions = questions[start_ind: end_ind]
+        y = y[start_ind: end_ind]
+
         if not y:
             y = [None for _ in range(len(questions))]
 
