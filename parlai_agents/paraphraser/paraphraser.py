@@ -96,7 +96,7 @@ class ParaphraserAgent(Agent):
         examples = [ex for ex in examples if ex is not None]
         batch = self._batchify(examples)
 
-        if 'labels' in observations[0]:
+        if 'labels' in observations[0] and not self.opt.get('pretrained_model'):
             self.n_examples += len(examples)
             self.model.update(batch)
         else:
@@ -106,6 +106,13 @@ class ParaphraserAgent(Agent):
                 batch_reply[valid_inds[i]]['text'] = predictions[i]
 
         return batch_reply
+
+    def save(self, fname=None):
+        """Save the parameters of the agent to a file."""
+        fname = self.opt.get('model_file', None) if fname is None else fname
+        if fname:
+            print("[ saving model: " + fname + " ]")
+            self.model.save(fname)
 
     def _build_ex(self, ex):
         if 'text' not in ex:

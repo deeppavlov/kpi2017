@@ -82,14 +82,10 @@ class ParaphraserModel(object):
                            optimizer=optimizer,
                            metrics=['accuracy', fbeta_score])
 
-    def save(self, fname=None):
-        """Save the parameters of the agent to a file."""
-        fname = self.opt.get('model_file', None) if fname is None else fname
-        if fname:
-            print("[ Saving model: " + fname + " ]")
-            self.model.save_weights(fname+'.h5')
-            with open(fname+'.json', 'w') as f:
-                json.dump(self.opt, f)
+    def save(self, fname):
+        self.model.save_weights(fname+'.h5')
+        with open(fname+'.json', 'w') as f:
+            json.dump(self.opt, f)
 
     def _init_from_saved(self):
         fname = self.opt['pretrained_model']
