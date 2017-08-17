@@ -3,6 +3,7 @@ from .metrics import fbeta_score
 import os
 import numpy as np
 import copy
+import json
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
 from keras.models import load_model
@@ -20,41 +21,12 @@ class ParaphraserModel(object):
         self.word_index = word_index
         self.embedding_matrix = embedding_matrix
         self.opt = copy.deepcopy(opt)
-        self.max_sequence_length = opt['max_sequence_length']
-        self.embedding_dim = opt['embedding_dim']
-        self.learning_rate = opt['learning_rate']
-        self.batch_size = opt['batch_size']
-        self.epoch_num = opt['epoch_num']
-        self.seed = opt['seed']
-        self.hidden_dim = opt['hidden_dim']
-        self.attention_dim = opt['attention_dim']
-        self.perspective_num = opt['perspective_num']
-        self.aggregation_dim = opt['aggregation_dim']
-        self.dense_dim = opt['dense_dim']
-        self.ldrop_val = opt['ldrop_val']
-        self.dropout_val = opt['dropout_val']
-        self.recdrop_val = opt['recdrop_val']
-        self.inpdrop_val = opt['inpdrop_val']
-        self.ldropagg_val = opt['ldropagg_val']
-        self.dropoutagg_val = opt['dropoutagg_val']
-        self.recdropagg_val = opt['recdropagg_val']
-        self.inpdropagg_val = opt['inpdropagg_val']
-        self.model_name = opt['model_name']
+        self._init_params()
 
-        if self.opt.get('model_file') and os.path.isfile(opt['model_file']):
-            self._init_from_saved(opt['model_file'])
+        if self.opt.get('pretrained_model'):
+            self._init_from_saved()
         else:
-            if self.opt.get('pretrained_model'):
-                self._init_from_saved(opt['pretrained_model'])
-            else:
-                self._init_from_scratch()
-        self.opt['cuda'] = not self.opt['no_cuda']
-        # if self.opt['cuda']:
-        #     print('[ Using CUDA (GPU %d) ]' % opt['gpu'])
-        #     config = tf.ConfigProto()
-        #     config.gpu_options.per_process_gpu_memory_fraction = 0.45
-        #     config.gpu_options.visible_device_list = str(opt['gpu'])
-        #     set_session(tf.Session(config=config))
+            self._init_from_scratch()
 
         self.n_examples = 0
         self.updates = 0
@@ -65,6 +37,27 @@ class ParaphraserModel(object):
         self.val_acc = 0.0
         self.val_f1 = 0.0
 
+    def _init_params(self):
+        self.max_sequence_length = self.opt['max_sequence_length']
+        self.embedding_dim = self.opt['embedding_dim']
+        self.learning_rate = self.opt['learning_rate']
+        self.batch_size = self.opt['batch_size']
+        self.epoch_num = self.opt['epoch_num']
+        self.seed = self.opt['seed']
+        self.hidden_dim = self.opt['hidden_dim']
+        self.attention_dim = self.opt['attention_dim']
+        self.perspective_num = self.opt['perspective_num']
+        self.aggregation_dim = self.opt['aggregation_dim']
+        self.dense_dim = self.opt['dense_dim']
+        self.ldrop_val = self.opt['ldrop_val']
+        self.dropout_val = self.opt['dropout_val']
+        self.recdrop_val = self.opt['recdrop_val']
+        self.inpdrop_val = self.opt['inpdrop_val']
+        self.ldropagg_val = self.opt['ldropagg_val']
+        self.dropoutagg_val = self.opt['dropoutagg_val']
+        self.recdropagg_val = self.opt['recdropagg_val']
+        self.inpdropagg_val = self.opt['inpdropagg_val']
+        self.model_name = self.opt['model_name']
 
     def _init_from_scratch(self):
         print('[ Initializing model from scratch ]')
@@ -93,12 +86,27 @@ class ParaphraserModel(object):
         """Save the parameters of the agent to a file."""
         fname = self.opt.get('model_file', None) if fname is None else fname
         if fname:
-            print("[ saving model: " + fname + " ]")
-            self.model.save(fname+'.h5')
+            print("[ Saving model: " + fname + " ]")
+            self.model.save_weights(fname+'.h5')
+            with open(fname+'.json', 'w') as f:
+                json.dump(self.opt, f)
 
-    def _init_from_saved(self, fname):
+    def _init_from_saved(self):
+        fname = self.opt['pretrained_model']
         print('[ Loading model %s ]' % fname)
-        self.model = load_model(fname)
+        if os.path.isfile(fname+'.h5'):
+            self._init_params()
+            self._init_from_scratch()
+            self.model.load_weights(fname+'.h5')
+        else:
+            print('Error. There is no %s.h5 file provided.' % fname)
+            exit()
+        if os.path.isfile(fname+'.json'):
+            with open(fname + '.json', 'r') as f:
+                self.opt = json.load(f)
+        else:
+            print('Error. There is no %s.json file provided.' % fname)
+            exit()
 
     def update(self, batch):
         x, y = batch

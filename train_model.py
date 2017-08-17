@@ -114,6 +114,8 @@ def main():
     opt = parser.parse_args()
     # Possibly build a dictionary (not all models do this).
     if opt['dict_build_first'] and 'dict_file' in opt:
+        if opt['dict_file'] is None and opt.get('pretrained_model'):
+            opt['dict_file'] = opt['pretrained_model'] + '.dict'
         if opt['dict_file'] is None and opt.get('model_file'):
             opt['dict_file'] = opt['model_file'] + '.dict'
         print("[ building dictionary first... ]")
