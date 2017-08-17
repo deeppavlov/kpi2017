@@ -22,14 +22,6 @@ python examples/train_model.py -m drqa -t babi:Task10k:1 -mf /tmp/model -bs 10
 TODO List:
 - More logging (e.g. to files), make things prettier.
 """
-import tensorflow as tf
-from keras.backend.tensorflow_backend import set_session
-config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction = 0.95
-config.gpu_options.visible_device_list = '1'
-set_session(tf.Session(config=config))
-
-
 from parlai.core.agents import create_agent
 from parlai.core.worlds import create_task
 from parlai.core.params import ParlaiParser
@@ -217,9 +209,9 @@ def main():
     world.shutdown()
     if not saved:
         world.save_agents()
-    else:
-        # reload best validation model
-        agent = create_agent(opt)
+    # else:
+    #     # reload best validation model
+    #     agent = create_agent(opt)
 
     run_eval(agent, opt, 'valid', write_log=True)
     run_eval(agent, opt, 'test', write_log=True)
