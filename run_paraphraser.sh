@@ -11,6 +11,8 @@ python3 ./train_model.py -t parlai_tasks.paraphrases.agents \
                          --learning_rate 0.0001 \
                          --hidden_dim 200 \
                          --embedding_file 'yalen_sg_word_vectors_300.txt' \
-                         --validation-every-n-epochs 5
+                         --validation-every-n-epochs 5 \
+                         --fasttext_dir '/home/leonid/github/fastText' \
+                         --fasttext_model 'model_yalen_sg_300.bin'
 #                         --pretrained_model '/tmp/paraphraser'
 #                         --validation-patience 5 \

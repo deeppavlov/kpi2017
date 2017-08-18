@@ -1,10 +1,11 @@
 import copy
+import subprocess
+import numpy as np
+import os
 
 from . import config
 from .model import ParaphraserModel
 from .utils import load_embeddings
-
-from keras.preprocessing.sequence import pad_sequences
 
 from parlai.core.agents import Agent
 from parlai.core.dict import DictionaryAgent
@@ -32,12 +33,6 @@ class ParaphraserDictionaryAgent(DictionaryAgent):
         questions = (' ').join(text.split('\n')[1:])
         return questions.split(' ')
 
-    def txt2vec(self, text, vec_type=list):
-        tokens = text.split()
-        sequence = [self.tok2ind.get(token, 0) for token in tokens]
-        return sequence
-
-
 class ParaphraserAgent(Agent):
 
     @staticmethod
@@ -60,12 +55,8 @@ class ParaphraserAgent(Agent):
         # Set up params/logging/dicts
         self.is_shared = False
 
-        print('create word dict')
-        self.word_dict = ParaphraserAgent.dictionary_class()(opt)
-        print('create embedding matrix')
-        self.embedding_matrix = load_embeddings(opt, self.word_dict.tok2ind)
         print('create model')
-        self.model = ParaphraserModel(self.word_dict.tok2ind, self.embedding_matrix, opt)
+        self.model = ParaphraserModel(opt)
         self.n_examples = 0
 
     def observe(self, observation):
@@ -134,15 +125,73 @@ class ParaphraserAgent(Agent):
         question1 = []
         question2 = []
         for ex in batch:
-            question1.append(self.word_dict.txt2vec(ex['question1']))
-            question2.append(self.word_dict.txt2vec(ex['question2']))
-        question1 = pad_sequences(question1, maxlen=self.opt['max_sequence_length'])
-        question2 = pad_sequences(question2, maxlen=self.opt['max_sequence_length'])
+            question1.append(ex['question1'])
+            question2.append(ex['question2'])
+        self._create_embeddings(question1)
+        self._create_embeddings(question2)
+        b1 = self._create_batch(question1)
+        b2 = self._create_batch(question2)
+
         if len(batch[0]) == 3:
             y = [1 if ex['labels'][0] == 'Да' else 0 for ex in batch]
-            return [question1, question2], y
+            return [b1, b2], y
         else:
-            return [question1, question2], None
+            return [b1, b2], None
+
+    def _create_embeddings(self, sentence_li):
+        fasttext_model = os.path.join(self.opt['datapath'], 'paraphrases', self.opt.get('fasttext_model'))
+        fasttext_run = os.path.join(self.opt['fasttext_dir'], 'fasttext')
+        if not os.path.isfile(fasttext_model) or not os.path.isfile(fasttext_model):
+            print('Error. There is no fasttext executable file or fasttext trained model provided.')
+            exit()
+        else:
+            command = [fasttext_run, 'print-word-vectors', fasttext_model]
+        unk_tokens = []
+        for sen in sentence_li:
+            tokens = sen.split(' ')
+            tokens = [el for el in tokens if el != '']
+            for tok in tokens:
+                if self.model.tok2emb.get(tok) is None:
+                    unk_tokens.append(tok)
+        if len(unk_tokens) > 0:
+            p = subprocess.Popen(command, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+            tok_string = ('\n'.join(unk_tokens)).encode()
+            stdout = p.communicate(input=tok_string)[0]
+            stdout_li = stdout.decode().split('\n')[:-1]
+            for line in stdout_li:
+                values = line.rsplit(sep=' ', maxsplit=self.model.embedding_dim + 1)
+                word = values[0]
+                coefs = np.asarray(values[1:-1], dtype='float32')
+                self.model.tok2emb[word] = coefs
+
+    def _create_batch(self, sentence_li):
+        embeddings_batch = []
+        for sen in sentence_li:
+            embeddings = []
+            tokens = sen.split(' ')
+            tokens = [el for el in tokens if el != '']
+            if len(tokens) >= self.model.max_sequence_length:
+                for tok in tokens[len(tokens)-self.model.max_sequence_length:]:
+                    emb = self.model.tok2emb.get(tok)
+                    if emb is None:
+                        print('Error!')
+                        exit()
+                    embeddings.append(emb)
+            else:
+                for tok in tokens:
+                    emb = self.model.tok2emb.get(tok)
+                    if emb is None:
+                        print('Error!')
+                        exit()
+                    embeddings.append(emb)
+                    pads = []
+                for _ in range(self.model.max_sequence_length - len(tokens)):
+                    pads.append(np.zeros(self.model.embedding_dim))
+                embeddings = pads + embeddings
+            embeddings = np.asarray(embeddings)
+            embeddings_batch.append(embeddings)
+        embeddings_batch = np.asarray(embeddings_batch)
+        return embeddings_batch
 
     def _predictions2text(self, predictions):
         y = ['Да' if ex > 0.5 else 'Нет' for ex in predictions]

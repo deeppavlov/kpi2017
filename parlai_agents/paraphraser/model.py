@@ -11,7 +11,7 @@ set_session(tf.Session(config=config))
 
 from .metrics import fbeta_score
 
-from keras.layers import Dense, Activation, Input, Embedding, LSTM, Dropout, multiply, Lambda
+from keras.layers import Dense, Activation, Input, LSTM, Dropout, multiply, Lambda
 from keras.models import Model
 from keras.layers.wrappers import Bidirectional
 from keras.initializers import glorot_uniform, Orthogonal
@@ -21,9 +21,8 @@ from keras.optimizers import Adam
 
 class ParaphraserModel(object):
 
-    def __init__(self, word_index, embedding_matrix, opt):
-        self.word_index = word_index
-        self.embedding_matrix = embedding_matrix
+    def __init__(self, opt):
+        self.tok2emb = {}
         self.opt = copy.deepcopy(opt)
         self._init_params()
 
@@ -67,12 +66,8 @@ class ParaphraserModel(object):
     def _init_from_scratch(self):
         if self.model_name == 'bmwacor':
             self.model = self.bmwacor_model()
-        if self.model_name == 'bmwacor1':
-            self.model = self.bmwacor1_model()
         if self.model_name == 'bilstm_split':
             self.model = self.bilstm_split_model()
-        if self.model_name == 'bilstm_split1':
-            self.model = self.bilstm_split1_model()
         if self.model_name == 'full_match':
             self.model = self.full_match_model()
         if self.model_name == 'maxpool_match':
@@ -115,16 +110,6 @@ class ParaphraserModel(object):
 
     def predict(self, batch):
         return self.model.predict_on_batch(batch)
-
-    def create_embedding_layer(self, input_dim):
-        inp = Input(shape=(input_dim,))
-        out = Embedding(len(self.word_index),
-                        self.embedding_dim,
-                        weights=[self.embedding_matrix] if self.embedding_matrix is not None else None,
-                        input_length=input_dim,
-                        trainable=self.embedding_matrix is None)(inp)
-        model = Model(inputs=inp, outputs=out, name="word_embedding_model")
-        return model
 
     def create_lstm_layer(self, input_dim):
         inp = Input(shape=(input_dim, self.embedding_dim,))
@@ -467,15 +452,13 @@ class ParaphraserModel(object):
         return shape[0], shape[2]
 
     def bmwacor_model(self):
-        input_a = Input(shape=(self.max_sequence_length,))
-        input_b = Input(shape=(self.max_sequence_length,))
-        embedding_layer = self.create_embedding_layer(self.max_sequence_length)
+        input_a = Input(shape=(self.max_sequence_length, self.embedding_dim,))
+        input_b = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         lstm_layer = self.create_lstm_layer(self.max_sequence_length)
+        lstm_a = lstm_layer(input_a)
+        lstm_b = lstm_layer(input_b)
+
         attention_layer = self.create_attention_layer(self.max_sequence_length, self.max_sequence_length)
-        embedding_a = embedding_layer(input_a)
-        embedding_b = embedding_layer(input_b)
-        lstm_a = lstm_layer(embedding_a)
-        lstm_b = lstm_layer(embedding_b)
         attention_a = attention_layer([lstm_a, lstm_b])
         attention_b = attention_layer([lstm_b, lstm_a])
 
@@ -496,54 +479,15 @@ class ParaphraserModel(object):
 
         return model
 
-    def bmwacor1_model(self):
-        input_a = Input(shape=(self.max_sequence_length,))
-        input_b = Input(shape=(self.max_sequence_length,))
-        embedding_layer = self.create_embedding_layer(self.max_sequence_length)
-        lstm_layer = self.create_lstm_layer(self.max_sequence_length)
-        attention_layer = self.create_attention_layer(self.max_sequence_length, self.max_sequence_length)
-        embedding_a = embedding_layer(input_a)
-        embedding_b = embedding_layer(input_b)
-        lstm_a = lstm_layer(embedding_a)
-        lstm_b = lstm_layer(embedding_b)
-        attention_a = attention_layer([lstm_a, lstm_b])
-        attention_b = attention_layer([lstm_b, lstm_a])
-
-        weighted_a = Lambda(self.weighted_with_attention,
-                            output_shape=self.weighted_with_attention_output_shape, name="mul_q1")([lstm_a, attention_a])
-        weighted_b = Lambda(self.weighted_with_attention,
-                            output_shape=self.weighted_with_attention_output_shape, name="mul_q2")([lstm_b, attention_b])
-
-        reduced_a = Lambda(self.dim_reduction,
-                           output_shape=self.dim_reduction_output_shape, name="sum_q1")(weighted_a)
-        reduced_b = Lambda(self.dim_reduction,
-                           output_shape=self.dim_reduction_output_shape, name="sum_q2")(weighted_b)
-
-        dist = Lambda(self.cosine_dist, output_shape=self.cosine_dist_output_shape,
-                      name="similarity_network")([reduced_a, reduced_b])
-
-        ker_in = glorot_uniform(seed=None)
-        dense = Dense(1, activation='sigmoid', name='similarity_score',
-                      kernel_regularizer=None,
-                      bias_regularizer=None,
-                      activity_regularizer=None,
-                      kernel_initializer=ker_in)(dist)
-
-        model = Model([input_a, input_b], dense)
-
-        return model
-
     def bilstm_split_model(self):
-        input_a = Input(shape=(self.max_sequence_length,))
-        input_b = Input(shape=(self.max_sequence_length,))
-        embedding_layer = self.create_embedding_layer(self.max_sequence_length)
+        input_a = Input(shape=(self.max_sequence_length, self.embedding_dim,))
+        input_b = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         lstm_layer = self.create_lstm_layer_1(self.max_sequence_length)
+        lstm_a = lstm_layer(input_a)
+        lstm_b = lstm_layer(input_b)
+
         attention_layer_f = self.create_attention_layer_f(self.max_sequence_length, self.max_sequence_length)
         attention_layer_b = self.create_attention_layer_b(self.max_sequence_length, self.max_sequence_length)
-        embedding_a = embedding_layer(input_a)
-        embedding_b = embedding_layer(input_b)
-        lstm_a = lstm_layer(embedding_a)
-        lstm_b = lstm_layer(embedding_b)
         attention_a_forw = attention_layer_f([lstm_a[0], lstm_b[0]])
         attention_a_back = attention_layer_b([lstm_a[1], lstm_b[1]])
         attention_b_forw = attention_layer_f([lstm_b[0], lstm_a[0]])
@@ -579,74 +523,16 @@ class ParaphraserModel(object):
 
         return model
 
-    def bilstm_split1_model(self):
-        input_a = Input(shape=(self.max_sequence_length,))
-        input_b = Input(shape=(self.max_sequence_length,))
-        embedding_layer = self.create_embedding_layer(self.max_sequence_length)
-        lstm_layer = self.create_lstm_layer_1(self.max_sequence_length)
-        attention_layer_f = self.create_attention_layer_f(self.max_sequence_length, self.max_sequence_length)
-        attention_layer_b = self.create_attention_layer_b(self.max_sequence_length, self.max_sequence_length)
-        embedding_a = embedding_layer(input_a)
-        embedding_b = embedding_layer(input_b)
-        lstm_a = lstm_layer(embedding_a)
-        lstm_b = lstm_layer(embedding_b)
-        attention_a_forw = attention_layer_f([lstm_a[0], lstm_b[0]])
-        attention_a_back = attention_layer_b([lstm_a[1], lstm_b[1]])
-        attention_b_forw = attention_layer_f([lstm_b[0], lstm_a[0]])
-        attention_b_back = attention_layer_b([lstm_b[1], lstm_a[1]])
-
-        weighted_a_forw = Lambda(self.weighted_with_attention,
-                                 output_shape=self.weighted_with_attention_output_shape,
-                                 name="mul_q1_f")([lstm_a[0], attention_a_forw])
-        weighted_a_back = Lambda(self.weighted_with_attention,
-                                 output_shape=self.weighted_with_attention_output_shape,
-                                 name="mul_q1_b")([lstm_a[1], attention_a_back])
-        weighted_b_forw = Lambda(self.weighted_with_attention,
-                                 output_shape=self.weighted_with_attention_output_shape,
-                                 name="mul_q2_f")([lstm_b[0], attention_b_forw])
-        weighted_b_back = Lambda(self.weighted_with_attention,
-                                 output_shape=self.weighted_with_attention_output_shape,
-                                 name="mul_q2_b")([lstm_b[1], attention_b_back])
-
-        reduced_a_forw = Lambda(self.dim_reduction,
-                                output_shape=self.dim_reduction_output_shape, name="sum_q1_f")(weighted_a_forw)
-        reduced_a_back = Lambda(self.dim_reduction,
-                                output_shape=self.dim_reduction_output_shape, name="sum_q1_b")(weighted_a_back)
-        reduced_b_forw = Lambda(self.dim_reduction,
-                                output_shape=self.dim_reduction_output_shape, name="sum_q2_f")(weighted_b_forw)
-        reduced_b_back = Lambda(self.dim_reduction,
-                                output_shape=self.dim_reduction_output_shape, name="sum_q2_b")(weighted_b_back)
-
-        reduced_a = Lambda(lambda x: K.concatenate(x, axis=-1),
-                           name='concat_q1')([reduced_a_forw, reduced_a_back])
-        reduced_b = Lambda(lambda x: K.concatenate(x, axis=-1),
-                           name='concat_q2')([reduced_b_forw, reduced_b_back])
-
-        dist = Lambda(self.cosine_dist, output_shape=self.cosine_dist_output_shape,
-                      name="similarity_network")([reduced_a, reduced_b])
-
-        dense = Dense(1, activation='sigmoid', name='similarity_score',
-                      kernel_regularizer=None,
-                      bias_regularizer=None,
-                      activity_regularizer=None)(dist)
-
-        model = Model([input_a, input_b], dense)
-
-        return model
-
     def maxpool_match_model(self):
-        input_a = Input(shape=(self.max_sequence_length,))
-        input_b = Input(shape=(self.max_sequence_length,))
-        embedding_layer = self.create_embedding_layer(self.max_sequence_length)
+        input_a = Input(shape=(self.max_sequence_length, self.embedding_dim,))
+        input_b = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         lstm_layer = self.create_lstm_layer_1(self.max_sequence_length)
+        lstm_a = lstm_layer(input_a)
+        lstm_b = lstm_layer(input_b)
+
         matching_layer_f = self.create_maxpool_matching_layer(self.max_sequence_length, self.max_sequence_length)
         matching_layer_b = self.create_maxpool_matching_layer(self.max_sequence_length, self.max_sequence_length)
-
         lstm_layer_agg = self.create_lstm_layer_2(self.max_sequence_length)
-        embedding_a = embedding_layer(input_a)
-        embedding_b = embedding_layer(input_b)
-        lstm_a = lstm_layer(embedding_a)
-        lstm_b = lstm_layer(embedding_b)
         matching_a_forw = matching_layer_f([lstm_a[0], lstm_b[0]])
         matching_a_back = matching_layer_b([lstm_a[1], lstm_b[1]])
         matching_b_forw = matching_layer_f([lstm_b[0], lstm_a[0]])
@@ -685,18 +571,15 @@ class ParaphraserModel(object):
         return model
 
     def maxatt_match_model(self):
-        input_a = Input(shape=(self.max_sequence_length,))
-        input_b = Input(shape=(self.max_sequence_length,))
-        embedding_layer = self.create_embedding_layer(self.max_sequence_length)
+        input_a = Input(shape=(self.max_sequence_length, self.embedding_dim,))
+        input_b = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         lstm_layer = self.create_lstm_layer_1(self.max_sequence_length)
+        lstm_a = lstm_layer(input_a)
+        lstm_b = lstm_layer(input_b)
+
         matching_layer_f = self.create_maxatt_matching_layer(self.max_sequence_length, self.max_sequence_length)
         matching_layer_b = self.create_maxatt_matching_layer(self.max_sequence_length, self.max_sequence_length)
-
         lstm_layer_agg = self.create_lstm_layer_2(self.max_sequence_length)
-        embedding_a = embedding_layer(input_a)
-        embedding_b = embedding_layer(input_b)
-        lstm_a = lstm_layer(embedding_a)
-        lstm_b = lstm_layer(embedding_b)
         matching_a_forw = matching_layer_f([lstm_a[0], lstm_b[0]])
         matching_a_back = matching_layer_b([lstm_a[1], lstm_b[1]])
         matching_b_forw = matching_layer_f([lstm_b[0], lstm_a[0]])
@@ -735,18 +618,15 @@ class ParaphraserModel(object):
         return model
 
     def att_match_model(self):
-        input_a = Input(shape=(self.max_sequence_length,))
-        input_b = Input(shape=(self.max_sequence_length,))
-        embedding_layer = self.create_embedding_layer(self.max_sequence_length)
+        input_a = Input(shape=(self.max_sequence_length, self.embedding_dim,))
+        input_b = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         lstm_layer = self.create_lstm_layer_1(self.max_sequence_length)
+        lstm_a = lstm_layer(input_a)
+        lstm_b = lstm_layer(input_b)
+
         matching_layer_f = self.create_att_matching_layer(self.max_sequence_length, self.max_sequence_length)
         matching_layer_b = self.create_att_matching_layer(self.max_sequence_length, self.max_sequence_length)
-
         lstm_layer_agg = self.create_lstm_layer_2(self.max_sequence_length)
-        embedding_a = embedding_layer(input_a)
-        embedding_b = embedding_layer(input_b)
-        lstm_a = lstm_layer(embedding_a)
-        lstm_b = lstm_layer(embedding_b)
         matching_a_forw = matching_layer_f([lstm_a[0], lstm_b[0]])
         matching_a_back = matching_layer_b([lstm_a[1], lstm_b[1]])
         matching_b_forw = matching_layer_f([lstm_b[0], lstm_a[0]])
@@ -785,18 +665,15 @@ class ParaphraserModel(object):
         return model
 
     def full_match_model(self):
-        input_a = Input(shape=(self.max_sequence_length,))
-        input_b = Input(shape=(self.max_sequence_length,))
-        embedding_layer = self.create_embedding_layer(self.max_sequence_length)
+        input_a = Input(shape=(self.max_sequence_length, self.embedding_dim,))
+        input_b = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         lstm_layer = self.create_lstm_layer_1(self.max_sequence_length)
+        lstm_a = lstm_layer(input_a)
+        lstm_b = lstm_layer(input_b)
+
         matching_layer_f = self.create_full_matching_layer_f(self.max_sequence_length, self.max_sequence_length)
         matching_layer_b = self.create_full_matching_layer_b(self.max_sequence_length, self.max_sequence_length)
-
         lstm_layer_agg = self.create_lstm_layer_2(self.max_sequence_length)
-        embedding_a = embedding_layer(input_a)
-        embedding_b = embedding_layer(input_b)
-        lstm_a = lstm_layer(embedding_a)
-        lstm_b = lstm_layer(embedding_b)
         matching_a_forw = matching_layer_f([lstm_a[0], lstm_b[0]])
         matching_a_back = matching_layer_b([lstm_a[1], lstm_b[1]])
         matching_b_forw = matching_layer_f([lstm_b[0], lstm_a[0]])
@@ -833,9 +710,3 @@ class ParaphraserModel(object):
 
         model = Model([input_a, input_b], dense)
         return model
-
-    #def compile_model(self):
-    #    optimizer = Adam(lr=self.learning_rate)
-    #    model.compile(loss='binary_crossentropy',
-    #                  optimizer=optimizer,
-    #                  metrics=['accuracy', metrics.fbeta_score])
