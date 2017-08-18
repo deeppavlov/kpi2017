@@ -21,8 +21,8 @@ from keras.optimizers import Adam
 
 class ParaphraserModel(object):
 
-    def __init__(self, opt):
-        self.tok2emb = {}
+    def __init__(self, opt, embdict):
+        self.embdict = embdict
         self.opt = copy.deepcopy(opt)
         self._init_params()
 
@@ -85,6 +85,7 @@ class ParaphraserModel(object):
         self.model.save_weights(fname+'.h5')
         with open(fname+'.json', 'w') as f:
             json.dump(self.opt, f)
+        self.embdict.save_items(fname)
 
     def _init_from_saved(self):
         fname = self.opt['pretrained_model']
@@ -110,6 +111,67 @@ class ParaphraserModel(object):
 
     def predict(self, batch):
         return self.model.predict_on_batch(batch)
+
+    def build_ex(self, ex):
+        if 'text' not in ex:
+            return
+
+        """Find the token span of the answer in the context for this example.
+        """
+        inputs = dict()
+        texts = ex['text'].split('\n')
+        inputs['question1'] = texts[1]
+        inputs['question2'] = texts[2]
+        if 'labels' in ex:
+            inputs['labels'] = ex['labels']
+
+        return inputs
+
+    def batchify(self, batch):
+        question1 = []
+        question2 = []
+        for ex in batch:
+            question1.append(ex['question1'])
+            question2.append(ex['question2'])
+        self.embdict.add_items(question1)
+        self.embdict.add_items(question2)
+        b1 = self.create_batch(question1)
+        b2 = self.create_batch(question2)
+
+        if len(batch[0]) == 3:
+            y = [1 if ex['labels'][0] == 'Да' else 0 for ex in batch]
+            return [b1, b2], y
+        else:
+            return [b1, b2], None
+
+    def create_batch(self, sentence_li):
+        embeddings_batch = []
+        for sen in sentence_li:
+            embeddings = []
+            tokens = sen.split(' ')
+            tokens = [el for el in tokens if el != '']
+            if len(tokens) >= self.max_sequence_length:
+                for tok in tokens[len(tokens)-self.max_sequence_length:]:
+                    emb = self.embdict.tok2emb.get(tok)
+                    if emb is None:
+                        print('Error!')
+                        exit()
+                    embeddings.append(emb)
+            else:
+                for tok in tokens:
+                    emb = self.embdict.tok2emb.get(tok)
+                    if emb is None:
+                        print('Error!')
+                        exit()
+                    embeddings.append(emb)
+                    pads = []
+                for _ in range(self.max_sequence_length - len(tokens)):
+                    pads.append(np.zeros(self.embedding_dim))
+                embeddings = pads + embeddings
+            embeddings = np.asarray(embeddings)
+            embeddings_batch.append(embeddings)
+        embeddings_batch = np.asarray(embeddings_batch)
+        return embeddings_batch
 
     def create_lstm_layer(self, input_dim):
         inp = Input(shape=(input_dim, self.embedding_dim,))
