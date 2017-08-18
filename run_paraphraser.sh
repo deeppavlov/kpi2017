@@ -11,6 +11,6 @@ python3 ./train_model.py -t parlai_tasks.paraphrases.agents \
                          --learning_rate 0.0001 \
                          --hidden_dim 200 \
                          --embedding_file 'yalen_sg_word_vectors_300.txt' \
-                         --validation-every-n-epochs 5 \
-                         --pretrained_model '/tmp/paraphraser'
+                         --validation-every-n-epochs 5
+#                         --pretrained_model '/tmp/paraphraser'
 #                         --validation-patience 5 \
