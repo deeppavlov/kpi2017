@@ -30,6 +30,7 @@ class ParaphraserModel(object):
         if self.opt.get('pretrained_model'):
             self._init_from_saved()
         else:
+            print('[ Initializing model from scratch ]')
             self._init_from_scratch()
 
         self.n_examples = 0
@@ -64,7 +65,6 @@ class ParaphraserModel(object):
         self.model_name = self.opt['model_name']
 
     def _init_from_scratch(self):
-        print('[ Initializing model from scratch ]')
         if self.model_name == 'bmwacor':
             self.model = self.bmwacor_model()
         if self.model_name == 'bmwacor1':

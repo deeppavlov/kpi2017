@@ -100,6 +100,7 @@ class ParaphraserAgent(Agent):
             self.n_examples += len(examples)
             self.model.update(batch)
         else:
+            batch, _ = batch
             predictions = self.model.predict(batch)
             predictions = self._predictions2text(predictions)
             for i in range(len(predictions)):
@@ -141,7 +142,7 @@ class ParaphraserAgent(Agent):
             y = [1 if ex['labels'][0] == 'Да' else 0 for ex in batch]
             return [question1, question2], y
         else:
-            return [question1, question2]
+            return [question1, question2], None
 
     def _predictions2text(self, predictions):
         y = ['Да' if ex > 0.5 else 'Нет' for ex in predictions]
