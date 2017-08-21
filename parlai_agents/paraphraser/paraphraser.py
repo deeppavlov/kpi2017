@@ -5,22 +5,6 @@ from .model import ParaphraserModel
 from .embeddings_dict import EmbeddingsDict
 
 from parlai.core.agents import Agent
-from parlai.core.dict import DictionaryAgent
-from parlai.core.params import class2str
-
-
-class ParaphraserDictionaryAgent(DictionaryAgent):
-
-    @staticmethod
-    def add_cmdline_args(argparser):
-        group = DictionaryAgent.add_cmdline_args(argparser)
-        group.add_argument(
-            '--dict_class', default=class2str(ParaphraserDictionaryAgent)
-        )
-
-    def act(self):
-        """Add only words passed in the 'text' field of the observation to this dictionary."""
-        return {'id': 'ParaphraserDictionary'}
 
 
 class ParaphraserAgent(Agent):
@@ -28,11 +12,6 @@ class ParaphraserAgent(Agent):
     @staticmethod
     def add_cmdline_args(argparser):
         config.add_cmdline_args(argparser)
-        ParaphraserAgent.dictionary_class().add_cmdline_args(argparser)
-
-    @staticmethod
-    def dictionary_class():
-        return ParaphraserDictionaryAgent
 
     def __init__(self, opt, shared=None):
         self.id = 'ParaphraserAgent'
