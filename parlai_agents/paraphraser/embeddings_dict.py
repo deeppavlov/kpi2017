@@ -2,6 +2,7 @@ import os
 import copy
 import numpy as np
 import subprocess
+import urllib.request
 
 
 class EmbeddingsDict(object):
@@ -10,14 +11,27 @@ class EmbeddingsDict(object):
         self.opt = copy.deepcopy(opt)
         self.load_items()
 
+        self.fasttext_path = os.path.join(os.path.expanduser(self.opt.get('fasttext_dir', '')), 'fasttext')
+        if not self.opt.get('fasttext_dir') or not os.path.isfile(self.fasttext_path):
+            raise RuntimeError('There is no fasttext executable provided.')
+        if not self.opt.get('fasttext_model'):
+            raise RuntimeError('No pretrained fasttext model provided')
+        self.fasttext_model_file = self.opt.get('fasttext_model')
+        if not os.path.isfile(self.fasttext_model_file):
+            ftppath = os.environ.get('IPAVLOV_FTP')
+            if not ftppath:
+                raise RuntimeError('No pretrained fasttext model provided')
+            fname = os.path.basename(self.fasttext_model_file)
+            try:
+                print('Trying to download a pretrained fasttext model from the ftp server')
+                urllib.request.urlretrieve(ftppath + '/paraphraser_data/' + fname, self.fasttext_model_file)
+                print('Downloaded a fasttext model')
+            except:
+                raise RuntimeError('Looks like the `IPAVLOV_FTP` variable is set incorrectly')
+
     def add_items(self, sentence_li):
-        fasttext_model = os.path.join(self.opt['datapath'], 'paraphrases', self.opt.get('fasttext_model'))
-        fasttext_run = os.path.join(self.opt['fasttext_dir'], 'fasttext')
-        if not os.path.isfile(fasttext_model) or not os.path.isfile(fasttext_model):
-            print('Error. There is no fasttext executable file or fasttext trained model provided.')
-            exit()
-        else:
-            command = [fasttext_run, 'print-word-vectors', fasttext_model]
+
+        command = [self.fasttext_path, 'print-word-vectors', self.fasttext_model_file]
         unk_tokens = []
         for sen in sentence_li:
             tokens = sen.split(' ')
