@@ -24,12 +24,12 @@ class ParaphraserModel(object):
     def __init__(self, opt, embdict):
         self.embdict = embdict
         self.opt = copy.deepcopy(opt)
-        self._init_params()
 
         if self.opt.get('pretrained_model'):
             self._init_from_saved()
         else:
             print('[ Initializing model from scratch ]')
+            self._init_params()
             self._init_from_scratch()
 
         self.n_examples = 0
@@ -41,27 +41,29 @@ class ParaphraserModel(object):
         self.val_acc = 0.0
         self.val_f1 = 0.0
 
-    def _init_params(self):
-        self.max_sequence_length = self.opt['max_sequence_length']
-        self.embedding_dim = self.opt['embedding_dim']
-        self.learning_rate = self.opt['learning_rate']
-        self.batch_size = self.opt['batch_size']
-        self.epoch_num = self.opt['epoch_num']
-        self.seed = self.opt['seed']
-        self.hidden_dim = self.opt['hidden_dim']
-        self.attention_dim = self.opt['attention_dim']
-        self.perspective_num = self.opt['perspective_num']
-        self.aggregation_dim = self.opt['aggregation_dim']
-        self.dense_dim = self.opt['dense_dim']
-        self.ldrop_val = self.opt['ldrop_val']
-        self.dropout_val = self.opt['dropout_val']
-        self.recdrop_val = self.opt['recdrop_val']
-        self.inpdrop_val = self.opt['inpdrop_val']
-        self.ldropagg_val = self.opt['ldropagg_val']
-        self.dropoutagg_val = self.opt['dropoutagg_val']
-        self.recdropagg_val = self.opt['recdropagg_val']
-        self.inpdropagg_val = self.opt['inpdropagg_val']
-        self.model_name = self.opt['model_name']
+    def _init_params(self, param_dict=None):
+        if param_dict is None:
+            param_dict = self.opt
+        self.max_sequence_length = param_dict['max_sequence_length']
+        self.embedding_dim = param_dict['embedding_dim']
+        self.learning_rate = param_dict['learning_rate']
+        self.batch_size = param_dict['batch_size']
+        self.epoch_num = param_dict['epoch_num']
+        self.seed = param_dict['seed']
+        self.hidden_dim = param_dict['hidden_dim']
+        self.attention_dim = param_dict['attention_dim']
+        self.perspective_num = param_dict['perspective_num']
+        self.aggregation_dim = param_dict['aggregation_dim']
+        self.dense_dim = param_dict['dense_dim']
+        self.ldrop_val = param_dict['ldrop_val']
+        self.dropout_val = param_dict['dropout_val']
+        self.recdrop_val = param_dict['recdrop_val']
+        self.inpdrop_val = param_dict['inpdrop_val']
+        self.ldropagg_val = param_dict['ldropagg_val']
+        self.dropoutagg_val = param_dict['dropoutagg_val']
+        self.recdropagg_val = param_dict['recdropagg_val']
+        self.inpdropagg_val = param_dict['inpdropagg_val']
+        self.model_name = param_dict['model_name']
 
     def _init_from_scratch(self):
         if self.model_name == 'bmwacor':
@@ -90,18 +92,18 @@ class ParaphraserModel(object):
     def _init_from_saved(self):
         fname = self.opt['pretrained_model']
         print('[ Loading model %s ]' % fname)
+        if os.path.isfile(fname+'.json'):
+            with open(fname + '.json', 'r') as f:
+                param_dict = json.load(f)
+                self._init_params(param_dict)
+        else:
+            print('Error. There is no %s.json file provided.' % fname)
+            exit()
         if os.path.isfile(fname+'.h5'):
-            self._init_params()
             self._init_from_scratch()
             self.model.load_weights(fname+'.h5')
         else:
             print('Error. There is no %s.h5 file provided.' % fname)
-            exit()
-        if os.path.isfile(fname+'.json'):
-            with open(fname + '.json', 'r') as f:
-                self.opt = json.load(f)
-        else:
-            print('Error. There is no %s.json file provided.' % fname)
             exit()
 
     def update(self, batch):
