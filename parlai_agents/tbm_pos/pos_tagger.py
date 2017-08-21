@@ -63,9 +63,9 @@ class POSTagger(nn.Module):
             if emb_ids:
                 e = emb(self.gpu(Variable(torch.LongTensor(emb_ids)))).sum(dim=0)
             else:
-                e = self.gpu(Variable(torch.FloatTensor([[0]*es])))
+                e = self.gpu(Variable(torch.FloatTensor([0]*es)))
             embeddings.append(e)
-        return torch.cat(embeddings, dim=1)
+        return torch.cat(embeddings, dim=0).unsqueeze(0)
 
 
     def set_input(self, input_seq):

@@ -45,7 +45,7 @@ class TeacherForcingTrainer(Trainer):
                 break
             output = self.network.forward([states[i] for i in indexes])  # 64x21
             output = self.network.softmax(output)
-            best_actions = output.max(1)[1].data.squeeze(1).tolist()  # 64
+            best_actions = output.max(1)[1].data.tolist()  # 64
             for i in range(len(best_actions)):
                 loss_cnt += 1
                 index = indexes[i]
@@ -68,7 +68,7 @@ class TeacherForcingTrainer(Trainer):
             if not indexes:
                 break
             output = self.network.forward([states[i] for i in indexes])
-            best_actions = output.max(1)[1].data.squeeze(1).tolist()
+            best_actions = output.max(1)[1].data.tolist()
             for i in range(len(best_actions)):
                 index = indexes[i]
                 paths[index].append(best_actions[i])
