@@ -10,7 +10,7 @@ def _path(opt):
 
     # set up paths to data (specific to each dataset)
     dt = opt['datatype'].split(':')[0]
-    datafile = os.path.join(opt['datapath'], 'kaggle_insults', dt + '.csv')
+    datafile = os.path.join(opt['datapath'], 'insults', dt + '.csv')
     return datafile
 
 
@@ -29,9 +29,9 @@ class DefaultTeacher(DialogTeacher):
         opt['datafile'] = _path(opt)
 
         # store identifier for the teacher in the dialog
-        self.id = 'kaggle_insults_teacher'
+        self.id = 'insults_teacher'
 
-        self.answer_candidates = ['Ok', "Not Ok"]
+        self.answer_candidates = ['Non-insult', "Insult"]
 
         super().__init__(opt, shared)
 
