@@ -6,8 +6,9 @@ import urllib.request
 
 
 class EmbeddingsDict(object):
-    def __init__(self, opt):
+    def __init__(self, opt, embedding_dim):
         self.tok2emb = {}
+        self.embedding_dim = embedding_dim
         self.opt = copy.deepcopy(opt)
         self.load_items()
 
@@ -45,7 +46,7 @@ class EmbeddingsDict(object):
             stdout = p.communicate(input=tok_string)[0]
             stdout_li = stdout.decode().split('\n')[:-1]
             for line in stdout_li:
-                values = line.rsplit(sep=' ', maxsplit=self.opt['embedding_dim'] + 1)
+                values = line.rsplit(sep=' ', maxsplit=self.embedding_dim + 1)
                 word = values[0]
                 coefs = np.asarray(values[1:-1], dtype='float32')
                 self.tok2emb[word] = coefs
@@ -73,8 +74,8 @@ class EmbeddingsDict(object):
             print('Loading existing dictionary from %s.emb.' % fname)
             with open(fname+'.emb', 'r') as f:
                 for line in f:
-                    values = line.rsplit(sep=' ', maxsplit=self.opt['embedding_dim'])
-                    assert(len(values) == self.opt['embedding_dim'] + 1)
+                    values = line.rsplit(sep=' ', maxsplit=self.embedding_dim)
+                    assert(len(values) == self.embedding_dim + 1)
                     word = values[0]
                     coefs = np.asarray(values[1:], dtype='float32')
                     self.tok2emb[word] = coefs

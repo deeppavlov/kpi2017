@@ -10,7 +10,7 @@ config.gpu_options.visible_device_list = '0'
 set_session(tf.Session(config=config))
 
 from .metrics import fbeta_score
-
+from .embeddings_dict import EmbeddingsDict
 from keras.layers import Dense, Activation, Input, LSTM, Dropout, multiply, Lambda
 from keras.models import Model
 from keras.layers.wrappers import Bidirectional
@@ -21,8 +21,7 @@ from keras.optimizers import Adam
 
 class ParaphraserModel(object):
 
-    def __init__(self, opt, embdict):
-        self.embdict = embdict
+    def __init__(self, opt):
         self.opt = copy.deepcopy(opt)
 
         if self.opt.get('pretrained_model'):
@@ -31,6 +30,8 @@ class ParaphraserModel(object):
             print('[ Initializing model from scratch ]')
             self._init_params()
             self._init_from_scratch()
+
+        self.embdict = EmbeddingsDict(opt, self.embedding_dim)
 
         self.n_examples = 0
         self.updates = 0
