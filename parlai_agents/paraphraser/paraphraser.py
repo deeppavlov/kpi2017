@@ -23,8 +23,7 @@ class ParaphraserAgent(Agent):
 
         # Set up params/logging/dicts
         self.is_shared = False
-        embdict = EmbeddingsDict(opt)
-        self.model = ParaphraserModel(opt, embdict)
+        self.model = ParaphraserModel(opt)
         self.n_examples = 0
 
     def observe(self, observation):
