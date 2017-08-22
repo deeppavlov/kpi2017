@@ -84,3 +84,6 @@ class ParaphraserAgent(Agent):
             (self.model.updates, self.n_examples,
              self.model.train_loss, self.model.train_acc, self.model.train_f1))
 
+    def reset_metrics(self):
+        self.model.reset_metrics()
+        self.n_examples = 0

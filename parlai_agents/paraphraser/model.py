@@ -41,6 +41,16 @@ class ParaphraserModel(object):
         self.val_acc = 0.0
         self.val_f1 = 0.0
 
+    def reset_metrics(self):
+        self.n_examples = 0
+        self.updates = 0
+        self.train_loss = 0.0
+        self.train_acc = 0.0
+        self.train_f1 = 0.0
+        self.val_loss = 0.0
+        self.val_acc = 0.0
+        self.val_f1 = 0.0
+
     def _init_params(self, param_dict=None):
         if param_dict is None:
             param_dict = self.opt
