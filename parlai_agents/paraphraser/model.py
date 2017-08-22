@@ -163,23 +163,10 @@ class ParaphraserModel(object):
             embeddings = []
             tokens = sen.split(' ')
             tokens = [el for el in tokens if el != '']
-            if len(tokens) >= self.max_sequence_length:
-                for tok in tokens[len(tokens)-self.max_sequence_length:]:
-                    emb = self.embdict.tok2emb.get(tok)
-                    if emb is None:
-                        print('Error!')
-                        exit()
-                    embeddings.append(emb)
-            else:
-                for tok in tokens:
-                    emb = self.embdict.tok2emb.get(tok)
-                    if emb is None:
-                        print('Error!')
-                        exit()
-                    embeddings.append(emb)
-                    pads = []
-                for _ in range(self.max_sequence_length - len(tokens)):
-                    pads.append(np.zeros(self.embedding_dim))
+            for tok in tokens:
+                embeddings.append(self.embdict.tok2emb.get(tok))
+            if len(tokens) < self.max_sequence_length:
+                pads = [np.zeros(self.embedding_dim) for _ in range(self.max_sequence_length - len(tokens))]
                 embeddings = pads + embeddings
             embeddings = np.asarray(embeddings)
             embeddings_batch.append(embeddings)
