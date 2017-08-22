@@ -13,8 +13,6 @@ def add_cmdline_args(parser):
                        help='Save dict/features/weights/opts from this file')
     agent.add_argument('--fasttext_model', type=str, default=None,
                        help='fasttext trained model file name')
-    agent.add_argument('--fasttext_dir', type=str, default=None,
-                       help='path to fasttext executable file')
 
 
 
