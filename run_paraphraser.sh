@@ -2,10 +2,11 @@
 python3 ./train_model.py -t parlai_tasks.paraphrases.agents \
                          -m parlai_agents.paraphraser.paraphraser:ParaphraserAgent \
                          -mf /tmp/paraphraser \
+                         --datatype train:ordered \
                          --batchsize 256 \
                          --display-examples False \
                          --max-train-time -1 \
-                         --num-epochs 10 \
+                         --num-epochs -1 \
                          --log-every-n-secs -1 \
                          --log-every-n-epochs 1 \
                          --learning_rate 0.0001 \
