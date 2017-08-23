@@ -37,7 +37,11 @@ class EmbeddingsDict(object):
                     self.tok2emb[tok] = self.fasttext_model[tok]
 
     def save_items(self, fname):
-        f = open(fname + '.emb', 'w')
+        if self.opt.get('fasttext_embeddings_dict') is not None:
+            fname = self.opt['fasttext_embeddings_dict']
+        else:
+            fname += '.emb'
+        f = open(fname, 'w')
         string = '\n'.join([el[0] + ' ' + self.emb2str(el[1]) for el in self.tok2emb.items()])
         f.write(string)
         f.close()
@@ -48,16 +52,19 @@ class EmbeddingsDict(object):
 
     def load_items(self):
         """Initialize embeddings from file."""
-        if self.opt.get('model_file') is not None:
-            fname = self.opt['model_file']
-        if self.opt.get('pretrained_model') is not None:
-            fname = self.opt['pretrained_model']
+        fname = None
+        if self.opt.get('fasttext_embeddings_dict') is not None:
+            fname = self.opt['fasttext_embeddings_dict']
+        elif self.opt.get('pretrained_model') is not None:
+            fname = self.opt['pretrained_model']+'.emb'
+        elif self.opt.get('model_file') is not None:
+            fname = self.opt['model_file']+'.emb'
 
-        if not os.path.isfile(fname+'.emb'):
-            print('There is no %s.emb file provided. Initializing new dictionary.' % fname)
+        if fname is None or not os.path.isfile(fname):
+            print('There is no %s file provided. Initializing new dictionary.' % fname)
         else:
-            print('Loading existing dictionary from %s.emb.' % fname)
-            with open(fname+'.emb', 'r') as f:
+            print('Loading existing dictionary from %s.' % fname)
+            with open(fname, 'r') as f:
                 for line in f:
                     values = line.rsplit(sep=' ', maxsplit=self.embedding_dim)
                     assert(len(values) == self.embedding_dim + 1)

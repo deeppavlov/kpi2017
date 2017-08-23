@@ -42,7 +42,10 @@ class DefaultTeacher(DialogTeacher):
         self.question = "Эти два предложения — парафразы?"
         self.answer_candidates = ['Да', 'Нет']
 
+        random_state = random.getstate()
+        random.seed(opt.get('cross_validation_seed'))
         self.random_state = random.getstate()
+        random.setstate(random_state)
 
         super().__init__(opt, shared)
 
@@ -86,7 +89,7 @@ class DefaultTeacher(DialogTeacher):
         indexes = range(len(questions))
         if self.datatype_strict != 'test':
             random_state = random.getstate()
-            random.seed(self.opt.get('cross_validation_seed'))
+            random.setstate(self.random_state)
             kf_seed = random.randrange(500000)
             kf = KFold(self.opt.get('cross_validation_splits_count'), shuffle=True,
                        random_state=kf_seed)

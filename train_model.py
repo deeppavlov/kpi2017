@@ -29,6 +29,7 @@ from parlai.core.utils import Timer
 import build_dict
 import math
 
+
 def run_eval(agent, opt, datatype, max_exs=-1, write_log=False, valid_world=None):
     """Eval on validation/test data.
     - Agent is the agent to use for the evaluation.
@@ -65,14 +66,14 @@ def run_eval(agent, opt, datatype, max_exs=-1, write_log=False, valid_world=None
     print(metrics)
     if write_log and opt['model_file']:
         # Write out metrics
-        f = open(opt['model_file'] + '.' + datatype, 'a+')
+        f = open(opt['model_file'] + '.' + datatype, 'w')
         f.write(metrics + '\n')
         f.close()
 
     return valid_report, valid_world
 
 
-def main():
+def main(args=None):
     # Get command line arguments
     parser = ParlaiParser(True, True)
     train = parser.add_argument_group('Training Loop Arguments')
@@ -103,7 +104,7 @@ def main():
     train.add_argument('-dbf', '--dict-build-first',
                         type='bool', default=True,
                         help='build dictionary first before training agent')
-    opt = parser.parse_args()
+    opt = parser.parse_args(args=args)
     # Possibly build a dictionary (not all models do this).
     if opt['dict_build_first'] and 'dict_file' in opt:
         if opt['dict_file'] is None and opt.get('pretrained_model'):
@@ -225,10 +226,11 @@ def main():
             opt['pretrained_model'] = opt['model_file']
             agent = create_agent(opt)
 
-        run_eval(agent, opt, 'valid', write_log=True)
+        report, _ = run_eval(agent, opt, 'valid', write_log=True)
         run_eval(agent, opt, 'test', write_log=True)
     else:
-        run_eval(agent, opt, opt['datatype'], write_log=True)
+        report, _ = run_eval(agent, opt, opt['datatype'], write_log=True)
+    return report
 
 
 if __name__ == '__main__':

@@ -10,9 +10,11 @@ def add_cmdline_args(parser):
                        help='Load dict/features/weights/opts from this file prefix')
     agent.add_argument('--log_file', type=str, default=None)
     agent.add_argument('--model_file', type=str, default=None,
-                       help='Save dict/features/weights/opts from this file')
+                       help='Save dict/features/weights/opts to this file')
     agent.add_argument('--fasttext_model', type=str, default=None,
                        help='fasttext trained model file name')
+    agent.add_argument('-fed', '--fasttext_embeddings_dict', type=str, default=None,
+                       help='saved fasttext embeddings dict')
 
 
 

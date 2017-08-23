@@ -21,7 +21,7 @@ from keras.optimizers import Adam
 
 class ParaphraserModel(object):
 
-    def __init__(self, opt):
+    def __init__(self, opt, embdict=None):
         self.opt = copy.deepcopy(opt)
 
         if self.opt.get('pretrained_model'):
@@ -31,7 +31,7 @@ class ParaphraserModel(object):
             self._init_params()
             self._init_from_scratch()
 
-        self.embdict = EmbeddingsDict(opt, self.embedding_dim)
+        self.embdict = embdict if embdict is not None else EmbeddingsDict(opt, self.embedding_dim)
 
         self.n_examples = 0
         self.updates = 0
