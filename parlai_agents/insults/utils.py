@@ -1,6 +1,9 @@
-import os
+import os, sys
 import numpy as np
-
+import _pickle as cPickle
+import scipy.sparse as sp
+sys.path.append(os.path.abspath(os.path.join("..", "..", "parlai_tasks", "insults")))
+from build import ngrams_you_are
 
 def load_embeddings(opt, word_dict):
     """Initialize embeddings from file of pretrained vectors."""
@@ -31,3 +34,34 @@ def load_embeddings(opt, word_dict):
             embedding_matrix[i] = embedding_vector
 
     return embedding_matrix
+
+
+def vectorize_select(data, dpath, num_ngrams):
+    for i in range(num_ngrams):
+        with open(os.path.join(dpath, 'ngrams_vect_general_' + str(i) + '.bin'), 'rb') as f:
+            data_struct = cPickle.load(f)
+            try:
+                vectorizer, selector = data_struct['vectorizer'], data_struct['selector']
+                X_i = vectorizer.transform(data)
+                X_i = selector.transform(X_i)
+            except KeyError:
+                vectorizer = data_struct['vectorizer']
+                X_i = vectorizer.transform(data)
+        if i == 0:
+            X = X_i
+        else:
+            X = sp.hstack([X, X_i])
+
+    with open(os.path.join(dpath, 'ngrams_vect_special.bin'), 'rb') as f:
+        data_struct = cPickle.load(f)
+        you_are_data = ngrams_you_are(data)
+        try:
+            vectorizer, selector = data_struct['vectorizer'], data_struct['selector']
+            X_i = vectorizer.transform(you_are_data)
+            X_i = selector.transform(X_i)
+        except KeyError:
+            vectorizer = data_struct['vectorizer']
+            X_i = vectorizer.transform(you_are_data)
+    X = sp.hstack([X, X_i])
+
+    return X

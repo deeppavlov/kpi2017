@@ -12,7 +12,6 @@ def add_cmdline_args(parser):
                        help='Load dict/features/weights/opts from this file')
     agent.add_argument('--log_file', type=str, default=None)
     agent.add_argument('--model_file', type=str, default=None)
-
     agent.add_argument('--max_sequence_length', type=int, default=100)
     agent.add_argument('--embedding_dim', type=int, default=128)
     agent.add_argument('--learning_rate', type=float, default=1e-1)

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
+
 python3 ./train_model.py -t parlai_tasks.insults.agents \
                          -m parlai_agents.insults.insults_agents:InsultsAgent \
-                         -mf C:/Users/Dilyara/ParlAI/tmp/insults \
+                         -mf C:/Users/Dilyara/ParlAI/tmp/insults_2 \
                          --log-every-n-secs 5 \
                          --raw-dataset-path C:/Users/Dilyara/Documents/DataScience/Insults_kaggle/data \
                          --batchsize 64 \

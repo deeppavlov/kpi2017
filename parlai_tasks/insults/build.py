@@ -2,6 +2,9 @@ import parlai.core.build_data as build_data
 import os
 import re
 import string
+import _pickle as cPickle
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_selection import SelectKBest, chi2
 try:
     import pandas as pd
 except ImportError:
@@ -133,6 +136,63 @@ def balance_dataset(dataset_0, labels_0, dataset_1, labels_1, ratio=1):
     result_labels = labels_0.append(labels_1.iloc[insult_inds_to_add])
     return result, result_labels
 
+
+def ngrams_selection(train_data, train_labels, ind, dpath,
+                     ngram_range_=(1, 1), max_num_features=100,
+                     analyzer_type='word'):
+    vectorizer = TfidfVectorizer(ngram_range=ngram_range_, sublinear_tf=True, analyzer=analyzer_type)
+
+    X_train = vectorizer.fit_transform(train_data)
+
+    if max_num_features < X_train.shape[1]:
+        ch2 = SelectKBest(chi2, k=max_num_features)
+        ch2.fit(X_train, train_labels)
+        data_struct = {'vectorizer': vectorizer, 'selector': ch2}
+        print ('creating ', os.path.join(dpath, 'ngrams_vect_' + ind + '.bin'))
+        with open(os.path.join(dpath, 'ngrams_vect_' + ind + '.bin'), 'wb') as f:
+            cPickle.dump(data_struct, f)
+    else:
+        data_struct = {'vectorizer': vectorizer}
+        print ('creating', os.path.join(dpath, 'ngrams_vect_' + ind + '.bin'))
+        with open(os.path.join(dpath, 'ngrams_vect_' + ind + '.bin'), 'wb') as f:
+            cPickle.dump(data_struct, f)
+    return
+
+def ngrams_you_are(data):
+    g = [x.lower()
+         .replace("you are", " SSS ")
+         .replace("you're", " SSS ")
+         .replace(" ur ", " SSS ")
+         .replace(" u ", " SSS ")
+         .replace(" you ", " SSS ")
+         .replace(" yours ", " SSS ")
+         .replace(" u r ", " SSS ")
+         .replace(" are you ", " SSS ")
+         .replace(" urs ", " SSS ")
+         .replace(" r u ", " SSS ").split("SSS")[1:]
+         for x in data]
+    f = []
+    for x in g:
+        fts = " "
+        for y in x:
+            w = y.strip().replace("?",".").split(".")
+            fts = fts + " " + w[0]
+        f.append(fts)
+    return f
+
+def create_vectorizer_selector(train_data, train_labels, dpath,
+                               ngram_list=[1], max_num_features_list=[100], analyzer_type_list=['word']):
+
+    for i in range(len(ngram_list)):
+        ngrams_selection(train_data, train_labels, 'general_' + str(i), dpath,
+                         ngram_range_=(ngram_list[i], ngram_list[i]),
+                         max_num_features=max_num_features_list[i],
+                         analyzer_type=analyzer_type_list[i])
+    you_are_data = ngrams_you_are(train_data)
+    ngrams_selection(you_are_data, train_labels, 'special', dpath,
+                     ngram_range_=(1,1), max_num_features=100)
+    return
+
 def build(opt):
     # get path to data directory
     dpath = os.path.join(opt['datapath'], 'insults')
@@ -190,6 +250,11 @@ def build(opt):
         print('Preprocessing test')
         test_data['Comment'] = data_preprocessing(test_data['Comment'], raw_path)
         valid_data['Comment'] = data_preprocessing(valid_data['Comment'], raw_path)
+
+        create_vectorizer_selector(train_data['Comment'], train_data['Insult'], dpath,
+                                   ngram_list=[1, 2, 3, 4, 5, 3],
+                                   max_num_features_list=[2000, 4000, 100, 1000, 1000, 2000],
+                                   analyzer_type_list=['word', 'word', 'word', 'char', 'char', 'char'])
 
         print('Writing input files for fasttext')
         write_input_fasttext_cls(train_data, os.path.join(dpath, 'train'), 'train')

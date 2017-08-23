@@ -4,12 +4,12 @@ from . import config
 from .model import InsultsModel
 
 from keras.preprocessing.sequence import pad_sequences
-
+import os
 from parlai.core.agents import Agent
 from parlai.core.dict import DictionaryAgent
 from parlai.core.params import class2str
-
-
+from keras import backend as K
+from .utils import vectorize_select
 
 class InsultsDictionaryAgent(DictionaryAgent):
 
@@ -26,7 +26,6 @@ class InsultsDictionaryAgent(DictionaryAgent):
         if text:
             self.add_to_dict(self.tokenize(text))
         return {'id': 'InsultsDictionary'}
-
 
 class InsultsAgent(Agent):
 
@@ -56,13 +55,15 @@ class InsultsAgent(Agent):
         #print('create embedding matrix')
         #self.embedding_matrix = load_embeddings(opt, self.word_dict.tok2ind)
         self.embedding_matrix = None
-        print('create model')
-        self.models = []
+        print('create models')
+        self.models_agents = []
         for model_name in (opt['models'].split(' ')):
-            self.models.append(InsultsModel(model_name, self.word_dict, self.embedding_matrix, opt))
+            self.models_agents.append(InsultsModel(model_name, self.word_dict, self.embedding_matrix, opt))
+            #self.models_agents.append(InsultsAgentTrainable(model_name, self.word_dict, opt ))
         self.models_coefs = [1.]
         self.n_examples = 0
-
+        self.dpath = os.path.join(opt['datapath'], 'insults')
+        self.num_ngrams = 6
 
     def observe(self, observation):
         observation = copy.deepcopy(observation)
@@ -90,21 +91,27 @@ class InsultsAgent(Agent):
         examples = [self._build_ex(obs) for obs in observations]
         valid_inds = [i for i in range(batch_size) if examples[i] is not None]
         examples = [ex for ex in examples if ex is not None]
-        batch = self._batchify(examples)
+        #batch = self._batchify(examples)
 
         if 'labels' in observations[0]:
             self.n_examples += len(examples)
-            for i in range(len(self.models)):
-                self.models[i].update(batch)
+            for i in range(len(self.models_agents)):
+                if self.models_agents[i].model_type == 'nn':
+                    batch = self._batchify_nn(examples)
+                if self.models_agents[i].model_type == 'ngrams':
+                    batch = self._batchify_ngrams(examples)
+                self.models_agents[i].update(batch)
         else:
             list_predictions = []
-            for i in range(len(self.models)):
-                if self.models[i].model_type == 'nn':
-                    list_predictions.append(self.models[i].predict(batch))
-                if self.models[i].model_type == 'ngrams':
-                    list_predictions.append(self.models[i].predict(batch).reshape(-1))
+            for i in range(len(self.models_agents)):
+                if self.models_agents[i].model_type == 'nn':
+                    batch = self._batchify_nn(examples)
+                    list_predictions.append(self.models_agents[i].predict(batch))
+                if self.models_agents[i].model_type == 'ngrams':
+                    batch = self._batchify_ngrams(examples)
+                    list_predictions.append(self.models_agents[i].predict(batch).reshape(-1))
             # weighted sum of predictions
-            predictions = np.array(list_predictions).T.dot(np.array(self.models_coefs))
+            predictions = np.array(list_predictions).T.dot(np.array(self.models_coefs)).reshape(-1)
             predictions = self._predictions2text(predictions)
             for i in range(len(predictions)):
                 batch_reply[valid_inds[i]]['text'] = predictions[i]
@@ -136,6 +143,28 @@ class InsultsAgent(Agent):
         else:
             return question
 
+    def _batchify_nn(self, batch):
+        question = []
+        for ex in batch:
+            question.append(self.word_dict.txt2vec(ex['question']))
+        question = pad_sequences(question, maxlen=self.opt['max_sequence_length'], padding='post')
+        if len(batch[0]) == 2:
+            y = [1 if ex['labels'][0] == 'Insult' else 0 for ex in batch]
+            return question, y
+        else:
+            return question
+
+    def _batchify_ngrams(self, batch):
+        question = []
+        for ex in batch:
+            question.append(vectorize_select([ex['question']], self.dpath, self.num_ngrams))
+
+        if len(batch[0]) == 2:
+            y = [1 if ex['labels'][0] == 'Insult' else 0 for ex in batch]
+            return question, y
+        else:
+            return question
+
     def _predictions2text(self, predictions):
         y = ['Insult' if ex > 0.5 else 'Non-insult' for ex in predictions]
         return y
@@ -143,13 +172,20 @@ class InsultsAgent(Agent):
     def report(self):
         info = ''
         args = ()
-        for i in range(len(self.models)):
+        for i in range(len(self.models_agents)):
             info += '\n[model %d] updates = %d | exs = %d | loss = %.4f | acc = %.4f | auc = %.4f'
-            args += (i, self.models[i].updates, self.n_examples,
-                     self.models[i].train_loss, self.models[i].train_acc, self.models[i].train_auc,)
+            args += (i, self.models_agents[i].updates,
+                     self.n_examples,
+                     self.models_agents[i].train_loss,
+                     self.models_agents[i].train_acc,
+                     self.models_agents[i].train_auc,)
+        print (args)
         return (info % args)
-        #return (
-        #    '[train] updates = %d | exs = %d | loss = %.4f | acc = %.4f | auc = %.4f'%
-        #    (self.model.updates, self.n_examples,
-        #     self.model.train_loss, self.model.train_acc, self.model.train_auc))
+
+    def save(self):
+        for i in range(len(self.models_agents)):
+            self.models_agents[i].save()
+
+
+
 
