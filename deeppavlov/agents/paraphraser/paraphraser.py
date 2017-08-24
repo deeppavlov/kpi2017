@@ -76,6 +76,7 @@ class EnsembleParaphraserAgent(Agent):
             if len(predictions[i]):
                 prediction = sum(predictions[i])/len(predictions[i])
                 batch_reply[i]['text'] = prediction2text(prediction)
+                batch_reply[i]['score'] = prediction
 
         return batch_reply
 
@@ -133,9 +134,10 @@ class ParaphraserAgent(Agent):
         else:
             batch, _ = batch
             predictions = self.model.predict(batch)
-            predictions = predictions2text(predictions)
+            texts = predictions2text(predictions)
             for i in range(len(predictions)):
-                batch_reply[valid_inds[i]]['text'] = predictions[i]
+                batch_reply[valid_inds[i]]['text'] = texts[i]
+                batch_reply[valid_inds[i]]['score'] = predictions[i]
 
         return batch_reply
 
