@@ -1,7 +1,7 @@
 from parlai.core.dialog_teacher import DialogTeacher
 from .build import build
 import os
-import xml.etree.ElementTree as ET
+import csv
 from sklearn.model_selection import KFold
 import random
 
@@ -15,7 +15,7 @@ def _path(opt):
     fname = 'paraphrases'
     if dt == 'test':
         fname += '_gold'
-    fname += '.xml'
+    fname += '.tsv'
     datafile = os.path.join(opt['datapath'], 'paraphrases', fname)
     return datafile
 
@@ -61,26 +61,14 @@ class DefaultTeacher(DialogTeacher):
         # open data file with labels
         # (path will be provided to setup_data from opt['datafile'] defined above)
         with open(path) as labels_file:
-            context = ET.iterparse(labels_file, events=("start", "end"))
+            tsv_reader = csv.reader(labels_file, delimiter='\t')
 
-            # turn it into an iterator
-            context = iter(context)
-
-            # get the root element
-            event, root = next(context)
-
-            for event, elem in context:
-                if event == "end" and elem.tag == "paraphrase":
-                    question = []
-                    for child in elem.iter():
-                        if child.get('name') == 'text_1':
-                            question.append(child.text)
-                        if child.get('name') == 'text_2':
-                            question.append(child.text)
-                        if child.get('name') == 'class':
-                            y.append(['Да' if int(child.text) >= 0 else 'Нет'])
-                    root.clear()
-                    questions.append("\n".join(question))
+            for row in tsv_reader:
+                if len(row) != 3:
+                    print('Warn: expected 3 columns in a tsv row, got ' + str(row))
+                    continue
+                y.append(['Да' if row[0] == '1' else 'Нет'])
+                questions.append(row[1] + '\n' + row[2])
 
         episode_done = True
         if not y:
