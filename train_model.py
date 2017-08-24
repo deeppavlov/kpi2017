@@ -73,38 +73,7 @@ def run_eval(agent, opt, datatype, max_exs=-1, write_log=False, valid_world=None
     return valid_report, valid_world
 
 
-def main(args=None):
-    # Get command line arguments
-    parser = ParlaiParser(True, True)
-    train = parser.add_argument_group('Training Loop Arguments')
-    train.add_argument('-et', '--evaltask',
-                        help=('task to use for valid/test (defaults to the ' +
-                              'one used for training if not set)'))
-    train.add_argument('-d', '--display-examples',
-                        type='bool', default=False)
-    train.add_argument('-e', '--num-epochs', type=float, default=-1)
-    train.add_argument('-ttim', '--max-train-time',
-                        type=float, default=-1)
-    train.add_argument('-ltim', '--log-every-n-secs',
-                        type=float, default=2)
-    train.add_argument('-le', '--log-every-n-epochs',
-                        type=int, default=0)
-    train.add_argument('-vtim', '--validation-every-n-secs',
-                        type=float, default=-1)
-    train.add_argument('-ve', '--validation-every-n-epochs',
-                        type=int, default=0)
-    train.add_argument('-vme', '--validation-max-exs',
-                        type=int, default=-1,
-                        help='max examples to use during validation (default ' +
-                             '-1 uses all)')
-    train.add_argument('-vp', '--validation-patience',
-                        type=int, default=5,
-                        help=('number of iterations of validation where result '
-                              + 'does not improve before we stop training'))
-    train.add_argument('-dbf', '--dict-build-first',
-                        type='bool', default=True,
-                        help='build dictionary first before training agent')
-    opt = parser.parse_args(args=args)
+def train_model(opt):
     # Possibly build a dictionary (not all models do this).
     if opt['dict_build_first'] and 'dict_file' in opt:
         if opt['dict_file'] is None and opt.get('pretrained_model'):
@@ -226,11 +195,63 @@ def main(args=None):
             opt['pretrained_model'] = opt['model_file']
             agent = create_agent(opt)
 
-        report, _ = run_eval(agent, opt, 'valid', write_log=True)
-        run_eval(agent, opt, 'test', write_log=True)
+        run_eval(agent, opt, 'valid', write_log=True)
+        report, _ = run_eval(agent, opt, 'test', write_log=True)
     else:
         report, _ = run_eval(agent, opt, opt['datatype'], write_log=True)
     return report
+
+
+def train_cross_valid(opt):
+    if opt.get('model_files'):
+        opt['model_files'] = [fname+'_'+str(i) for fname in opt['model_files']
+                              for i in range(opt['cross_validation_splits_count'])]
+        return [train_model(opt)]
+    model_file = opt.get('model_file', '')
+    reports = []
+    for i in range(opt['cross_validation_splits_count']):
+        opt['model_file'] = model_file + '_' + str(i)
+        opt['cross_validation_model_index'] = i
+        reports.append(train_model(opt))
+    return reports
+
+
+def main(args=None):
+    # Get command line arguments
+    parser = ParlaiParser(True, True)
+    train = parser.add_argument_group('Training Loop Arguments')
+    train.add_argument('-et', '--evaltask',
+                        help=('task to use for valid/test (defaults to the ' +
+                              'one used for training if not set)'))
+    train.add_argument('-d', '--display-examples',
+                        type='bool', default=False)
+    train.add_argument('-e', '--num-epochs', type=float, default=-1)
+    train.add_argument('-ttim', '--max-train-time',
+                        type=float, default=-1)
+    train.add_argument('-ltim', '--log-every-n-secs',
+                        type=float, default=2)
+    train.add_argument('-le', '--log-every-n-epochs',
+                        type=int, default=0)
+    train.add_argument('-vtim', '--validation-every-n-secs',
+                        type=float, default=-1)
+    train.add_argument('-ve', '--validation-every-n-epochs',
+                        type=int, default=0)
+    train.add_argument('-vme', '--validation-max-exs',
+                        type=int, default=-1,
+                        help='max examples to use during validation (default ' +
+                             '-1 uses all)')
+    train.add_argument('-vp', '--validation-patience',
+                        type=int, default=5,
+                        help=('number of iterations of validation where result '
+                              + 'does not improve before we stop training'))
+    train.add_argument('-dbf', '--dict-build-first',
+                        type='bool', default=True,
+                        help='build dictionary first before training agent')
+    opt = parser.parse_args(args=args)
+    if opt.get('cross_validation_splits_count'):
+        train_cross_valid(opt)
+    else:
+        train_model(opt)
 
 
 if __name__ == '__main__':
