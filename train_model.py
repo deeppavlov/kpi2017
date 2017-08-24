@@ -22,6 +22,7 @@ python examples/train_model.py -m drqa -t babi:Task10k:1 -mf /tmp/model -bs 10
 TODO List:
 - More logging (e.g. to files), make things prettier.
 """
+import copy
 from parlai.core.agents import create_agent
 from parlai.core.worlds import create_task
 from parlai.core.params import ParlaiParser
@@ -207,12 +208,12 @@ def train_cross_valid(opt):
         opt['model_files'] = [fname+'_'+str(i) for fname in opt['model_files']
                               for i in range(opt['cross_validation_splits_count'])]
         return [train_model(opt)]
-    model_file = opt.get('model_file', '')
     reports = []
     for i in range(opt['cross_validation_splits_count']):
-        opt['model_file'] = model_file + '_' + str(i)
-        opt['cross_validation_model_index'] = i
-        reports.append(train_model(opt))
+        local_opt = copy.deepcopy(opt)
+        local_opt['model_file'] = opt.get('model_file', '') + '_' + str(i)
+        local_opt['cross_validation_model_index'] = i
+        reports.append(train_model(local_opt))
     return reports
 
 

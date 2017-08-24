@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 python3 ./train_model.py -t parlai_tasks.paraphrases.agents \
                          -m parlai_agents.paraphraser.paraphraser:ParaphraserAgent \
-                         -mf /tmp/paraphraser_0 \
+                         -mf /tmp/paraphraser \
                          --datatype train:ordered \
                          --batchsize 256 \
                          --display-examples False \
@@ -16,9 +16,9 @@ python3 ./train_model.py -t parlai_tasks.paraphrases.agents \
                          --fasttext_model '/tmp/ft_0.8.3_yalen_sg_300.bin' \
                          --cross-validation-seed 50 \
                          --cross-validation-model-index 0 \
-                         --cross-validation-splits-count 5
-##                         --pretrained_model '/tmp/paraphraser'
-##                         --validation-patience 5 \
+                         --cross-validation-splits-count 5 \
+                         --validation-patience 3
+#                         --pretrained_model '/tmp/paraphraser'
 
 python3 ./train_model.py -t parlai_tasks.paraphrases.agents \
                          -m parlai_agents.paraphraser.paraphraser:EnsembleParaphraserAgent \
