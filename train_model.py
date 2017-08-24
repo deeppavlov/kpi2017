@@ -188,33 +188,34 @@ def train_model(opt):
         except KeyboardInterrupt:
             print('Stopped training, starting testing')
 
-        world.shutdown()
         if not saved:
             world.save_agents()
-        else:
-            # reload best validation model
-            opt['pretrained_model'] = opt['model_file']
-            agent = create_agent(opt)
+        # else:
+        world.shutdown()
+
+        # reload best validation model
+        opt['pretrained_model'] = opt['model_file']
+        agent = create_agent(opt)
 
         run_eval(agent, opt, 'valid', write_log=True)
-        report, _ = run_eval(agent, opt, 'test', write_log=True)
+        run_eval(agent, opt, 'test', write_log=True)
     else:
-        report, _ = run_eval(agent, opt, opt['datatype'], write_log=True)
-    return report
+        run_eval(agent, opt, opt['datatype'], write_log=True)
+    agent.shutdown()
 
 
 def train_cross_valid(opt):
     if opt.get('model_files'):
         opt['model_files'] = [fname+'_'+str(i) for fname in opt['model_files']
                               for i in range(opt['cross_validation_splits_count'])]
-        return [train_model(opt)]
-    reports = []
+        train_model(opt)
+        return
     for i in range(opt['cross_validation_splits_count']):
+        print("Training fold number %i" % (i+1))
         local_opt = copy.deepcopy(opt)
         local_opt['model_file'] = opt.get('model_file', '') + '_' + str(i)
         local_opt['cross_validation_model_index'] = i
-        reports.append(train_model(local_opt))
-    return reports
+        train_model(local_opt)
 
 
 def main(args=None):
@@ -249,7 +250,7 @@ def main(args=None):
                         type='bool', default=True,
                         help='build dictionary first before training agent')
     opt = parser.parse_args(args=args)
-    if opt.get('cross_validation_splits_count'):
+    if opt.get('cross_validation_splits_count', 0) > 1 and opt.get('cross_validation_model_index') is None:
         train_cross_valid(opt)
     else:
         train_model(opt)

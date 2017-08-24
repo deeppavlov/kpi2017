@@ -155,3 +155,9 @@ class ParaphraserAgent(Agent):
     def reset_metrics(self):
         self.model.reset_metrics()
         self.n_examples = 0
+
+    def shutdown(self):
+        if not self.is_shared:
+            if self.model is not None:
+                self.model.shutdown()
+            self.model = None

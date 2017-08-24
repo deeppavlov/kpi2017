@@ -52,6 +52,9 @@ class ParaphraserModel(object):
         self.val_acc = 0.0
         self.val_f1 = 0.0
 
+    def shutdown(self):
+        self.embdict = None
+
     def _init_params(self, param_dict=None):
         if param_dict is None:
             param_dict = self.opt

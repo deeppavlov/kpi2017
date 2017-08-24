@@ -26,7 +26,7 @@ class DefaultTeacher(DialogTeacher):
     def add_cmdline_args(argparser):
         teacher = argparser.add_argument_group('paraphrases teacher arguments')
         teacher.add_argument('--cross-validation-seed', type=int, default=71)
-        teacher.add_argument('--cross-validation-model-index', type=int, default=0)
+        teacher.add_argument('--cross-validation-model-index', type=int)
         teacher.add_argument('--cross-validation-splits-count', type=int, default=5)
 
     def __init__(self, opt, shared=None):
@@ -96,11 +96,10 @@ class DefaultTeacher(DialogTeacher):
             i = 0
             for train_index, test_index in kf.split(questions):
                 indexes = train_index if self.datatype_strict == 'train' else test_index
-                if i >= self.opt.get('cross_validation_model_index'):
+                if i >= self.opt.get('cross_validation_model_index', 0):
                     break
             self.random_state = random.getstate()
             random.setstate(random_state)
-
 
         # define iterator over all queries
         for i in indexes:
