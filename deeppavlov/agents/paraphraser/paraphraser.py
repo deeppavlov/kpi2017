@@ -1,10 +1,10 @@
 import copy
 
-from . import config
-from .model import ParaphraserModel
-from .embeddings_dict import EmbeddingsDict
-
 from parlai.core.agents import Agent
+
+from . import config
+from .embeddings_dict import EmbeddingsDict
+from .model import ParaphraserModel
 
 
 def prediction2text(prediction):
