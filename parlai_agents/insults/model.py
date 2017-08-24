@@ -17,6 +17,8 @@ from sklearn import linear_model, svm
 from sklearn.model_selection import GridSearchCV
 from keras import backend as K
 from keras.metrics import binary_accuracy
+import scipy.sparse as sp
+import json
 
 class InsultsModel(object):
 
@@ -33,9 +35,16 @@ class InsultsModel(object):
             self.model_type = 'nn'
         if self.model_name == 'log_reg' or self.model_name == 'svc':
             self.model_type = 'ngrams'
+            self.num_ngrams = None
+            self.vectorizers = None
+            self.selectors = None
+
+        self.from_saved = False
 
         if self.opt.get('model_file') and \
-                (os.path.isfile(opt['model_file'] + '.h5') or os.path.isfile(opt['model_file'] + '.txt')):
+                ( (os.path.isfile(opt['model_file'] + '.h5') and self.model_type == 'nn')
+                 or (os.path.isfile(opt['model_file'] + '.txt') and self.model_type == 'ngrams') ):
+            self.from_saved = True
             self._init_from_scratch()
             self._init_from_saved(opt['model_file'])
         else:
@@ -51,7 +60,6 @@ class InsultsModel(object):
         #     config.gpu_options.per_process_gpu_memory_fraction = 0.45
         #     config.gpu_options.visible_device_list = str(opt['gpu'])
         #     set_session(tf.Session(config=config))
-
         self.n_examples = 0
         self.updates = 0
         self.train_loss = 0.0
@@ -88,6 +96,8 @@ class InsultsModel(object):
 
             if self.model_type == 'ngrams':
                 print("[ saving model: " + fname + " ]")
+                with open(fname + '_opt.json', 'w') as opt_file:
+                    json.dump(self.opt, opt_file)
                 best_params = list(self.model.best_params_.items())
                 f = open(fname + '.txt', 'w')
                 for i in range(len(best_params)):
@@ -99,6 +109,8 @@ class InsultsModel(object):
         if self.model_type == 'nn':
             self.model.load_weights(fname + '.h5')
         if self.model_type == 'ngrams':
+            with open(fname + '_opt.json', 'r') as opt_file:
+                self.opt = json.load(opt_file)
             f = open(fname + '.txt', 'r')
             data = f.readlines()
             best_params = dict()
@@ -108,7 +120,7 @@ class InsultsModel(object):
                     best_params[line_split[0]] = float(line_split[1])
                 except ValueError:
                     best_params[line_split[0]] = line_split[1]
-            self.model_best_params_ = best_params
+            self.model.best_params_ = best_params
             f.close()
 
     def update(self, batch):
@@ -133,7 +145,10 @@ class InsultsModel(object):
         if self.model_type == 'nn':
             return self.model.predict_on_batch(batch)
         if self.model_type == 'ngrams':
-            return np.array(self.model.predict_proba(batch)[:,1]) #probability of class "1"
+            predictions = []
+            for ex in batch:
+                predictions.append(self.model.predict_proba(ex)[:,1])
+            return np.array(predictions)
 
     def log_reg_model(self):
         model = linear_model.LogisticRegression()
@@ -143,7 +158,7 @@ class InsultsModel(object):
 
     def svc_model(self):
         model = svm.SVC(probability=True)
-        params = {'C': [0.5], 'kernel': 'linear'}
+        params = {'C': [0.3], 'kernel': ('linear',)}
         best_model = GridSearchCV(model, params)
         return best_model
 

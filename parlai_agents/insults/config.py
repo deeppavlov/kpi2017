@@ -25,13 +25,17 @@ def add_cmdline_args(parser):
     agent.add_argument('--dropout_rate', type=float, default=0.)
     agent.add_argument('--dense_dim', type=int, default=100)
 
-    agent.add_argument('-btd', '--balance_train_dataset',
+    agent.add_argument('-bd', '--balance_dataset',
                         type='bool', default=False,
-                        help='balance train dataset for insult/non-insult ratio 1?')
+                        help='balance train dataset for insult/non-insult?')
 
-    agent.add_argument('-mds', '--models',
+    agent.add_argument('-bdr', '--balance_dataset_ratio',
+                       type=int, default=1,
+                       help='ratio for balancing train dataset for insult/non-insult')
+
+    agent.add_argument('-mn', '--model_name',
                        type=str, default='cnn_word',
-                       help='str of models to use. Example: cnn_word log_reg svc')
+                       help='str of models to use. available: cnn_word log_reg svc')
 
 
 

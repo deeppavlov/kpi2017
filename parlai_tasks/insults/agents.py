@@ -35,6 +35,7 @@ class DefaultTeacher(DialogTeacher):
 
         super().__init__(opt, shared)
 
+
     def label_candidates(self):
         return self.answer_candidates
 
@@ -62,3 +63,5 @@ class DefaultTeacher(DialogTeacher):
             # get current label, both as a digit and as a text
             # yield tuple with information and episode_done? flag
             yield (questions[i], y[i]), episode_done
+
+
