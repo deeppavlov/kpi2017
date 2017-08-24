@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-python3 ./train_model.py -t parlai_tasks.paraphrases.agents \
-                         -m parlai_agents.paraphraser.paraphraser:ParaphraserAgent \
+python3 ./utils/train_model.py -t deeppavlov.tasks.paraphrases.agents \
+                         -m deeppavlov.agents.paraphraser.paraphraser:ParaphraserAgent \
                          -mf /tmp/paraphraser \
                          --datatype train:ordered \
                          --batchsize 256 \
@@ -19,8 +19,8 @@ python3 ./train_model.py -t parlai_tasks.paraphrases.agents \
                          --validation-patience 3
 #                         --pretrained_model '/tmp/paraphraser'
 
-python3 ./train_model.py -t parlai_tasks.paraphrases.agents \
-                         -m parlai_agents.paraphraser.paraphraser:EnsembleParaphraserAgent \
+python3 ./utils/train_model.py -t deeppavlov.tasks.paraphrases.agents \
+                         -m deeppavlov.agents.paraphraser.paraphraser:EnsembleParaphraserAgent \
                          -mf /tmp/paraphraser \
                          --model_files /tmp/paraphraser \
                          --datatype test \
