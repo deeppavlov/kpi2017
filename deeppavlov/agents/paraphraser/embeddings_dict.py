@@ -32,7 +32,8 @@ class EmbeddingsDict(object):
     def add_items(self, sentence_li):
         for sen in sentence_li:
             sent_toks = sent_tokenize(sen)
-            tokens = [word_tokenize(el) for el in sent_toks][0]
+            word_toks = [word_tokenize(el) for el in sent_toks]
+            tokens = [val for sublist in word_toks for val in sublist]
             tokens = [el for el in tokens if el != '']
             for tok in tokens:
                 if self.tok2emb.get(tok) is None:
