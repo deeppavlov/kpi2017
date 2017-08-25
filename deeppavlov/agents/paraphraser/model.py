@@ -17,6 +17,7 @@ from keras.layers.wrappers import Bidirectional
 from keras.initializers import glorot_uniform, Orthogonal
 from keras import backend as K
 from keras.optimizers import Adam
+from nltk.tokenize import sent_tokenize, word_tokenize
 
 
 class ParaphraserModel(object):
@@ -162,9 +163,11 @@ class ParaphraserModel(object):
 
     def create_batch(self, sentence_li):
         embeddings_batch = []
+
         for sen in sentence_li:
-            embeddings = []
-            tokens = sen.split(' ')
+            sent_toks = sent_tokenize(sen)
+            word_toks = [word_tokenize(el) for el in sent_toks]
+            tokens = [val for sublist in word_toks for val in sublist]
             tokens = [el for el in tokens if el != '']
             for tok in tokens:
                 embeddings.append(self.embdict.tok2emb.get(tok))
