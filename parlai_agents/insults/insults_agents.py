@@ -99,7 +99,7 @@ class InsultsAgent(Agent):
         if 'labels' in observations[0]:
             self.n_examples += len(examples)
             batch = self._batchify_nn(examples)
-            faself.model.update(batch)
+            self.model.update(batch)
         else:
             batch = self._batchify_nn(examples)
             predictions = self.model.predict(batch).reshape(-1)
@@ -190,7 +190,8 @@ class OneEpochAgent(InsultsAgent):
     def _batchify_ngrams(self, batch):
         question = []
         for ex in batch:
-            question.append(vectorize_select_from_data([ex['question']], self.model.vectorizers, self.model.selectors))
+            ngrams_quest = vectorize_select_from_data([ex['question']], self.model.vectorizers, self.model.selectors)
+            question.append(ngrams_quest)
 
         if len(batch[0]) == 2:
             y = [1 if ex['labels'][0] == 'Insult' else 0 for ex in batch]
@@ -221,8 +222,6 @@ class OneEpochAgent(InsultsAgent):
                 batch_reply[valid_inds[i]]['text'] = predictions[i]
 
         return batch_reply
-
-
 
     def save(self):
         if not self.is_shared:
