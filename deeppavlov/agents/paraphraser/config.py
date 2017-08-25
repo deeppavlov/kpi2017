@@ -20,7 +20,7 @@ def add_cmdline_args(parser):
 
     # Model details
     agent.add_argument('--model_name', default='maxpool_match')
-    agent.add_argument('--max_sequence_length', type=int, default=27)
+    agent.add_argument('--max_sequence_length', type=int, default=28)
     agent.add_argument('--embedding_dim', type=int, default=300)
     agent.add_argument('--learning_rate', type=float, default=1e-5)
     agent.add_argument('--batch_size', type=int, default=256)
