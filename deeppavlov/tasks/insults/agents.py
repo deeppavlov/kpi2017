@@ -2,11 +2,8 @@ from parlai.core.dialog_teacher import DialogTeacher
 from .build import build
 import os
 import csv
-from keras import backend as K
-import numpy as np
-from keras.losses import binary_crossentropy
-from keras.metrics import binary_accuracy
-from .metrics import roc_auc_score
+import sklearn.metrics
+
 
 def _path(opt):
     # ensure data is built
@@ -47,7 +44,6 @@ class DefaultTeacher(DialogTeacher):
 
     def share(self):
         shared = super().share()
-        shared['data'] = self.data.share()
         shared['observations'] = self.observations
         shared['labels'] = self.labels
         return shared
@@ -98,22 +94,21 @@ class DefaultTeacher(DialogTeacher):
             self.lastY = None
         return observation
 
-    def report(self):
+    def reset_metrics(self):
+        super().reset_metrics()
+        del self.observations[:]
+        del self.labels[:]
 
-        y = np.array(self.labels).reshape(-1)
-        y_pred = np.array(self.observations).reshape(-1)
-        y_pred_tensor = K.constant(y_pred, dtype='float64')
-        loss = K.eval(binary_crossentropy(y.astype('float'), y_pred_tensor))
-        acc = K.eval(binary_accuracy(y.astype('float'), y_pred_tensor))
-        auc = roc_auc_score(y, y_pred)
+    def report(self):
+        loss = sklearn.metrics.log_loss(self.labels, self.observations)
+        acc = sklearn.metrics.accuracy_score(self.labels, self.observations)
+        try:
+            auc = sklearn.metrics.roc_auc_score(self.labels, self.observations)
+        except ValueError:
+            auc = 0
         report = dict()
         report['comments'] = len(self.observations)
         report['loss'] = loss
         report['accuracy'] = acc
         report['auc'] = auc
-        #info = ''
-        #args = ()
-        #info += '\n[model] comments = %d | loss = %.4f | acc = %.4f | auc = %.4f'
-        #args += (len(self.observations), loss, acc, auc,)
         return report
-
