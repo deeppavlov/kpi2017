@@ -1,14 +1,14 @@
 import copy
-import numpy as np
 from . import config
 from .model import InsultsModel
 
 from keras.preprocessing.sequence import pad_sequences
 import os
+
 from parlai.core.agents import Agent
 from parlai.core.dict import DictionaryAgent
 from parlai.core.params import class2str
-import scipy.sparse as sp
+
 from .utils import create_vectorizer_selector, get_vectorizer_selector, vectorize_select_from_data
 from scipy.io import mmwrite, mmread
 
@@ -64,10 +64,20 @@ class InsultsAgent(Agent):
             self.embedding_matrix = None
             self.num_ngrams = 6
 
+
         print('create model', self.model_name)
         self.model = InsultsModel(self.model_name, self.word_dict, self.embedding_matrix, opt)
         self.n_examples = 0
         self.dpath = os.path.join(opt['datapath'], 'insults')
+        if (self.model.model_type == 'ngrams' and
+                (os.path.isfile(os.path.join(self.dpath, 'ngrams_vect_special.bin')) and
+                     os.path.isfile(os.path.join(self.dpath, 'ngrams_vect_general_0.bin')) and
+                     os.path.isfile(os.path.join(self.dpath, 'ngrams_vect_general_1.bin')) and
+                     os.path.isfile(os.path.join(self.dpath, 'ngrams_vect_general_2.bin')) and
+                     os.path.isfile(os.path.join(self.dpath, 'ngrams_vect_general_3.bin')) and
+                     os.path.isfile(os.path.join(self.dpath, 'ngrams_vect_general_4.bin')) and
+                     os.path.isfile(os.path.join(self.dpath, 'ngrams_vect_general_5.bin'))) ):
+            self.model.vectorizers, self.model.selectors = get_vectorizer_selector(self.dpath, self.num_ngrams)
 
     def observe(self, observation):
         observation = copy.deepcopy(observation)
@@ -85,7 +95,6 @@ class InsultsAgent(Agent):
         return self.batch_act([self.observation])[0]
 
     def batch_act(self, observations):
-
         if self.is_shared:
             raise RuntimeError("Parallel act is not supported.")
 
@@ -99,10 +108,14 @@ class InsultsAgent(Agent):
         if 'labels' in observations[0]:
             self.n_examples += len(examples)
             batch = self._batchify_nn(examples)
-            self.model.update(batch)
+            predictions = self.model.update(batch)
+            predictions = self._predictions2text(predictions)
+            for i in range(len(predictions)):
+                batch_reply[valid_inds[i]]['text'] = predictions[i]
         else:
             batch = self._batchify_nn(examples)
-            predictions = self.model.predict(batch).reshape(-1)
+            predictions = self.model.predict(batch)
+            print ('Predict:', predictions)
             predictions = self._predictions2text(predictions)
             for i in range(len(predictions)):
                 batch_reply[valid_inds[i]]['text'] = predictions[i]
@@ -120,17 +133,6 @@ class InsultsAgent(Agent):
             inputs['labels'] = ex['labels']
 
         return inputs
-
-    def _batchify(self, batch):
-        question = []
-        for ex in batch:
-            question.append(self.word_dict.txt2vec(ex['question']))
-        question = pad_sequences(question, maxlen=self.model.opt['max_sequence_length'], padding='post')
-        if len(batch[0]) == 2:
-            y = [1 if ex['labels'][0] == 'Insult' else 0 for ex in batch]
-            return question, y
-        else:
-            return question
 
     def _batchify_nn(self, batch):
         question = []
@@ -152,15 +154,13 @@ class InsultsAgent(Agent):
         return y
 
     def report(self):
-        info = ''
-        args = ()
-        info += '\n[model] updates = %d | exs = %d | loss = %.4f | acc = %.4f | auc = %.4f'
-        args += (self.model.updates,
-                 self.n_examples,
-                 self.model.train_loss,
-                 self.model.train_acc,
-                 self.model.train_auc,)
-        return (info % args)
+        report = dict()
+        report['updates'] = self.model.updates
+        report['n_examples'] = self.n_examples
+        report['loss'] = self.model.train_loss
+        report['accuracy'] = self.model.train_acc
+        report['auc'] = self.model.train_auc
+        return report
 
     def save(self):
         self.model.save()
@@ -237,11 +237,14 @@ class OneEpochAgent(InsultsAgent):
                     os.path.isfile(os.path.join(self.dpath, 'ngrams_vect_general_3.bin')) and
                     os.path.isfile(os.path.join(self.dpath, 'ngrams_vect_general_4.bin')) and
                     os.path.isfile(os.path.join(self.dpath, 'ngrams_vect_general_5.bin')) ):
+                print ('No vectorized data found. Vectorizing train data')
                 create_vectorizer_selector(train_data, train_labels, self.dpath,
                                            ngram_list=[1, 2, 3, 4, 5, 3],
                                            max_num_features_list=[2000, 4000, 100, 1000, 1000, 2000],
                                            analyzer_type_list=['word', 'word', 'word', 'char', 'char', 'char'])
-            self.model.vectorizers, self.model.selectors = get_vectorizer_selector(self.dpath, self.num_ngrams)
+            if self.model.vectorizers is None:
+                print ('Get vectorizers and selectors')
+                self.model.vectorizers, self.model.selectors = get_vectorizer_selector(self.dpath, self.num_ngrams)
             self.model.num_ngrams = self.num_ngrams
 
             if os.path.isfile(os.path.join(self.dpath, 'train_vectorized.mtx')):
@@ -252,13 +255,8 @@ class OneEpochAgent(InsultsAgent):
                 X_train = vectorize_select_from_data(train_data, self.model.vectorizers, self.model.selectors)
                 mmwrite(os.path.join(self.dpath, 'train_vectorized'), X_train)
 
-            if not self.model.from_saved:
-                print ("Training model", self.model.model_name)
-                self.model.update([X_train, train_labels])
-
-            else:
-                print("Running model", self.model.model_name)
-                self.model.update([X_train, train_labels])
+            print('Training model', self.model_name)
+            self.model.update([X_train, train_labels])
 
         print ('\n[model] trained loss = %.4f | acc = %.4f | auc = %.4f' %
                (self.model.train_loss, self.model.train_acc, self.model.train_auc,))

@@ -17,8 +17,9 @@ from sklearn import linear_model, svm
 from sklearn.model_selection import GridSearchCV
 from keras import backend as K
 from keras.metrics import binary_accuracy
-import scipy.sparse as sp
+from sklearn.externals import joblib
 import json
+import pickle
 
 class InsultsModel(object):
 
@@ -39,17 +40,14 @@ class InsultsModel(object):
             self.vectorizers = None
             self.selectors = None
 
-        self.from_saved = False
-
         if self.opt.get('model_file') and \
                 ( (os.path.isfile(opt['model_file'] + '.h5') and self.model_type == 'nn')
-                 or (os.path.isfile(opt['model_file'] + '.txt') and self.model_type == 'ngrams') ):
-            self.from_saved = True
-            self._init_from_scratch()
+                 or (os.path.isfile(opt['model_file'] + '.txt') and
+                         os.path.isfile(opt['model_file'] + '_opt.json') and
+                         os.path.isfile(opt['model_file'] + '_cls.pkl') and self.model_type == 'ngrams') ):
             self._init_from_saved(opt['model_file'])
         else:
             if self.opt.get('pretrained_model'):
-                self._init_from_scratch()
                 self._init_from_saved(opt['pretrained_model'])
             else:
                 self._init_from_scratch()
@@ -73,9 +71,9 @@ class InsultsModel(object):
     def _init_from_scratch(self):
         print('[ Initializing model from scratch ]')
         if self.model_name == 'log_reg':
-            self.model = self.log_reg_model()
+            self.model = self.gridsearch_log_reg_model()
         if self.model_name == 'svc':
-            self.model = self.svc_model()
+            self.model = self.gridsearch_svc_model()
         if self.model_name == 'cnn_word':
             self.model = self.cnn_word_model()
 
@@ -96,32 +94,50 @@ class InsultsModel(object):
 
             if self.model_type == 'ngrams':
                 print("[ saving model: " + fname + " ]")
-                with open(fname + '_opt.json', 'w') as opt_file:
-                    json.dump(self.opt, opt_file)
                 best_params = list(self.model.best_params_.items())
-                f = open(fname + '.txt', 'w')
-                for i in range(len(best_params)):
-                    f.write(best_params[i][0] + ' ' + str(best_params[i][1]) + '\n')
-                f.close()
+                with open(fname + '.txt', 'w') as f:
+                    for i in range(len(best_params)):
+                        f.write(best_params[i][0] + ' ' + str(best_params[i][1]) + '\n')
+                with open(fname + '_cls.pkl', 'wb') as model_file:
+                    pickle.dump(self.model.best_estimator_, model_file)
+
+            with open(fname + '_opt.json', 'w') as opt_file:
+                json.dump(self.opt, opt_file)
 
     def _init_from_saved(self, fname):
-        print('[ Loading model weights %s ]' % fname)
+
+        with open(fname + '_opt.json', 'r') as opt_file:
+            self.opt = json.load(opt_file)
+
         if self.model_type == 'nn':
+            if self.model_name == 'cnn_word':
+                self.model = self.cnn_word_model()
+            optimizer = Adam(lr=self.opt['learning_rate'], decay=self.opt['learning_decay'])
+            self.model.compile(loss='binary_crossentropy',
+                               optimizer=optimizer,
+                               metrics=['binary_accuracy'])
+            print('[ Loading model weights %s ]' % fname)
             self.model.load_weights(fname + '.h5')
+
         if self.model_type == 'ngrams':
-            with open(fname + '_opt.json', 'r') as opt_file:
-                self.opt = json.load(opt_file)
-            f = open(fname + '.txt', 'r')
-            data = f.readlines()
-            best_params = dict()
-            for i in range(len(data)):
-                line_split =data[i][:-1].split(' ')
-                try:
-                    best_params[line_split[0]] = float(line_split[1])
-                except ValueError:
-                    best_params[line_split[0]] = line_split[1]
-            self.model.best_params_ = best_params
-            f.close()
+            if self.model_name == 'log_reg':
+                self.model = self.log_reg_model()
+            if self.model_name == 'svc':
+                self.model = self.svc_model()
+
+            with open(fname + '.txt', 'r') as f:
+                data = f.readlines()
+                best_params = dict()
+                for i in range(len(data)):
+                    line_split =data[i][:-1].split(' ')
+                    try:
+                        best_params[line_split[0]] = float(line_split[1])
+                    except ValueError:
+                        best_params[line_split[0]] = line_split[1]
+                self.model.set_params(**best_params)
+
+            with open(fname + '_cls.pkl', 'rb') as model_file:
+                self.model = pickle.load(model_file)
 
     def update(self, batch):
         x, y = batch
@@ -134,33 +150,43 @@ class InsultsModel(object):
 
         if self.model_type == 'ngrams':
             self.model.fit(x, y)
-            y_pred = np.array(self.model.predict_proba(x)[:,1]) #probability of class "1"
+            y_pred = np.array(self.model.predict_proba(x)[:,1]).reshape(-1)
             y_pred_tensor = K.constant(y_pred, dtype='float64')
             self.train_loss = K.eval(binary_crossentropy(y.astype('float'), y_pred_tensor))
             self.train_acc = K.eval(binary_accuracy(y.astype('float'), y_pred_tensor))
             self.train_auc = roc_auc_score(y, y_pred)
         self.updates += 1
+        return y_pred
 
     def predict(self, batch):
         if self.model_type == 'nn':
-            return self.model.predict_on_batch(batch)
+            y_pred = np.array(self.model.predict_on_batch(batch)).reshape(-1)
+            return y_pred
         if self.model_type == 'ngrams':
             predictions = []
             for ex in batch:
                 predictions.append(self.model.predict_proba(ex)[:,1])
-            return np.array(predictions)
+            return np.array(predictions).reshape(-1)
 
-    def log_reg_model(self):
+    def gridsearch_log_reg_model(self):
         model = linear_model.LogisticRegression()
         params = {'C': [10]}
         best_model = GridSearchCV(model, params)
         return best_model
 
-    def svc_model(self):
+    def gridsearch_svc_model(self):
         model = svm.SVC(probability=True)
         params = {'C': [0.3], 'kernel': ('linear',)}
         best_model = GridSearchCV(model, params)
         return best_model
+
+    def log_reg_model(self):
+        model = linear_model.LogisticRegression()
+        return model
+
+    def svc_model(self):
+        model = svm.SVC(probability=True)
+        return model
 
     def cnn_word_model(self):
 

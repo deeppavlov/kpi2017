@@ -106,10 +106,14 @@ class DefaultTeacher(DialogTeacher):
         loss = K.eval(binary_crossentropy(y.astype('float'), y_pred_tensor))
         acc = K.eval(binary_accuracy(y.astype('float'), y_pred_tensor))
         auc = roc_auc_score(y, y_pred)
-
-        info = ''
-        args = ()
-        info += '\n[model] comments = %d | loss = %.4f | acc = %.4f | auc = %.4f'
-        args += (len(self.observations), loss, acc, auc,)
-        return (info % args)
+        report = dict()
+        report['comments'] = len(self.observations)
+        report['loss'] = loss
+        report['accuracy'] = acc
+        report['auc'] = auc
+        #info = ''
+        #args = ()
+        #info += '\n[model] comments = %d | loss = %.4f | acc = %.4f | auc = %.4f'
+        #args += (len(self.observations), loss, acc, auc,)
+        return report
 
