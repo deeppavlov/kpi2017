@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-python3 ./train_model.py -t parlai_tasks.insults.agents \
-                         -m parlai_agents.insults.insults_agents:InsultsAgent \
+python3 utils/train_model.py -t deeppavlov.tasks.insults.agents \
+                         -m deeppavlov.agents.insults.insults_agents:InsultsAgent \
                          -mf C:/Users/Dilyara/ParlAI/tmp/insults_cnn_word \
                          -dt train:ordered \
                          --model_name cnn_word \
@@ -22,8 +22,8 @@ python3 ./train_model.py -t parlai_tasks.insults.agents \
                          --dropout_rate 0.5 \
                          --dense_dim 100
 
-python3 ./train_model.py -t parlai_tasks.insults.agents \
-                         -m parlai_agents.insults.insults_agents:OneEpochAgent \
+python3 utils/train_model.py -t deeppavlov.tasks.insults.agents \
+                         -m deeppavlov.agents.insults.insults_agents:OneEpochAgent \
                          -mf C:/Users/Dilyara/ParlAI/tmp/insults_log_reg \
                          -dt train:ordered \
                          --model_name log_reg \
@@ -34,8 +34,8 @@ python3 ./train_model.py -t parlai_tasks.insults.agents \
                          --max-train-time 100 \
                          --num-epochs 1
 
-python3 ./train_model.py -t parlai_tasks.insults.agents \
-                         -m parlai_agents.insults.insults_agents:OneEpochAgent \
+python3 ./train_model.py -t deeppavlov.tasks.insults.agents \
+                         -m deeppavlov.agents.insults.insults_agents:OneEpochAgent \
                          -mf C:/Users/Dilyara/ParlAI/tmp/insults_svc \
                          -dt train:ordered \
                          --model_name svc \

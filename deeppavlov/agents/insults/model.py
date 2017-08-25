@@ -42,8 +42,7 @@ class InsultsModel(object):
 
         if self.opt.get('model_file') and \
                 ( (os.path.isfile(opt['model_file'] + '.h5') and self.model_type == 'nn')
-                 or (os.path.isfile(opt['model_file'] + '.txt') and
-                         os.path.isfile(opt['model_file'] + '_opt.json') and
+                 or (os.path.isfile(opt['model_file'] + '_opt.json') and
                          os.path.isfile(opt['model_file'] + '_cls.pkl') and self.model_type == 'ngrams') ):
             self._init_from_saved(opt['model_file'])
         else:
@@ -71,9 +70,9 @@ class InsultsModel(object):
     def _init_from_scratch(self):
         print('[ Initializing model from scratch ]')
         if self.model_name == 'log_reg':
-            self.model = self.gridsearch_log_reg_model()
+            self.model = self.log_reg_model()
         if self.model_name == 'svc':
-            self.model = self.gridsearch_svc_model()
+            self.model = self.svc_model()
         if self.model_name == 'cnn_word':
             self.model = self.cnn_word_model()
 
@@ -94,10 +93,6 @@ class InsultsModel(object):
 
             if self.model_type == 'ngrams':
                 print("[ saving model: " + fname + " ]")
-                best_params = list(self.model.best_params_.items())
-                with open(fname + '.txt', 'w') as f:
-                    for i in range(len(best_params)):
-                        f.write(best_params[i][0] + ' ' + str(best_params[i][1]) + '\n')
                 with open(fname + '_cls.pkl', 'wb') as model_file:
                     pickle.dump(self.model.best_estimator_, model_file)
 
@@ -124,17 +119,6 @@ class InsultsModel(object):
                 self.model = self.log_reg_model()
             if self.model_name == 'svc':
                 self.model = self.svc_model()
-
-            with open(fname + '.txt', 'r') as f:
-                data = f.readlines()
-                best_params = dict()
-                for i in range(len(data)):
-                    line_split =data[i][:-1].split(' ')
-                    try:
-                        best_params[line_split[0]] = float(line_split[1])
-                    except ValueError:
-                        best_params[line_split[0]] = line_split[1]
-                self.model.set_params(**best_params)
 
             with open(fname + '_cls.pkl', 'rb') as model_file:
                 self.model = pickle.load(model_file)

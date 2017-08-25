@@ -1,16 +1,16 @@
 import copy
-from . import config
-from .model import InsultsModel
-
-from keras.preprocessing.sequence import pad_sequences
 import os
 
+from keras.preprocessing.sequence import pad_sequences
 from parlai.core.agents import Agent
 from parlai.core.dict import DictionaryAgent
 from parlai.core.params import class2str
-
-from .utils import create_vectorizer_selector, get_vectorizer_selector, vectorize_select_from_data
 from scipy.io import mmwrite, mmread
+
+from . import config
+from .model import InsultsModel
+from .utils import create_vectorizer_selector, get_vectorizer_selector, vectorize_select_from_data
+
 
 class InsultsDictionaryAgent(DictionaryAgent):
 
