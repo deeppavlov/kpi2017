@@ -3,6 +3,7 @@ import copy
 import numpy as np
 import urllib.request
 import fasttext
+from nltk.tokenize import sent_tokenize, word_tokenize
 
 
 class EmbeddingsDict(object):
@@ -30,7 +31,8 @@ class EmbeddingsDict(object):
 
     def add_items(self, sentence_li):
         for sen in sentence_li:
-            tokens = sen.split(' ')
+            sent_toks = sent_tokenize(sen)
+            tokens = [word_tokenize(el) for el in sent_toks][0]
             tokens = [el for el in tokens if el != '']
             for tok in tokens:
                 if self.tok2emb.get(tok) is None:
