@@ -1,12 +1,17 @@
-from .metrics import fbeta_score
-
 import os
 import numpy as np
 import copy
+import json
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
-from keras.models import load_model
-from keras.layers import Dense, Activation, Input, Embedding, LSTM, Dropout, multiply, Lambda
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.95
+config.gpu_options.visible_device_list = '0'
+set_session(tf.Session(config=config))
+
+from .metrics import fbeta_score
+from .embeddings_dict import EmbeddingsDict
+from keras.layers import Dense, Activation, Input, LSTM, Dropout, multiply, Lambda
 from keras.models import Model
 from keras.layers.wrappers import Bidirectional
 from keras.initializers import glorot_uniform, Orthogonal
@@ -16,45 +21,17 @@ from keras.optimizers import Adam
 
 class ParaphraserModel(object):
 
-    def __init__(self, word_index, embedding_matrix, opt):
-        self.word_index = word_index
-        self.embedding_matrix = embedding_matrix
+    def __init__(self, opt, embdict=None):
         self.opt = copy.deepcopy(opt)
-        self.max_sequence_length = opt['max_sequence_length']
-        self.embedding_dim = opt['embedding_dim']
-        self.learning_rate = opt['learning_rate']
-        self.batch_size = opt['batch_size']
-        self.epoch_num = opt['epoch_num']
-        self.seed = opt['seed']
-        self.hidden_dim = opt['hidden_dim']
-        self.attention_dim = opt['attention_dim']
-        self.perspective_num = opt['perspective_num']
-        self.aggregation_dim = opt['aggregation_dim']
-        self.dense_dim = opt['dense_dim']
-        self.ldrop_val = opt['ldrop_val']
-        self.dropout_val = opt['dropout_val']
-        self.recdrop_val = opt['recdrop_val']
-        self.inpdrop_val = opt['inpdrop_val']
-        self.ldropagg_val = opt['ldropagg_val']
-        self.dropoutagg_val = opt['dropoutagg_val']
-        self.recdropagg_val = opt['recdropagg_val']
-        self.inpdropagg_val = opt['inpdropagg_val']
-        self.model_name = opt['model_name']
 
-        if self.opt.get('model_file') and os.path.isfile(opt['model_file']):
-            self._init_from_saved(opt['model_file'])
+        if self.opt.get('pretrained_model'):
+            self._init_from_saved()
         else:
-            if self.opt.get('pretrained_model'):
-                self._init_from_saved(opt['pretrained_model'])
-            else:
-                self._init_from_scratch()
-        self.opt['cuda'] = not self.opt['no_cuda']
-        # if self.opt['cuda']:
-        #     print('[ Using CUDA (GPU %d) ]' % opt['gpu'])
-        #     config = tf.ConfigProto()
-        #     config.gpu_options.per_process_gpu_memory_fraction = 0.45
-        #     config.gpu_options.visible_device_list = str(opt['gpu'])
-        #     set_session(tf.Session(config=config))
+            print('[ Initializing model from scratch ]')
+            self._init_params()
+            self._init_from_scratch()
+
+        self.embdict = embdict if embdict is not None else EmbeddingsDict(opt, self.embedding_dim)
 
         self.n_examples = 0
         self.updates = 0
@@ -65,17 +42,48 @@ class ParaphraserModel(object):
         self.val_acc = 0.0
         self.val_f1 = 0.0
 
+    def reset_metrics(self):
+        self.n_examples = 0
+        self.updates = 0
+        self.train_loss = 0.0
+        self.train_acc = 0.0
+        self.train_f1 = 0.0
+        self.val_loss = 0.0
+        self.val_acc = 0.0
+        self.val_f1 = 0.0
+
+    def shutdown(self):
+        self.embdict = None
+
+    def _init_params(self, param_dict=None):
+        if param_dict is None:
+            param_dict = self.opt
+        self.max_sequence_length = param_dict['max_sequence_length']
+        self.embedding_dim = param_dict['embedding_dim']
+        self.learning_rate = param_dict['learning_rate']
+        self.batch_size = param_dict['batch_size']
+        self.epoch_num = param_dict['epoch_num']
+        self.seed = param_dict['seed']
+        self.hidden_dim = param_dict['hidden_dim']
+        self.attention_dim = param_dict['attention_dim']
+        self.perspective_num = param_dict['perspective_num']
+        self.aggregation_dim = param_dict['aggregation_dim']
+        self.dense_dim = param_dict['dense_dim']
+        self.ldrop_val = param_dict['ldrop_val']
+        self.dropout_val = param_dict['dropout_val']
+        self.recdrop_val = param_dict['recdrop_val']
+        self.inpdrop_val = param_dict['inpdrop_val']
+        self.ldropagg_val = param_dict['ldropagg_val']
+        self.dropoutagg_val = param_dict['dropoutagg_val']
+        self.recdropagg_val = param_dict['recdropagg_val']
+        self.inpdropagg_val = param_dict['inpdropagg_val']
+        self.model_name = param_dict['model_name']
 
     def _init_from_scratch(self):
-        print('[ Initializing model from scratch ]')
         if self.model_name == 'bmwacor':
             self.model = self.bmwacor_model()
-        if self.model_name == 'bmwacor1':
-            self.model = self.bmwacor1_model()
         if self.model_name == 'bilstm_split':
             self.model = self.bilstm_split_model()
-        if self.model_name == 'bilstm_split1':
-            self.model = self.bilstm_split1_model()
         if self.model_name == 'full_match':
             self.model = self.full_match_model()
         if self.model_name == 'maxpool_match':
@@ -89,16 +97,28 @@ class ParaphraserModel(object):
                            optimizer=optimizer,
                            metrics=['accuracy', fbeta_score])
 
-    def save(self, fname=None):
-        """Save the parameters of the agent to a file."""
-        fname = self.opt.get('model_file', None) if fname is None else fname
-        if fname:
-            print("[ saving model: " + fname + " ]")
-            self.model.save(fname+'.h5')
+    def save(self, fname):
+        self.model.save_weights(fname+'.h5')
+        with open(fname+'.json', 'w') as f:
+            json.dump(self.opt, f)
+        self.embdict.save_items(fname)
 
-    def _init_from_saved(self, fname):
+    def _init_from_saved(self):
+        fname = self.opt['pretrained_model']
         print('[ Loading model %s ]' % fname)
-        self.model = load_model(fname)
+        if os.path.isfile(fname+'.json'):
+            with open(fname + '.json', 'r') as f:
+                param_dict = json.load(f)
+                self._init_params(param_dict)
+        else:
+            print('Error. There is no %s.json file provided.' % fname)
+            exit()
+        if os.path.isfile(fname+'.h5'):
+            self._init_from_scratch()
+            self.model.load_weights(fname+'.h5')
+        else:
+            print('Error. There is no %s.h5 file provided.' % fname)
+            exit()
 
     def update(self, batch):
         x, y = batch
@@ -108,15 +128,53 @@ class ParaphraserModel(object):
     def predict(self, batch):
         return self.model.predict_on_batch(batch)
 
-    def create_embedding_layer(self, input_dim):
-        inp = Input(shape=(input_dim,))
-        out = Embedding(len(self.word_index) + 1,
-                        self.embedding_dim,
-                        weights=[self.embedding_matrix] if self.embedding_matrix is not None else None,
-                        input_length=input_dim,
-                        trainable=self.embedding_matrix is None)(inp)
-        model = Model(inputs=inp, outputs=out, name="word_embedding_model")
-        return model
+    def build_ex(self, ex):
+        if 'text' not in ex:
+            return
+
+        """Find the token span of the answer in the context for this example.
+        """
+        inputs = dict()
+        texts = ex['text'].split('\n')
+        inputs['question1'] = texts[1]
+        inputs['question2'] = texts[2]
+        if 'labels' in ex:
+            inputs['labels'] = ex['labels']
+
+        return inputs
+
+    def batchify(self, batch):
+        question1 = []
+        question2 = []
+        for ex in batch:
+            question1.append(ex['question1'])
+            question2.append(ex['question2'])
+        self.embdict.add_items(question1)
+        self.embdict.add_items(question2)
+        b1 = self.create_batch(question1)
+        b2 = self.create_batch(question2)
+
+        if len(batch[0]) == 3:
+            y = [1 if ex['labels'][0] == 'Да' else 0 for ex in batch]
+            return [b1, b2], y
+        else:
+            return [b1, b2], None
+
+    def create_batch(self, sentence_li):
+        embeddings_batch = []
+        for sen in sentence_li:
+            embeddings = []
+            tokens = sen.split(' ')
+            tokens = [el for el in tokens if el != '']
+            for tok in tokens:
+                embeddings.append(self.embdict.tok2emb.get(tok))
+            if len(tokens) < self.max_sequence_length:
+                pads = [np.zeros(self.embedding_dim) for _ in range(self.max_sequence_length - len(tokens))]
+                embeddings = pads + embeddings
+            embeddings = np.asarray(embeddings)
+            embeddings_batch.append(embeddings)
+        embeddings_batch = np.asarray(embeddings_batch)
+        return embeddings_batch
 
     def create_lstm_layer(self, input_dim):
         inp = Input(shape=(input_dim, self.embedding_dim,))
@@ -459,15 +517,13 @@ class ParaphraserModel(object):
         return shape[0], shape[2]
 
     def bmwacor_model(self):
-        input_a = Input(shape=(self.max_sequence_length,))
-        input_b = Input(shape=(self.max_sequence_length,))
-        embedding_layer = self.create_embedding_layer(self.max_sequence_length)
+        input_a = Input(shape=(self.max_sequence_length, self.embedding_dim,))
+        input_b = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         lstm_layer = self.create_lstm_layer(self.max_sequence_length)
+        lstm_a = lstm_layer(input_a)
+        lstm_b = lstm_layer(input_b)
+
         attention_layer = self.create_attention_layer(self.max_sequence_length, self.max_sequence_length)
-        embedding_a = embedding_layer(input_a)
-        embedding_b = embedding_layer(input_b)
-        lstm_a = lstm_layer(embedding_a)
-        lstm_b = lstm_layer(embedding_b)
         attention_a = attention_layer([lstm_a, lstm_b])
         attention_b = attention_layer([lstm_b, lstm_a])
 
@@ -488,54 +544,15 @@ class ParaphraserModel(object):
 
         return model
 
-    def bmwacor1_model(self):
-        input_a = Input(shape=(self.max_sequence_length,))
-        input_b = Input(shape=(self.max_sequence_length,))
-        embedding_layer = self.create_embedding_layer(self.max_sequence_length)
-        lstm_layer = self.create_lstm_layer(self.max_sequence_length)
-        attention_layer = self.create_attention_layer(self.max_sequence_length, self.max_sequence_length)
-        embedding_a = embedding_layer(input_a)
-        embedding_b = embedding_layer(input_b)
-        lstm_a = lstm_layer(embedding_a)
-        lstm_b = lstm_layer(embedding_b)
-        attention_a = attention_layer([lstm_a, lstm_b])
-        attention_b = attention_layer([lstm_b, lstm_a])
-
-        weighted_a = Lambda(self.weighted_with_attention,
-                            output_shape=self.weighted_with_attention_output_shape, name="mul_q1")([lstm_a, attention_a])
-        weighted_b = Lambda(self.weighted_with_attention,
-                            output_shape=self.weighted_with_attention_output_shape, name="mul_q2")([lstm_b, attention_b])
-
-        reduced_a = Lambda(self.dim_reduction,
-                           output_shape=self.dim_reduction_output_shape, name="sum_q1")(weighted_a)
-        reduced_b = Lambda(self.dim_reduction,
-                           output_shape=self.dim_reduction_output_shape, name="sum_q2")(weighted_b)
-
-        dist = Lambda(self.cosine_dist, output_shape=self.cosine_dist_output_shape,
-                      name="similarity_network")([reduced_a, reduced_b])
-
-        ker_in = glorot_uniform(seed=None)
-        dense = Dense(1, activation='sigmoid', name='similarity_score',
-                      kernel_regularizer=None,
-                      bias_regularizer=None,
-                      activity_regularizer=None,
-                      kernel_initializer=ker_in)(dist)
-
-        model = Model([input_a, input_b], dense)
-
-        return model
-
     def bilstm_split_model(self):
-        input_a = Input(shape=(self.max_sequence_length,))
-        input_b = Input(shape=(self.max_sequence_length,))
-        embedding_layer = self.create_embedding_layer(self.max_sequence_length)
+        input_a = Input(shape=(self.max_sequence_length, self.embedding_dim,))
+        input_b = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         lstm_layer = self.create_lstm_layer_1(self.max_sequence_length)
+        lstm_a = lstm_layer(input_a)
+        lstm_b = lstm_layer(input_b)
+
         attention_layer_f = self.create_attention_layer_f(self.max_sequence_length, self.max_sequence_length)
         attention_layer_b = self.create_attention_layer_b(self.max_sequence_length, self.max_sequence_length)
-        embedding_a = embedding_layer(input_a)
-        embedding_b = embedding_layer(input_b)
-        lstm_a = lstm_layer(embedding_a)
-        lstm_b = lstm_layer(embedding_b)
         attention_a_forw = attention_layer_f([lstm_a[0], lstm_b[0]])
         attention_a_back = attention_layer_b([lstm_a[1], lstm_b[1]])
         attention_b_forw = attention_layer_f([lstm_b[0], lstm_a[0]])
@@ -571,74 +588,16 @@ class ParaphraserModel(object):
 
         return model
 
-    def bilstm_split1_model(self):
-        input_a = Input(shape=(self.max_sequence_length,))
-        input_b = Input(shape=(self.max_sequence_length,))
-        embedding_layer = self.create_embedding_layer(self.max_sequence_length)
-        lstm_layer = self.create_lstm_layer_1(self.max_sequence_length)
-        attention_layer_f = self.create_attention_layer_f(self.max_sequence_length, self.max_sequence_length)
-        attention_layer_b = self.create_attention_layer_b(self.max_sequence_length, self.max_sequence_length)
-        embedding_a = embedding_layer(input_a)
-        embedding_b = embedding_layer(input_b)
-        lstm_a = lstm_layer(embedding_a)
-        lstm_b = lstm_layer(embedding_b)
-        attention_a_forw = attention_layer_f([lstm_a[0], lstm_b[0]])
-        attention_a_back = attention_layer_b([lstm_a[1], lstm_b[1]])
-        attention_b_forw = attention_layer_f([lstm_b[0], lstm_a[0]])
-        attention_b_back = attention_layer_b([lstm_b[1], lstm_a[1]])
-
-        weighted_a_forw = Lambda(self.weighted_with_attention,
-                                 output_shape=self.weighted_with_attention_output_shape,
-                                 name="mul_q1_f")([lstm_a[0], attention_a_forw])
-        weighted_a_back = Lambda(self.weighted_with_attention,
-                                 output_shape=self.weighted_with_attention_output_shape,
-                                 name="mul_q1_b")([lstm_a[1], attention_a_back])
-        weighted_b_forw = Lambda(self.weighted_with_attention,
-                                 output_shape=self.weighted_with_attention_output_shape,
-                                 name="mul_q2_f")([lstm_b[0], attention_b_forw])
-        weighted_b_back = Lambda(self.weighted_with_attention,
-                                 output_shape=self.weighted_with_attention_output_shape,
-                                 name="mul_q2_b")([lstm_b[1], attention_b_back])
-
-        reduced_a_forw = Lambda(self.dim_reduction,
-                                output_shape=self.dim_reduction_output_shape, name="sum_q1_f")(weighted_a_forw)
-        reduced_a_back = Lambda(self.dim_reduction,
-                                output_shape=self.dim_reduction_output_shape, name="sum_q1_b")(weighted_a_back)
-        reduced_b_forw = Lambda(self.dim_reduction,
-                                output_shape=self.dim_reduction_output_shape, name="sum_q2_f")(weighted_b_forw)
-        reduced_b_back = Lambda(self.dim_reduction,
-                                output_shape=self.dim_reduction_output_shape, name="sum_q2_b")(weighted_b_back)
-
-        reduced_a = Lambda(lambda x: K.concatenate(x, axis=-1),
-                           name='concat_q1')([reduced_a_forw, reduced_a_back])
-        reduced_b = Lambda(lambda x: K.concatenate(x, axis=-1),
-                           name='concat_q2')([reduced_b_forw, reduced_b_back])
-
-        dist = Lambda(self.cosine_dist, output_shape=self.cosine_dist_output_shape,
-                      name="similarity_network")([reduced_a, reduced_b])
-
-        dense = Dense(1, activation='sigmoid', name='similarity_score',
-                      kernel_regularizer=None,
-                      bias_regularizer=None,
-                      activity_regularizer=None)(dist)
-
-        model = Model([input_a, input_b], dense)
-
-        return model
-
     def maxpool_match_model(self):
-        input_a = Input(shape=(self.max_sequence_length,))
-        input_b = Input(shape=(self.max_sequence_length,))
-        embedding_layer = self.create_embedding_layer(self.max_sequence_length)
+        input_a = Input(shape=(self.max_sequence_length, self.embedding_dim,))
+        input_b = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         lstm_layer = self.create_lstm_layer_1(self.max_sequence_length)
+        lstm_a = lstm_layer(input_a)
+        lstm_b = lstm_layer(input_b)
+
         matching_layer_f = self.create_maxpool_matching_layer(self.max_sequence_length, self.max_sequence_length)
         matching_layer_b = self.create_maxpool_matching_layer(self.max_sequence_length, self.max_sequence_length)
-
         lstm_layer_agg = self.create_lstm_layer_2(self.max_sequence_length)
-        embedding_a = embedding_layer(input_a)
-        embedding_b = embedding_layer(input_b)
-        lstm_a = lstm_layer(embedding_a)
-        lstm_b = lstm_layer(embedding_b)
         matching_a_forw = matching_layer_f([lstm_a[0], lstm_b[0]])
         matching_a_back = matching_layer_b([lstm_a[1], lstm_b[1]])
         matching_b_forw = matching_layer_f([lstm_b[0], lstm_a[0]])
@@ -677,18 +636,15 @@ class ParaphraserModel(object):
         return model
 
     def maxatt_match_model(self):
-        input_a = Input(shape=(self.max_sequence_length,))
-        input_b = Input(shape=(self.max_sequence_length,))
-        embedding_layer = self.create_embedding_layer(self.max_sequence_length)
+        input_a = Input(shape=(self.max_sequence_length, self.embedding_dim,))
+        input_b = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         lstm_layer = self.create_lstm_layer_1(self.max_sequence_length)
+        lstm_a = lstm_layer(input_a)
+        lstm_b = lstm_layer(input_b)
+
         matching_layer_f = self.create_maxatt_matching_layer(self.max_sequence_length, self.max_sequence_length)
         matching_layer_b = self.create_maxatt_matching_layer(self.max_sequence_length, self.max_sequence_length)
-
         lstm_layer_agg = self.create_lstm_layer_2(self.max_sequence_length)
-        embedding_a = embedding_layer(input_a)
-        embedding_b = embedding_layer(input_b)
-        lstm_a = lstm_layer(embedding_a)
-        lstm_b = lstm_layer(embedding_b)
         matching_a_forw = matching_layer_f([lstm_a[0], lstm_b[0]])
         matching_a_back = matching_layer_b([lstm_a[1], lstm_b[1]])
         matching_b_forw = matching_layer_f([lstm_b[0], lstm_a[0]])
@@ -727,18 +683,15 @@ class ParaphraserModel(object):
         return model
 
     def att_match_model(self):
-        input_a = Input(shape=(self.max_sequence_length,))
-        input_b = Input(shape=(self.max_sequence_length,))
-        embedding_layer = self.create_embedding_layer(self.max_sequence_length)
+        input_a = Input(shape=(self.max_sequence_length, self.embedding_dim,))
+        input_b = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         lstm_layer = self.create_lstm_layer_1(self.max_sequence_length)
+        lstm_a = lstm_layer(input_a)
+        lstm_b = lstm_layer(input_b)
+
         matching_layer_f = self.create_att_matching_layer(self.max_sequence_length, self.max_sequence_length)
         matching_layer_b = self.create_att_matching_layer(self.max_sequence_length, self.max_sequence_length)
-
         lstm_layer_agg = self.create_lstm_layer_2(self.max_sequence_length)
-        embedding_a = embedding_layer(input_a)
-        embedding_b = embedding_layer(input_b)
-        lstm_a = lstm_layer(embedding_a)
-        lstm_b = lstm_layer(embedding_b)
         matching_a_forw = matching_layer_f([lstm_a[0], lstm_b[0]])
         matching_a_back = matching_layer_b([lstm_a[1], lstm_b[1]])
         matching_b_forw = matching_layer_f([lstm_b[0], lstm_a[0]])
@@ -777,18 +730,15 @@ class ParaphraserModel(object):
         return model
 
     def full_match_model(self):
-        input_a = Input(shape=(self.max_sequence_length,))
-        input_b = Input(shape=(self.max_sequence_length,))
-        embedding_layer = self.create_embedding_layer(self.max_sequence_length)
+        input_a = Input(shape=(self.max_sequence_length, self.embedding_dim,))
+        input_b = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         lstm_layer = self.create_lstm_layer_1(self.max_sequence_length)
+        lstm_a = lstm_layer(input_a)
+        lstm_b = lstm_layer(input_b)
+
         matching_layer_f = self.create_full_matching_layer_f(self.max_sequence_length, self.max_sequence_length)
         matching_layer_b = self.create_full_matching_layer_b(self.max_sequence_length, self.max_sequence_length)
-
         lstm_layer_agg = self.create_lstm_layer_2(self.max_sequence_length)
-        embedding_a = embedding_layer(input_a)
-        embedding_b = embedding_layer(input_b)
-        lstm_a = lstm_layer(embedding_a)
-        lstm_b = lstm_layer(embedding_b)
         matching_a_forw = matching_layer_f([lstm_a[0], lstm_b[0]])
         matching_a_back = matching_layer_b([lstm_a[1], lstm_b[1]])
         matching_b_forw = matching_layer_f([lstm_b[0], lstm_a[0]])
@@ -825,9 +775,3 @@ class ParaphraserModel(object):
 
         model = Model([input_a, input_b], dense)
         return model
-
-    #def compile_model(self):
-    #    optimizer = Adam(lr=self.learning_rate)
-    #    model.compile(loss='binary_crossentropy',
-    #                  optimizer=optimizer,
-    #                  metrics=['accuracy', metrics.fbeta_score])
