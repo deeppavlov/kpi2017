@@ -2,13 +2,11 @@ import parlai.core.build_data as build_data
 import os
 import re
 import string
+import numpy as np
+import pandas as pd
 
-try:
-    import pandas as pd
-except ImportError:
-    raise ImportError('Could not initialize Pandas library. Please, ensure that it\'s installed.')
 
-def data_preprocessing(f, path):
+def data_preprocessing(f):
     f = [x.lower() for x in f]
     f = [x[1:-1] for x in f]
     f = [x.replace("\\n", " ") for x in f]
@@ -114,14 +112,16 @@ def write_input_fasttext_cls(data, path, data_name):
             print('Incorrect data name')
     f.close()
 
+
 def write_input_fasttext_emb(data, path, data_name):
-    f = open(data_name + '_fasttext_emb.txt', 'w')
+    f = open(path + '_fasttext_emb.txt', 'w')
     for i in range(data.shape[0]):
         if data_name == 'train' or data_name == 'test':
             f.write(data.iloc[i,1] + '\n')
         else:
             print('Incorrect data name')
     f.close()
+
 
 def balance_dataset(dataset_0, labels_0, dataset_1, labels_1, ratio=1):
     initial_train_size = dataset_0.shape[0]
@@ -134,11 +134,12 @@ def balance_dataset(dataset_0, labels_0, dataset_1, labels_1, ratio=1):
     result_labels = labels_0.append(labels_1.iloc[insult_inds_to_add])
     return result, result_labels
 
+
 def build(opt):
     # get path to data directory
     dpath = os.path.join(opt['datapath'], 'insults')
     # define version if any
-    version = None
+    version = '1.0'
 
     # check if data had been previously built
     if not build_data.built(dpath, version_string=version):
@@ -187,10 +188,9 @@ def build(opt):
                                                                              train_data['Insult'], ratio=1)
 
         print('Preprocessing train')
-        train_data['Comment'] = data_preprocessing(train_data['Comment'], raw_path)
+        train_data['Comment'] = data_preprocessing(train_data['Comment'])
         print('Preprocessing test')
-        test_data['Comment'] = data_preprocessing(test_data['Comment'], raw_path)
-        valid_data['Comment'] = data_preprocessing(valid_data['Comment'], raw_path)
+        test_data['Comment'] = data_preprocessing(test_data['Comment'])
 
         print('Writing input files for fasttext')
         write_input_fasttext_cls(train_data, os.path.join(dpath, 'train'), 'train')
@@ -202,7 +202,6 @@ def build(opt):
         print('Writing input normalized input files')
         train_data.to_csv(os.path.join(dpath, 'train.csv'), index=False)
         test_data.to_csv(os.path.join(dpath, 'test.csv'), index=False)
-        valid_data.to_csv(os.path.join(dpath, 'valid.csv'), index=False)
 
         # mark the data as built
         build_data.mark_done(dpath, version_string=version)

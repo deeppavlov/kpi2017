@@ -1,15 +1,18 @@
 from parlai.core.dialog_teacher import DialogTeacher
+from sklearn.model_selection import KFold
+
 from .build import build
 import os
 import csv
 import sklearn.metrics
+import random
 
 
 def _path(opt):
     # ensure data is built
     build(opt)
     # set up paths to data (specific to each dataset)
-    dt = opt['datatype'].split(':')[0]
+    dt = 'test' if opt['datatype'] == 'test' else 'train'
     datafile = os.path.join(opt['datapath'], 'insults', dt + '.csv')
     return datafile
 
@@ -18,13 +21,16 @@ class DefaultTeacher(DialogTeacher):
 
     @staticmethod
     def add_cmdline_args(argparser):
-        agent = argparser.add_argument_group('Teacher arguments')
-        agent.add_argument('--raw-dataset-path', type=str, default=None,
-                           help='Path to unprocessed dataset files from Kaggle')
+        teacher = argparser.add_argument_group('Insults teacher arguments')
+        teacher.add_argument('--raw-dataset-path', type=str, default=None,
+                             help='Path to unprocessed dataset files from Kaggle')
+        teacher.add_argument('--cross-validation-seed', type=int, default=270)
+        teacher.add_argument('--cross-validation-model-index', type=int)
+        teacher.add_argument('--cross-validation-splits-count', type=int, default=5)
 
     def __init__(self, opt, shared=None):
         # store datatype
-        self.datatype = opt['datatype'].split(':')[0]
+        self.datatype_strict = opt['datatype'].split(':')[0]
 
         opt['datafile'] = _path(opt)
 
@@ -32,6 +38,11 @@ class DefaultTeacher(DialogTeacher):
         self.id = 'insults_teacher'
 
         self.answer_candidates = ['Non-insult', "Insult"]
+
+        random_state = random.getstate()
+        random.seed(opt.get('cross_validation_seed'))
+        self.random_state = random.getstate()
+        random.setstate(random_state)
 
         super().__init__(opt, shared)
 
@@ -70,8 +81,23 @@ class DefaultTeacher(DialogTeacher):
 
         episode_done = True
 
+        indexes = range(len(questions))
+        if self.datatype_strict != 'test':
+            random_state = random.getstate()
+            random.setstate(self.random_state)
+            kf_seed = random.randrange(500000)
+            kf = KFold(self.opt.get('cross_validation_splits_count'), shuffle=True,
+                       random_state=kf_seed)
+            i = 0
+            for train_index, test_index in kf.split(questions):
+                indexes = train_index if self.datatype_strict == 'train' else test_index
+                if i >= self.opt.get('cross_validation_model_index', 0):
+                    break
+            self.random_state = random.getstate()
+            random.setstate(random_state)
+
         # define iterator over all queries
-        for i in range(len(questions)):
+        for i in indexes:
             # get current label, both as a digit and as a text
             # yield tuple with information and episode_done? flag
             yield (questions[i], y[i]), episode_done
@@ -112,3 +138,12 @@ class DefaultTeacher(DialogTeacher):
         report['accuracy'] = acc
         report['auc'] = auc
         return report
+
+    def reset(self):
+        super().reset()
+
+        random_state = random.getstate()
+        random.setstate(self.random_state)
+        random.shuffle(self.data.data)
+        self.random_state = random.getstate()
+        random.setstate(random_state)
