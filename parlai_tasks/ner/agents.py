@@ -19,7 +19,7 @@ class DefaultTeacher(DialogTeacher):
         self.parts = [opt['train_part'], opt['valid_part'], opt['test_part']]
         random.seed(opt['teacher_seed'])
         # store datatype
-        self.datatype = opt['datatype'].split(':')[0]
+        self.dt = opt['datatype'].split(':')[0]
         self.opt = opt
         opt['datafile'] = _path(opt)
 
@@ -65,11 +65,11 @@ class DefaultTeacher(DialogTeacher):
         random.shuffle(questions_and_ys)
         questions, y = list(zip(*questions_and_ys))
 
-        if self.datatype == 'train':
+        if self.dt == 'train':
             part = [0, self.parts[0]]
-        elif self.datatype == 'test':
+        elif self.dt == 'test':
             part = [self.parts[0], sum(self.parts[0:2])]
-        elif self.datatype == 'valid':
+        elif self.dt == 'valid':
             part = [sum(self.parts[0:2]), 1]
         episode_done = True
 
