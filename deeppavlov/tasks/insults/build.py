@@ -78,7 +78,7 @@ def data_preprocessing(f, path):
     for letter in string.ascii_lowercase:
         f = [re.sub(letter * 3 + '+', letter, x).strip() for x in f]
 
-    bad_words_file = open(path + "/badwords.txt", "r")
+    bad_words_file = open("./badwords.txt", "r")
     bwMap = dict()
     for line in bad_words_file:
         sp = line.strip().lower().split(",")

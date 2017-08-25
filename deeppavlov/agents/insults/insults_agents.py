@@ -1,6 +1,6 @@
 import copy
 import os
-
+import numpy as np
 from keras.preprocessing.sequence import pad_sequences
 from parlai.core.agents import Agent
 from parlai.core.dict import DictionaryAgent
@@ -217,6 +217,8 @@ class OneEpochAgent(InsultsAgent):
         else:
             batch = self._batchify_ngrams(examples)
             predictions = self.model.predict(batch).reshape(-1)
+            print('Batch:', batch[0].tocsr())
+            print('Predicted', predictions)
             predictions = self._predictions2text(predictions)
             for i in range(len(predictions)):
                 batch_reply[valid_inds[i]]['text'] = predictions[i]
@@ -225,7 +227,6 @@ class OneEpochAgent(InsultsAgent):
 
     def save(self):
         if not self.is_shared:
-
             train_data = [observation['text'] for observation in self.observations if 'text' in observation.keys()]
             train_labels = self._text2predictions([observation['labels'][0] for observation in self.observations if 'labels' in observation.keys()])
 
@@ -257,6 +258,10 @@ class OneEpochAgent(InsultsAgent):
 
             print('Training model', self.model_name)
             self.model.update([X_train, train_labels])
+            #for i in range(100):
+            #    print('Comment:', train_data[i])
+            #    print('Label:', train_labels[i])
+            #    print('Predicted:', (self.model.predict([X_train.tocsr()[i,:]])))
 
         print ('\n[model] trained loss = %.4f | acc = %.4f | auc = %.4f' %
                (self.model.train_loss, self.model.train_acc, self.model.train_auc,))

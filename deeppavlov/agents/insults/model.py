@@ -94,7 +94,7 @@ class InsultsModel(object):
             if self.model_type == 'ngrams':
                 print("[ saving model: " + fname + " ]")
                 with open(fname + '_cls.pkl', 'wb') as model_file:
-                    pickle.dump(self.model.best_estimator_, model_file)
+                    joblib.dump(self.model, model_file, compress=9)
 
             with open(fname + '_opt.json', 'w') as opt_file:
                 json.dump(self.opt, opt_file)
@@ -121,7 +121,8 @@ class InsultsModel(object):
                 self.model = self.svc_model()
 
             with open(fname + '_cls.pkl', 'rb') as model_file:
-                self.model = pickle.load(model_file)
+                self.model = joblib.load(model_file)
+            print('CLS:', self.model)
 
     def update(self, batch):
         x, y = batch
@@ -152,24 +153,12 @@ class InsultsModel(object):
                 predictions.append(self.model.predict_proba(ex)[:,1])
             return np.array(predictions).reshape(-1)
 
-    def gridsearch_log_reg_model(self):
-        model = linear_model.LogisticRegression()
-        params = {'C': [10]}
-        best_model = GridSearchCV(model, params)
-        return best_model
-
-    def gridsearch_svc_model(self):
-        model = svm.SVC(probability=True)
-        params = {'C': [0.3], 'kernel': ('linear',)}
-        best_model = GridSearchCV(model, params)
-        return best_model
-
     def log_reg_model(self):
-        model = linear_model.LogisticRegression()
+        model = linear_model.LogisticRegression(C=10)
         return model
 
     def svc_model(self):
-        model = svm.SVC(probability=True)
+        model = svm.SVC(probability=True, C=0.3, kernel='linear')
         return model
 
     def cnn_word_model(self):
