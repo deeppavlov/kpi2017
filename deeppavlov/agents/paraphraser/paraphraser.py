@@ -1,10 +1,26 @@
+"""
+Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
 import copy
 
-from . import config
-from .model import ParaphraserModel
-from .embeddings_dict import EmbeddingsDict
-
 from parlai.core.agents import Agent
+
+from . import config
+from .embeddings_dict import EmbeddingsDict
+from .model import ParaphraserModel
 
 
 def prediction2text(prediction):
@@ -76,6 +92,7 @@ class EnsembleParaphraserAgent(Agent):
             if len(predictions[i]):
                 prediction = sum(predictions[i])/len(predictions[i])
                 batch_reply[i]['text'] = prediction2text(prediction)
+                batch_reply[i]['score'] = prediction
 
         return batch_reply
 
@@ -133,9 +150,10 @@ class ParaphraserAgent(Agent):
         else:
             batch, _ = batch
             predictions = self.model.predict(batch)
-            predictions = predictions2text(predictions)
+            texts = predictions2text(predictions)
             for i in range(len(predictions)):
-                batch_reply[valid_inds[i]]['text'] = predictions[i]
+                batch_reply[valid_inds[i]]['text'] = texts[i]
+                batch_reply[valid_inds[i]]['score'] = predictions[i]
 
         return batch_reply
 
