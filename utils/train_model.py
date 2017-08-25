@@ -23,12 +23,14 @@ TODO List:
 - More logging (e.g. to files), make things prettier.
 """
 import copy
+import math
+
 from parlai.core.agents import create_agent
-from parlai.core.worlds import create_task
 from parlai.core.params import ParlaiParser
 from parlai.core.utils import Timer
+from parlai.core.worlds import create_task
+
 import build_dict
-import math
 
 
 def run_eval(agent, opt, datatype, max_exs=-1, write_log=False, valid_world=None):
