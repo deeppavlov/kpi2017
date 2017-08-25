@@ -163,8 +163,8 @@ class ParaphraserModel(object):
 
     def create_batch(self, sentence_li):
         embeddings_batch = []
-
         for sen in sentence_li:
+            embeddings = []
             sent_toks = sent_tokenize(sen)
             word_toks = [word_tokenize(el) for el in sent_toks]
             tokens = [val for sublist in word_toks for val in sublist]
