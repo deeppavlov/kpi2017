@@ -1,0 +1,8 @@
+Cython==0.26.0
+numpy>=1.13.0
+sklearn
+-e git+https://github.com/facebookresearch/ParlAI.git@9800a9241dbb89ae2ce4b51653ec158ebce799d4#egg=parlai
+tensorflow>=1.2.1
+Keras>=2.0.6
+h5py>=2.7.0
+fasttext==0.8.3

@@ -1,3 +1,20 @@
+"""
+Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
+
 def add_cmdline_args(parser):
     # Runtime environment
     agent = parser.add_argument_group('Paraphraser Arguments')
@@ -6,12 +23,16 @@ def add_cmdline_args(parser):
     agent.add_argument('--random_seed', type=int, default=1013)
 
     # Basics
-    agent.add_argument('--embedding_file', type=str, default=None,
-                       help='File of space separated embeddings: w e1 ... ed')
     agent.add_argument('--pretrained_model', type=str, default=None,
-                       help='Load dict/features/weights/opts from this file')
+                       help='Load dict/features/weights/opts from this file prefix')
     agent.add_argument('--log_file', type=str, default=None)
-    agent.add_argument('--model_file', type=str, default=None)
+    agent.add_argument('--model_file', type=str, default=None,
+                       help='Save dict/features/weights/opts to this file')
+    agent.add_argument('--fasttext_model', type=str, default=None,
+                       help='fasttext trained model file name')
+    agent.add_argument('-fed', '--fasttext_embeddings_dict', type=str, default=None,
+                       help='saved fasttext embeddings dict')
+
 
 
     # Model details
