@@ -12,12 +12,6 @@ POS_Tagger_State = namedtuple('POS_Tagger_State', 'words char_embs input_index w
 
 class NERTagger:
 
-    # def gpu(self, obj):
-    #     if self.opt.get('cuda'):
-    #         return obj.cuda(device_id=self.opt.get('gpu'))
-    #     else:
-    #         return obj
-
     def __init__(self,
                  opt,
                  word_dict,
@@ -117,3 +111,6 @@ class NERTagger:
     def load(self, file_path):
         saver = tf.train.Saver()
         saver.restore(self.sess, file_path)
+
+    def shutdown(self):
+        tf.reset_default_graph()

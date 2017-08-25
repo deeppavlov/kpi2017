@@ -1,10 +1,11 @@
 import copy
+
 import numpy as np
 from parlai.core.agents import Agent
 
-from .ner_tagger import NERTagger
-from .dictionary import NERDictionaryAgent
 from . import config
+from .dictionary import NERDictionaryAgent
+from .ner_tagger import NERTagger
 
 
 class NERAgent(Agent):
@@ -17,8 +18,6 @@ class NERAgent(Agent):
     def add_cmdline_args(argparser):
         config.add_cmdline_args(argparser)
         NERAgent.dictionary_class().add_cmdline_args(argparser)
-        group = argparser.add_argument_group('NER Teacher')
-        group.add_argument('--model_file', default='/tmp/my_model')
 
     def __init__(self, opt, shared=None):
         self.id = 'NERAgent'
@@ -98,3 +97,7 @@ class NERAgent(Agent):
                 self.network.save(fname)
             except BaseException:
                 print('[ WARN: Saving failed... continuing anyway. ]')
+
+    def shutdown(self):
+        if not self.is_shared:
+            self.network.shutdown()

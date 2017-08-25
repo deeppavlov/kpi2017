@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-python3 ./train_model.py -t parlai_tasks.ner.agents \
-                         -m parlai_agents.ner.ner:NERAgent \
+python3 ./utils/train_model.py -t deeppavlov.tasks.ner.agents \
+                         -m deeppavlov.agents.ner.ner:NERAgent \
                          -mf /tmp/ner \
                          --learning_rate 0.001 \
                          --batchsize 16 \
