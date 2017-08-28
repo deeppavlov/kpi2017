@@ -4,8 +4,8 @@ import numpy as np
 
 try:
     import spacy
-except ModuleNotFoundError:
-    raise ModuleNotFoundError(
+except ImportError:
+    raise ImportError(
         "Please install spacy and spacy 'en' model: go to spacy.io"
     )
 
