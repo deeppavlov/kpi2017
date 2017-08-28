@@ -1,5 +1,6 @@
 import copy
 import os
+import pickle
 import numpy as np
 from . import config
 from .model import SquadModel
@@ -66,22 +67,19 @@ class SquadAgent(Agent):
 
     def _init_from_saved(self, fname):
         '''
-        L
+        Loading model from checkpoint.
         '''
-        print('[ Loading model %s ]' % fname)
-        saved_params = {}
+        print('[ Loading from saved %s ]' % fname)
 
-        #torch.load(fname,
-        #    map_location=lambda storage, loc: storage
-        #)
+        with open(fname+'.pkl','rb') as f:
+            saved_params = pickle.load(f)
 
         # TODO expand dict and embeddings for new data
         self.word_dict = saved_params['word_dict']
         self.feature_dict = saved_params['feature_dict']
-        self.state_dict = saved_params['state_dict']
         config.override_args(self.opt, saved_params['config'])
-        self.model = SquadModel(self.opt, self.word_dict,
-                                    self.feature_dict, self.state_dict)
+
+        self.model = SquadModel(self.opt, self.word_dict, self.feature_dict, fname)
 
 
     def observe(self, observation):

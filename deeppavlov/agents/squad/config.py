@@ -24,7 +24,6 @@ def add_cmdline_args(parser):
     agent.add_argument('--max_question_length', type=int, default=30)
     agent.add_argument('--embedding_dim', type=int, default=300)
     agent.add_argument('--learning_rate', type=float, default=1e-5)
-    agent.add_argument('--batch_size', type=int, default=64)
     agent.add_argument('--epoch_num', type=int, default=1)
     agent.add_argument('--seed', type=int, default=243)
     agent.add_argument('--hidden_dim', type=int, default=200)
@@ -66,4 +65,15 @@ def set_defaults(opt):
     elif not opt.get('embedding_dim'):
         raise RuntimeError(('Either embedding_file or embedding_dim '
                             'needs to be specified.'))
+
+def override_args(opt, override_opt):
+    # Major model args are reset to the values in override_opt.
+    # Non-architecture args (like dropout) are kept.
+    args = set(['embedding_file', 'embedding_dim', 'hidden_size', 'doc_layers',
+                'question_layers', 'rnn_type', 'optimizer', 'concat_rnn_layers',
+                'question_merge', 'use_qemb', 'use_in_question', 'use_tf',
+                'vocab_size', 'num_features', 'use_time'])
+    for k, v in override_opt.items():
+        if k in args:
+            opt[k] = v
 

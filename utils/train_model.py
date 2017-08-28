@@ -30,8 +30,7 @@ from parlai.core.params import ParlaiParser
 from parlai.core.utils import Timer
 from parlai.core.worlds import create_task
 
-import build_dict
-
+from utils import build_dict
 
 def run_eval(agent, opt, datatype, max_exs=-1, write_log=False, valid_world=None):
     """Eval on validation/test data.

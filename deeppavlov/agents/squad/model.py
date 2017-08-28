@@ -4,6 +4,7 @@ from __future__ import division
 
 import numpy as np
 import json, os, copy
+import pickle
 from keras import backend as K
 from keras.utils import np_utils
 from keras.models import Model
@@ -133,19 +134,25 @@ def answer_end_pred(context_encoding, question_attention_vector, answer_start_di
 '''
 
 class SquadModel(object):
-    def __init__(self, opt = None, word_dict = None, feature_dict = None):
+    def __init__(self, opt = None, word_dict = None, feature_dict = None, weights_path = None ):
         if opt == None:
             opt = default_opt
 
         self.opt = copy.deepcopy(opt)
+        self.word_dict = word_dict
+        self.feature_dict = feature_dict
 
-        if self.opt.get('pretrained_model'):
-            print('[ Using saved model ]')
-            self._init_from_saved()
-        else:
-            print('[ Initializing model from scratch ]')
-            self._init_params()
-            self._init_from_scratch()
+        self.max_context_length = None
+        self.max_question_length = None
+        self.embedding_dim = 300
+        self.learning_rate = opt['learning_rate']
+        self.epoch_num = opt['epoch_num']
+        self.seed = opt['seed']
+        self.hidden_dim = opt['hidden_dim']
+        self.dropout_val = opt['dropout_val']
+        self.recdrop_val = opt['recdrop_val']
+        self.inpdrop_val = opt['inpdrop_val']
+        self.model_name = opt['model_name']
 
         self.n_examples = 0
         self.updates = 0
@@ -156,56 +163,31 @@ class SquadModel(object):
         self.val_acc = 0.0
         self.val_f1 = 0.0
 
-
-    def _init_params(self, param_dict=None):
-
-        if param_dict is None:
-            param_dict = self.opt
-
-        self.max_context_length = None #param_dict['max_context_length']
-        self.max_question_length = None #param_dict['max_question_length']
-        self.embedding_dim = 300 #param_dict['embedding_dim']
-        self.learning_rate = param_dict['learning_rate']
-        self.batch_size = param_dict['batch_size']
-        self.epoch_num = param_dict['epoch_num']
-        self.seed = param_dict['seed']
-        self.hidden_dim = param_dict['hidden_dim']
-        self.dropout_val = param_dict['dropout_val']
-        self.recdrop_val = param_dict['recdrop_val']
-        self.inpdrop_val = param_dict['inpdrop_val']
-        self.model_name = param_dict['model_name']
-
-
-    def _init_from_scratch(self):
         self.model = self.fastqa_default()
-
         optimizer = Adam(lr=self.learning_rate)
         self.model.compile(loss='categorical_crossentropy',
                            optimizer=optimizer,
                            metrics=['accuracy'])
 
+        if not weights_path==None:
+            print('[ Loading model %s ]' % weights_path)
+            if os.path.isfile(weights_path + '.h5'):
+                self.model.load_weights(weights_path + '.h5')
+            else:
+                print('Error. There is no %s.h5 file provided.' % weights_path)
 
-    def _init_from_saved(self):
-        fname = self.opt['pretrained_model']
-        print('[ Loading model %s ]' % fname)
-        if os.path.isfile(fname+'.json'):
-            with open(fname + '.json', 'r') as f:
-                param_dict = json.load(f)
-                self._init_params(param_dict)
-        else:
-            print('Error. There is no %s.json file provided.' % fname)
-            exit()
-        if os.path.isfile(fname+'.h5'):
-            self._init_from_scratch()
-            self.model.load_weights(fname+'.h5')
-        else:
-            print('Error. There is no %s.h5 file provided.' % fname)
-            exit()
 
     def save(self, fname):
         self.model.save_weights(fname+'.h5')
-        with open(fname+'.json', 'w') as f:
-            json.dump(self.opt, f)
+
+        params = {
+            'word_dict': self.word_dict,
+            'feature_dict': self.feature_dict,
+            'config': self.opt,
+        }
+
+        with open(fname+'.pkl', 'wb') as f:
+            pickle.dump(params, f)
 
     def update(self, batch):
 
