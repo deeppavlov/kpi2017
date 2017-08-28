@@ -2,7 +2,7 @@
 python3 utils/train_model.py -t squad \
                          -m deeppavlov.agents.squad.squad:SquadAgent \
                          -mf /tmp/squad_model \
-                         --batchsize 64 \
+                         --batchsize 5 \
                          --display-examples False \
                          --max-train-time -1 \
                          --num-epochs -1 \
