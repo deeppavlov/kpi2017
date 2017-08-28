@@ -17,7 +17,6 @@ from sklearn import linear_model, svm
 from sklearn.model_selection import GridSearchCV
 from keras import backend as K
 from keras.metrics import binary_accuracy
-from sklearn.externals import joblib
 import json
 import pickle
 
@@ -94,7 +93,7 @@ class InsultsModel(object):
             if self.model_type == 'ngrams':
                 print("[ saving model: " + fname + " ]")
                 with open(fname + '_cls.pkl', 'wb') as model_file:
-                    joblib.dump(self.model, model_file, compress=9)
+                    pickle.dump(self.model, model_file)
 
             with open(fname + '_opt.json', 'w') as opt_file:
                 json.dump(self.opt, opt_file)
@@ -121,7 +120,7 @@ class InsultsModel(object):
                 self.model = self.svc_model()
 
             with open(fname + '_cls.pkl', 'rb') as model_file:
-                self.model = joblib.load(model_file)
+                self.model = pickle.load(model_file)
             print('CLS:', self.model)
 
     def update(self, batch):
@@ -136,6 +135,7 @@ class InsultsModel(object):
         if self.model_type == 'ngrams':
             self.model.fit(x, y)
             y_pred = np.array(self.model.predict_proba(x)[:,1]).reshape(-1)
+            #y_pred = np.array(self.model.predict(x)).reshape(-1)
             y_pred_tensor = K.constant(y_pred, dtype='float64')
             self.train_loss = K.eval(binary_crossentropy(y.astype('float'), y_pred_tensor))
             self.train_acc = K.eval(binary_accuracy(y.astype('float'), y_pred_tensor))
@@ -148,9 +148,7 @@ class InsultsModel(object):
             y_pred = np.array(self.model.predict_on_batch(batch)).reshape(-1)
             return y_pred
         if self.model_type == 'ngrams':
-            predictions = []
-            for ex in batch:
-                predictions.append(self.model.predict_proba(ex)[:,1])
+            predictions = self.model.predict_proba(batch)[:,1]
             return np.array(predictions).reshape(-1)
 
     def log_reg_model(self):

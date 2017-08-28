@@ -160,4 +160,5 @@ def vectorize_select_from_data(data, vectorizers, selectors):
     if selectors[-1] is not None:
         X_i = selectors[-1].transform(X_i)
     X = sp.hstack([X, X_i])
+
     return X

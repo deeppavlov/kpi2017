@@ -99,7 +99,6 @@ class DefaultTeacher(DialogTeacher):
         return observation
 
     def report(self):
-
         y = np.array(self.labels).reshape(-1)
         y_pred = np.array(self.observations).reshape(-1)
         y_pred_tensor = K.constant(y_pred, dtype='float64')
@@ -111,9 +110,5 @@ class DefaultTeacher(DialogTeacher):
         report['loss'] = loss
         report['accuracy'] = acc
         report['auc'] = auc
-        #info = ''
-        #args = ()
-        #info += '\n[model] comments = %d | loss = %.4f | acc = %.4f | auc = %.4f'
-        #args += (len(self.observations), loss, acc, auc,)
         return report
 
