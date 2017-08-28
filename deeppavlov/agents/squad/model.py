@@ -202,8 +202,7 @@ class SquadModel(object):
         answ_end = []
         x, y = [batch[0], batch[3]], [cat(batch[5]), cat(batch[6])]
 
-        output = self.model.train_on_batch(x, y)
-
+        self.train_loss, self.train_acc = self.model.train_on_batch(x, y)
         self.updates += 1
 
     def predict(self, batch):
