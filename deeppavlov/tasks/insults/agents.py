@@ -1,18 +1,18 @@
 from parlai.core.dialog_teacher import DialogTeacher
+from sklearn.model_selection import KFold
+
 from .build import build
 import os
 import csv
-from keras import backend as K
-import numpy as np
-from keras.losses import binary_crossentropy
-from keras.metrics import binary_accuracy
-from .metrics import roc_auc_score
+import sklearn.metrics
+import random
+
 
 def _path(opt):
     # ensure data is built
     build(opt)
     # set up paths to data (specific to each dataset)
-    dt = opt['datatype'].split(':')[0]
+    dt = 'test' if opt['datatype'] == 'test' else 'train'
     datafile = os.path.join(opt['datapath'], 'insults', dt + '.csv')
     return datafile
 
@@ -21,13 +21,16 @@ class DefaultTeacher(DialogTeacher):
 
     @staticmethod
     def add_cmdline_args(argparser):
-        agent = argparser.add_argument_group('Teacher arguments')
-        agent.add_argument('--raw-dataset-path', type=str, default=None,
-                           help='Path to unprocessed dataset files from Kaggle')
+        teacher = argparser.add_argument_group('Insults teacher arguments')
+        teacher.add_argument('--raw-dataset-path', type=str, default=None,
+                             help='Path to unprocessed dataset files from Kaggle')
+        teacher.add_argument('--cross-validation-seed', type=int, default=270)
+        teacher.add_argument('--cross-validation-model-index', type=int)
+        teacher.add_argument('--cross-validation-splits-count', type=int, default=5)
 
     def __init__(self, opt, shared=None):
         # store datatype
-        self.datatype = opt['datatype'].split(':')[0]
+        self.datatype_strict = opt['datatype'].split(':')[0]
 
         opt['datafile'] = _path(opt)
 
@@ -35,6 +38,11 @@ class DefaultTeacher(DialogTeacher):
         self.id = 'insults_teacher'
 
         self.answer_candidates = ['Non-insult', "Insult"]
+
+        random_state = random.getstate()
+        random.seed(opt.get('cross_validation_seed'))
+        self.random_state = random.getstate()
+        random.setstate(random_state)
 
         super().__init__(opt, shared)
 
@@ -47,7 +55,6 @@ class DefaultTeacher(DialogTeacher):
 
     def share(self):
         shared = super().share()
-        shared['data'] = self.data.share()
         shared['observations'] = self.observations
         shared['labels'] = self.labels
         return shared
@@ -74,8 +81,23 @@ class DefaultTeacher(DialogTeacher):
 
         episode_done = True
 
+        indexes = range(len(questions))
+        if self.datatype_strict != 'test':
+            random_state = random.getstate()
+            random.setstate(self.random_state)
+            kf_seed = random.randrange(500000)
+            kf = KFold(self.opt.get('cross_validation_splits_count'), shuffle=True,
+                       random_state=kf_seed)
+            i = 0
+            for train_index, test_index in kf.split(questions):
+                indexes = train_index if self.datatype_strict == 'train' else test_index
+                if i >= self.opt.get('cross_validation_model_index', 0):
+                    break
+            self.random_state = random.getstate()
+            random.setstate(random_state)
+
         # define iterator over all queries
-        for i in range(len(questions)):
+        for i in indexes:
             # get current label, both as a digit and as a text
             # yield tuple with information and episode_done? flag
             yield (questions[i], y[i]), episode_done
@@ -98,13 +120,18 @@ class DefaultTeacher(DialogTeacher):
             self.lastY = None
         return observation
 
+    def reset_metrics(self):
+        super().reset_metrics()
+        del self.observations[:]
+        del self.labels[:]
+
     def report(self):
-        y = np.array(self.labels).reshape(-1)
-        y_pred = np.array(self.observations).reshape(-1)
-        y_pred_tensor = K.constant(y_pred, dtype='float64')
-        loss = K.eval(binary_crossentropy(y.astype('float'), y_pred_tensor))
-        acc = K.eval(binary_accuracy(y.astype('float'), y_pred_tensor))
-        auc = roc_auc_score(y, y_pred)
+        loss = sklearn.metrics.log_loss(self.labels, self.observations)
+        acc = sklearn.metrics.accuracy_score(self.labels, self.observations)
+        try:
+            auc = sklearn.metrics.roc_auc_score(self.labels, self.observations)
+        except ValueError:
+            auc = 0
         report = dict()
         report['comments'] = len(self.observations)
         report['loss'] = loss
@@ -112,3 +139,11 @@ class DefaultTeacher(DialogTeacher):
         report['auc'] = auc
         return report
 
+    def reset(self):
+        super().reset()
+
+        random_state = random.getstate()
+        random.setstate(self.random_state)
+        random.shuffle(self.data.data)
+        self.random_state = random.getstate()
+        random.setstate(random_state)
