@@ -1,4 +1,6 @@
 from parlai.core.dialog_teacher import DialogTeacher
+
+from .metric import BinaryClassificationMetrics
 from .build import build
 import os
 import csv
@@ -46,6 +48,11 @@ class DefaultTeacher(DialogTeacher):
         random.seed(opt.get('cross_validation_seed'))
         self.random_state = random.getstate()
         random.setstate(random_state)
+
+        if shared and shared.get('metrics'):
+            self.metrics = shared['metrics']
+        else:
+            self.metrics = BinaryClassificationMetrics('Да')
 
         super().__init__(opt, shared)
 
