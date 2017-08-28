@@ -55,6 +55,7 @@ class ParaphraserModel(object):
 
     def shutdown(self):
         self.embdict = None
+        tf.reset_default_graph()
 
     def _init_params(self, param_dict=None):
         if param_dict is None:
