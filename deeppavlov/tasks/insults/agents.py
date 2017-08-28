@@ -126,6 +126,8 @@ class DefaultTeacher(DialogTeacher):
         del self.labels[:]
 
     def report(self):
+        print('REPORT labels:', self.labels)
+        print('REPORT predic:', self.observations)
         loss = sklearn.metrics.log_loss(self.labels, self.observations)
         acc = sklearn.metrics.accuracy_score(self.labels, self.observations)
         try:

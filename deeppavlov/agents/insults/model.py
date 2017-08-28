@@ -19,6 +19,8 @@ from keras import backend as K
 from keras.metrics import binary_accuracy
 import json
 import pickle
+from sklearn.externals import joblib
+from .embeddings_dict import EmbeddingsDict
 
 class InsultsModel(object):
 
@@ -93,7 +95,7 @@ class InsultsModel(object):
             if self.model_type == 'ngrams':
                 print("[ saving model: " + fname + " ]")
                 with open(fname + '_cls.pkl', 'wb') as model_file:
-                    pickle.dump(self.model, model_file)
+                    joblib.dump(self.model, model_file)
 
             with open(fname + '_opt.json', 'w') as opt_file:
                 json.dump(self.opt, opt_file)
@@ -114,13 +116,13 @@ class InsultsModel(object):
             self.model.load_weights(fname + '.h5')
 
         if self.model_type == 'ngrams':
-            if self.model_name == 'log_reg':
-                self.model = self.log_reg_model()
-            if self.model_name == 'svc':
-                self.model = self.svc_model()
+            #if self.model_name == 'log_reg':
+            #    self.model = self.log_reg_model()
+            #if self.model_name == 'svc':
+            #    self.model = self.svc_model()
 
             with open(fname + '_cls.pkl', 'rb') as model_file:
-                self.model = pickle.load(model_file)
+                self.model = joblib.load(model_file)
             print('CLS:', self.model)
 
     def update(self, batch):
@@ -152,7 +154,7 @@ class InsultsModel(object):
             return np.array(predictions).reshape(-1)
 
     def log_reg_model(self):
-        model = linear_model.LogisticRegression(C=10)
+        model = linear_model.LogisticRegression(C=10, penalty='l1')
         return model
 
     def svc_model(self):

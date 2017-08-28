@@ -36,7 +36,7 @@ def load_embeddings(opt, word_dict):
     return embedding_matrix
 
 
-def ngrams_selection(train_data, train_labels, ind, dpath,
+def ngrams_selection(train_data, train_labels, ind, model_file,
                      ngram_range_=(1, 1), max_num_features=100,
                      analyzer_type='word'):
     vectorizer = TfidfVectorizer(ngram_range=ngram_range_, sublinear_tf=True, analyzer=analyzer_type)
@@ -47,13 +47,13 @@ def ngrams_selection(train_data, train_labels, ind, dpath,
         ch2 = SelectKBest(chi2, k=max_num_features)
         ch2.fit(X_train, train_labels)
         data_struct = {'vectorizer': vectorizer, 'selector': ch2}
-        print ('creating ', os.path.join(dpath, 'ngrams_vect_' + ind + '.bin'))
-        with open(os.path.join(dpath, 'ngrams_vect_' + ind + '.bin'), 'wb') as f:
+        print ('creating ', model_file + '_ngrams_vect_' + ind + '.bin')
+        with open(model_file + '_ngrams_vect_' + ind + '.bin', 'wb') as f:
             pickle.dump(data_struct, f)
     else:
         data_struct = {'vectorizer': vectorizer}
-        print ('creating', os.path.join(dpath, 'ngrams_vect_' + ind + '.bin'))
-        with open(os.path.join(dpath, 'ngrams_vect_' + ind + '.bin'), 'wb') as f:
+        print ('creating', model_file + '_ngrams_vect_' + ind + '.bin')
+        with open(model_file + '_ngrams_vect_' + ind + '.bin', 'wb') as f:
             pickle.dump(data_struct, f)
     return
 
@@ -79,53 +79,24 @@ def ngrams_you_are(data):
         f.append(fts)
     return f
 
-def create_vectorizer_selector(train_data, train_labels, dpath,
+def create_vectorizer_selector(train_data, train_labels, model_file,
                                ngram_list=[1], max_num_features_list=[100], analyzer_type_list=['word']):
 
     for i in range(len(ngram_list)):
-        ngrams_selection(train_data, train_labels, 'general_' + str(i), dpath,
+        ngrams_selection(train_data, train_labels, 'general_' + str(i), model_file,
                          ngram_range_=(ngram_list[i], ngram_list[i]),
                          max_num_features=max_num_features_list[i],
                          analyzer_type=analyzer_type_list[i])
     you_are_data = ngrams_you_are(train_data)
-    ngrams_selection(you_are_data, train_labels, 'special', dpath,
+    ngrams_selection(you_are_data, train_labels, 'special', model_file,
                      ngram_range_=(1,1), max_num_features=100)
     return
 
-def vectorize_select(data, dpath, num_ngrams):
-    for i in range(num_ngrams):
-        with open(os.path.join(dpath, 'ngrams_vect_general_' + str(i) + '.bin'), 'rb') as f:
-            data_struct = pickle.load(f)
-            try:
-                vectorizer, selector = data_struct['vectorizer'], data_struct['selector']
-                X_i = vectorizer.transform(data)
-                X_i = selector.transform(X_i)
-            except KeyError:
-                vectorizer = data_struct['vectorizer']
-                X_i = vectorizer.transform(data)
-        if i == 0:
-            X = X_i
-        else:
-            X = sp.hstack([X, X_i])
-
-    with open(os.path.join(dpath, 'ngrams_vect_special.bin'), 'rb') as f:
-        data_struct = pickle.load(f)
-        you_are_data = ngrams_you_are(data)
-        try:
-            vectorizer, selector = data_struct['vectorizer'], data_struct['selector']
-            X_i = vectorizer.transform(you_are_data)
-            X_i = selector.transform(X_i)
-        except KeyError:
-            vectorizer = data_struct['vectorizer']
-            X_i = vectorizer.transform(you_are_data)
-    X = sp.hstack([X, X_i])
-    return X
-
-def get_vectorizer_selector(dpath, num_ngrams):
+def get_vectorizer_selector(model_file, num_ngrams):
     vectorizers = []
     selectors = []
     for i in range(num_ngrams):
-        with open(os.path.join(dpath, 'ngrams_vect_general_' + str(i) + '.bin'), 'rb') as f:
+        with open(model_file + '_ngrams_vect_general_' + str(i) + '.bin', 'rb') as f:
             data_struct = pickle.load(f)
             try:
                 vectorizers.append(data_struct['vectorizer'])
@@ -134,7 +105,7 @@ def get_vectorizer_selector(dpath, num_ngrams):
                 vectorizers.append(data_struct['vectorizer'])
                 selectors.append(None)
 
-    with open(os.path.join(dpath, 'ngrams_vect_special.bin'), 'rb') as f:
+    with open(model_file + '_ngrams_vect_special.bin', 'rb') as f:
         data_struct = pickle.load(f)
         try:
             vectorizers.append(data_struct['vectorizer'])

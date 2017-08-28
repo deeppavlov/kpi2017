@@ -37,5 +37,10 @@ def add_cmdline_args(parser):
                        type=str, default='cnn_word',
                        help='str of models to use. available: cnn_word log_reg svc')
 
+    agent.add_argument('--fasttext_model', type=str, default=None,
+                       help='fasttext trained model file name')
+    agent.add_argument('-fed', '--fasttext_embeddings_dict', type=str, default=None,
+                       help='saved fasttext embeddings dict')
+
 
 
