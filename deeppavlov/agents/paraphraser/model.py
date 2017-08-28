@@ -340,7 +340,7 @@ class ParaphraserModel(object):
         inp_b = Input(shape=(input_dim_b, self.hidden_dim,))
         W = []
         for i in range(self.perspective_num):
-            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0, seed=self.seed)
+            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0, seed=243)
             W.append(wi)
 
         val = np.concatenate((np.zeros((self.max_sequence_length-1,1)), np.ones((1,1))), axis=0)
@@ -369,7 +369,7 @@ class ParaphraserModel(object):
         inp_b = Input(shape=(input_dim_b, self.hidden_dim,))
         W = []
         for i in range(self.perspective_num):
-            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0, seed=self.seed)
+            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0, seed=243)
             W.append(wi)
 
         val = np.concatenate((np.ones((1, 1)), np.zeros((self.max_sequence_length - 1, 1))), axis=0)
@@ -398,7 +398,7 @@ class ParaphraserModel(object):
         inp_b = Input(shape=(input_dim_b, self.hidden_dim,))
         W = []
         for i in range(self.perspective_num):
-            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0, seed=self.seed)
+            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0, seed=243)
             W.append(wi)
 
         m = []
@@ -425,7 +425,7 @@ class ParaphraserModel(object):
 
         w = []
         for i in range(self.perspective_num):
-            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0, seed=self.seed)
+            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0, seed=243)
             w.append(wi)
 
         outp_a = Lambda(lambda x: K.l2_normalize(x, -1))(inp_a)
@@ -460,7 +460,7 @@ class ParaphraserModel(object):
 
         W = []
         for i in range(self.perspective_num):
-            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0, seed=self.seed)
+            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0, seed=243)
             W.append(wi)
 
         outp_a = Lambda(lambda x: K.l2_normalize(x, -1))(inp_a)
