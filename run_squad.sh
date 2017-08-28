@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-python3 ./train_model.py -t squad \
-                         -m parlai_agents.squad.squad:SquadAgent \
+python3 utils/train_model.py -t squad \
+                         -m deeppavlov.agents.squad.squad:SquadAgent \
                          -mf /tmp/squad_model \
                          --batchsize 64 \
                          --display-examples True \
