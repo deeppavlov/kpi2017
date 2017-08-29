@@ -177,20 +177,6 @@ class OneEpochAgent(InsultsAgent):
         self.observation = ''
         self.observations_ = []
 
-    def observe(self, observation):
-        observation = copy.deepcopy(observation)
-        try:
-            prev_dialogue = self.observation['text']
-            prev_labels = self.observation['labels']
-            observation['text'] = prev_dialogue + '\n' + observation['text']
-            observation['labels'] = prev_labels + observation['labels']
-            self.observation = observation
-        except TypeError:
-            self.observation = observation
-        except KeyError:
-            self.observation = observation
-        return observation
-
     def batch_act(self, observations):
         self.observations_ += observations
 
