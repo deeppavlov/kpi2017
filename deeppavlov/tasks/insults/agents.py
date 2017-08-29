@@ -107,7 +107,7 @@ class DefaultTeacher(DialogTeacher):
         return y
 
     def _text2predictions(self, predictions):
-        y = [1. if ex == 'Insult' else 0 for ex in predictions]
+        y = [1 if ex == 'Insult' else 0 for ex in predictions]
         return y
 
     def observe(self, observation):
@@ -116,7 +116,8 @@ class DefaultTeacher(DialogTeacher):
             self.metrics.update(observation, self.lastY)
             if 'text' in observation.keys():
                 self.labels += self._text2predictions(self.lastY)
-                self.observations += self._text2predictions([observation['text']])
+                #self.observations += self._text2predictions([observation['text']])
+                self.observations += [observation['score']]
             self.lastY = None
         return observation
 
@@ -126,10 +127,9 @@ class DefaultTeacher(DialogTeacher):
         del self.labels[:]
 
     def report(self):
-        print('REPORT labels:', self.labels)
-        print('REPORT predic:', self.observations)
         loss = sklearn.metrics.log_loss(self.labels, self.observations)
-        acc = sklearn.metrics.accuracy_score(self.labels, self.observations)
+        acc = sklearn.metrics.accuracy_score(self.labels,
+                                             self._text2predictions(self._predictions2text(self.observations)))
         try:
             auc = sklearn.metrics.roc_auc_score(self.labels, self.observations)
         except ValueError:
@@ -149,3 +149,42 @@ class DefaultTeacher(DialogTeacher):
         random.shuffle(self.data.data)
         self.random_state = random.getstate()
         random.setstate(random_state)
+
+
+class FullTeacher(DefaultTeacher):
+
+    @staticmethod
+    def add_cmdline_args(argparser):
+        teacher = argparser.add_argument_group('Insults teacher arguments')
+        teacher.add_argument('--raw-dataset-path', type=str, default=None,
+                             help='Path to unprocessed dataset files from Kaggle')
+
+    def __init__(self, opt, shared=None):
+        super().__init__(opt, shared)
+
+    def setup_data(self, path):
+        print('loading: ' + path)
+
+        questions = []
+        y = []
+
+        # open data file with labels
+        # (path will be provided to setup_data from opt['datafile'] defined above)
+        with open(path) as labels_file:
+            context = csv.reader(labels_file)
+            next(context)
+
+            for item in context:
+                label, text = item
+                questions.append(text)
+                y.append([self.answer_candidates[int(label)]])
+
+        episode_done = True
+
+        indexes = range(len(questions))
+
+        # define iterator over all queries
+        for i in indexes:
+            # get current label, both as a digit and as a text
+            # yield tuple with information and episode_done? flag
+            yield (questions[i], y[i]), episode_done
