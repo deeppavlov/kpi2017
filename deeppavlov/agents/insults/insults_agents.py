@@ -68,15 +68,8 @@ class InsultsAgent(Agent):
         self.model = InsultsModel(self.model_name, self.word_dict, self.embedding_matrix, opt)
         self.n_examples = 0
 
-        if (self.model.model_type == 'ngrams' and
-                (os.path.isfile(self.opt['model_file'] + '_ngrams_vect_special.bin') and
-                     os.path.isfile(self.opt['model_file'] + '_ngrams_vect_general_0.bin') and
-                     os.path.isfile(self.opt['model_file'] + '_ngrams_vect_general_1.bin') and
-                     os.path.isfile(self.opt['model_file'] + '_ngrams_vect_general_2.bin') and
-                     os.path.isfile(self.opt['model_file'] + '_ngrams_vect_general_3.bin') and
-                     os.path.isfile(self.opt['model_file'] + '_ngrams_vect_general_4.bin') and
-                     os.path.isfile(self.opt['model_file'] + '_ngrams_vect_general_5.bin')) ):
-            print ('reading vectorizers selectors')
+        if (self.model.from_saved == True ):
+            print ('Reading vectorizers and selectors')
             self.model.vectorizers, self.model.selectors = get_vectorizer_selector(self.opt['model_file'],  self.num_ngrams)
 
     def observe(self, observation):
@@ -146,23 +139,22 @@ class InsultsAgent(Agent):
                 return question
 
         if self.model.model_type == 'ngrams':
-            questions = []
+            question = []
             for ex in batch:
-                questions.append(ex['question'])
+                question.append(ex['question'])
 
-            ngrams_questions = vectorize_select_from_data(questions, self.model.vectorizers, self.model.selectors)
             if len(batch[0]) == 2:
                 y = [1 if ex['labels'][0] == 'Insult' else 0 for ex in batch]
-                return ngrams_questions, y
+                return question, y
             else:
-                return ngrams_questions
+                return question
 
     def _predictions2text(self, predictions):
         y = ['Insult' if ex > 0.5 else 'Non-insult' for ex in predictions]
         return y
 
     def _text2predictions(self, predictions):
-        y = [1. if ex == 'Insult' else 0 for ex in predictions]
+        y = [1 if ex == 'Insult' else 0 for ex in predictions]
         return y
 
     def report(self):
@@ -183,7 +175,7 @@ class OneEpochAgent(InsultsAgent):
     def __init__(self, opt, shared=None):
         super().__init__(opt, shared)
         self.observation = ''
-        self.observations = []
+        self.observations_ = []
 
     def observe(self, observation):
         observation = copy.deepcopy(observation)
@@ -200,7 +192,7 @@ class OneEpochAgent(InsultsAgent):
         return observation
 
     def batch_act(self, observations):
-        self.observations += observations
+        self.observations_ += observations
 
         if self.is_shared:
             raise RuntimeError("Parallel act is not supported.")
@@ -220,37 +212,29 @@ class OneEpochAgent(InsultsAgent):
             predictions = self._predictions2text(predictions)
             for i in range(len(predictions)):
                 batch_reply[valid_inds[i]]['text'] = predictions[i]
-            if 1:
+            if 0:
                 comment = 'your absolutely right , there i no way of explain it to a moron like you - go back to smokiung your crack , 8ss-hole ?! ?!'
                 print('Comment:', comment)
-                comment_features = vectorize_select_from_data([comment], self.model.vectorizers, self.model.selectors)
-                print('Features:', comment_features.tocsr())
-                print('Predicted:', (self.model.predict(comment_features.tocsr()[0:1,:])))
+                print('Predicted:', (self.model.predict([comment])))
         return batch_reply
 
     def save(self):
         if not self.is_shared:
-            train_data = [observation['text'] for observation in self.observations if 'text' in observation.keys()]
-            train_labels = self._text2predictions([observation['labels'][0] for observation in self.observations if 'labels' in observation.keys()])
+            train_data = [observation['text'] for observation in self.observations_ if 'text' in observation.keys()]
+            train_labels = self._text2predictions([observation['labels'][0] for observation in self.observations_ if 'labels' in observation.keys()])
 
-            # this should be done once for each launch!!!
-            if not (os.path.isfile(self.opt['model_file'] + '_ngrams_vect_special.bin') and
-                    os.path.isfile(self.opt['model_file'] + '_ngrams_vect_general_0.bin') and
-                    os.path.isfile(self.opt['model_file'] + '_ngrams_vect_general_1.bin') and
-                    os.path.isfile(self.opt['model_file'] + '_ngrams_vect_general_2.bin') and
-                    os.path.isfile(self.opt['model_file'] + '_ngrams_vect_general_3.bin') and
-                    os.path.isfile(self.opt['model_file'] + '_ngrams_vect_general_4.bin') and
-                    os.path.isfile(self.opt['model_file'] + '_ngrams_vect_general_5.bin') ):
-                print ('No vectorized data found. Vectorizing train data')
+            self.model.num_ngrams = self.num_ngrams
+
+            if self.model.from_saved == False:
+                print('Creating vectorizers and selectors')
                 create_vectorizer_selector(train_data, train_labels, self.opt['model_file'],
                                            ngram_list=[1, 2, 3, 4, 5, 3],
                                            max_num_features_list=[2000, 4000, 100, 1000, 1000, 2000],
                                            analyzer_type_list=['word', 'word', 'word', 'char', 'char', 'char'])
-            if self.model.vectorizers is None:
-                print ('Get vectorizers and selectors')
+                print('Reading vectorizers and selectors')
                 self.model.vectorizers, self.model.selectors = get_vectorizer_selector(self.opt['model_file'],  self.num_ngrams)
-            self.model.num_ngrams = self.num_ngrams
 
+            '''
             if os.path.isfile(self.opt['model_file'] + '_train_vectorized.mtx'):
                 print('Reading vectorized train dataset')
                 X_train = mmread(self.opt['model_file'] + '_train_vectorized.mtx')
@@ -258,16 +242,15 @@ class OneEpochAgent(InsultsAgent):
                 print('Vectorizing train dataset')
                 X_train = vectorize_select_from_data(train_data, self.model.vectorizers, self.model.selectors)
                 mmwrite(self.opt['model_file'] + '_train_vectorized', X_train)
+            '''
 
             print('Training model', self.model_name)
-            self.model.update([X_train, train_labels])
+            self.model.update([train_data, train_labels])
 
             if 1:
                 comment = 'your absolutely right , there i no way of explain it to a moron like you - go back to smokiung your crack , 8ss-hole ?! ?!'#'haha fuck you bitch your a fukn cripled cunt fuck you motherfucker stay off thi page unles you want to die bitch ?! ?!'
                 print('Comment:', comment)
-                comment_features = vectorize_select_from_data([comment], self.model.vectorizers, self.model.selectors)
-                print('Features:', comment_features.tocsr())
-                print('Predicted:', (self.model.predict(comment_features.tocsr()[0:1,:])))
+                print('Predicted:', (self.model.predict([comment])))
 
         print ('\n[model] trained loss = %.4f | acc = %.4f | auc = %.4f' %
                (self.model.train_loss, self.model.train_acc, self.model.train_auc,))

@@ -117,6 +117,8 @@ def get_vectorizer_selector(model_file, num_ngrams):
 
 def vectorize_select_from_data(data, vectorizers, selectors):
     num_ngrams = len(vectorizers) - 1
+    X = None
+
     for i in range(num_ngrams):
         X_i = vectorizers[i].transform(data)
         if selectors[i] is not None:

@@ -1,5 +1,4 @@
 from .metrics import roc_auc_score
-
 import os
 import numpy as np
 import copy
@@ -14,12 +13,12 @@ from keras.regularizers import l2
 from keras.optimizers import Adam
 from keras.losses import binary_crossentropy
 from sklearn import linear_model, svm
-from sklearn.model_selection import GridSearchCV
 from keras import backend as K
 from keras.metrics import binary_accuracy
 import json
-import pickle
 from sklearn.externals import joblib
+from .utils import vectorize_select_from_data
+
 from .embeddings_dict import EmbeddingsDict
 
 class InsultsModel(object):
@@ -32,6 +31,7 @@ class InsultsModel(object):
         self.kernel_sizes = [int(x) for x in opt['kernel_sizes'].split(' ')]
         self.pool_sizes = [int(x) for x in opt['pool_sizes'].split(' ')]
         self.model_type = None
+        self.from_saved = False
 
         if self.model_name == 'cnn_word':
             self.model_type = 'nn'
@@ -44,10 +44,20 @@ class InsultsModel(object):
         if self.opt.get('model_file') and \
                 ( (os.path.isfile(opt['model_file'] + '.h5') and self.model_type == 'nn')
                  or (os.path.isfile(opt['model_file'] + '_opt.json') and
-                         os.path.isfile(opt['model_file'] + '_cls.pkl') and self.model_type == 'ngrams') ):
+                     os.path.isfile(opt['model_file'] + '_cls.pkl') and
+                     os.path.isfile(self.opt['model_file'] + '_ngrams_vect_special.bin') and
+                     os.path.isfile(self.opt['model_file'] + '_ngrams_vect_general_0.bin') and
+                     os.path.isfile(self.opt['model_file'] + '_ngrams_vect_general_1.bin') and
+                     os.path.isfile(self.opt['model_file'] + '_ngrams_vect_general_2.bin') and
+                     os.path.isfile(self.opt['model_file'] + '_ngrams_vect_general_3.bin') and
+                     os.path.isfile(self.opt['model_file'] + '_ngrams_vect_general_4.bin') and
+                     os.path.isfile(self.opt['model_file'] + '_ngrams_vect_general_5.bin') and
+                             self.model_type == 'ngrams') ):
+            self.from_saved = True
             self._init_from_saved(opt['model_file'])
         else:
             if self.opt.get('pretrained_model'):
+                self.from_saved = True
                 self._init_from_saved(opt['pretrained_model'])
             else:
                 self._init_from_scratch()
@@ -116,28 +126,24 @@ class InsultsModel(object):
             self.model.load_weights(fname + '.h5')
 
         if self.model_type == 'ngrams':
-            #if self.model_name == 'log_reg':
-            #    self.model = self.log_reg_model()
-            #if self.model_name == 'svc':
-            #    self.model = self.svc_model()
-
             with open(fname + '_cls.pkl', 'rb') as model_file:
                 self.model = joblib.load(model_file)
             print('CLS:', self.model)
 
     def update(self, batch):
         x, y = batch
-        #x = np.array(x)
         y = np.array(y)
+
         if self.model_type == 'nn':
             self.train_loss, self.train_acc = self.model.train_on_batch(x, y)
             y_pred = self.model.predict_on_batch(x).reshape(-1)
             self.train_auc = roc_auc_score(y, y_pred)
 
         if self.model_type == 'ngrams':
-            self.model.fit(x, y)
+            x = vectorize_select_from_data(x, self.vectorizers, self.selectors)
+            print('Train shapes:', x.shape, y.shape)
+            self.model.fit(x, y.reshape(-1))
             y_pred = np.array(self.model.predict_proba(x)[:,1]).reshape(-1)
-            #y_pred = np.array(self.model.predict(x)).reshape(-1)
             y_pred_tensor = K.constant(y_pred, dtype='float64')
             self.train_loss = K.eval(binary_crossentropy(y.astype('float'), y_pred_tensor))
             self.train_acc = K.eval(binary_accuracy(y.astype('float'), y_pred_tensor))
@@ -150,7 +156,9 @@ class InsultsModel(object):
             y_pred = np.array(self.model.predict_on_batch(batch)).reshape(-1)
             return y_pred
         if self.model_type == 'ngrams':
-            predictions = self.model.predict_proba(batch)[:,1]
+            x = vectorize_select_from_data(batch, self.vectorizers, self.selectors)
+            print('Predict shapes:', x.shape)
+            predictions = self.model.predict_proba(x)[:,1]
             return np.array(predictions).reshape(-1)
 
     def log_reg_model(self):
