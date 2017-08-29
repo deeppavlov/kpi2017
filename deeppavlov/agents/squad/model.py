@@ -8,7 +8,7 @@ import pickle
 from keras import backend as K
 from keras.utils import np_utils
 from keras.models import Model
-from keras.layers import Input, Dense, Activation, Lambda,  multiply
+from keras.layers import Input, Dense, Activation, Lambda,  multiply, Masking
 from keras.layers.wrappers import Bidirectional, TimeDistributed
 from keras.layers.recurrent import LSTM
 from keras.activations import softmax as Softmax
@@ -26,8 +26,7 @@ set_session(tf.Session(config=config))
 # import layers
 from .layers import *
 
-
-# Default parametersor
+# Default parameters
 default_opt = {}
 default_opt['max_context_length'] = 300
 default_opt['max_question_length'] = 30
@@ -185,10 +184,12 @@ class SquadModel(object):
                                      unroll=False))
 
         passage_encoding = passage_input
+        passage_encoding = Masking()(passage_encoding)
         passage_encoding = encoder(passage_encoding)
         passage_encoding = projection(passage_encoding, self.embedding_dim)
 
         question_encoding = question_input
+        question_encoding = Masking()(question_encoding)
         question_encoding = encoder(question_encoding)
         question_encoding = projection(question_encoding, self.embedding_dim)
 
