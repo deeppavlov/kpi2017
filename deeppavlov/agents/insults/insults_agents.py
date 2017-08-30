@@ -1,16 +1,9 @@
 import copy
-import os
-import numpy as np
-
 from parlai.core.agents import Agent
-from parlai.core.dict import DictionaryAgent
-from parlai.core.params import class2str
-from scipy.io import mmwrite, mmread
-
 from . import config
 from .model import InsultsModel
-from .utils import create_vectorizer_selector, get_vectorizer_selector, vectorize_select_from_data
-
+from .utils import create_vectorizer_selector, get_vectorizer_selector
+from .embeddings_dict import EmbeddingsDict
 
 class EnsembleInsultsAgent(Agent):
 
@@ -43,14 +36,13 @@ class EnsembleInsultsAgent(Agent):
             print('Model file:', model_file)
             if model_name == 'cnn_word':
                 self.word_dict = None
-                ## NO EMBEDDINGS NOW
-                self.embedding_matrix = None
+                embedding_dict = EmbeddingsDict(opt, opt.get('embedding_dim'))
                 self.num_ngrams = None
             if model_name == 'log_reg' or model_name == 'svc':
                 self.word_dict = None
-                self.embedding_matrix = None
+                embedding_dict = None
                 self.num_ngrams = 6
-            self.models.append(InsultsModel(model_name, self.word_dict, self.embedding_matrix, opt))
+            self.models.append(InsultsModel(model_name, self.word_dict, embedding_dict, opt))
             if model_name == 'log_reg' or model_name == 'svc':
                 print('Reading vectorizers and selectors')
                 self.models[i].vectorizers, self.models[i].selectors = get_vectorizer_selector(model_file,
@@ -148,18 +140,16 @@ class InsultsAgent(Agent):
         self.model_name = opt['model_name']
 
         if self.model_name == 'cnn_word':
-            ## NO EMBEDDINGS NOW
-            #print('create embedding matrix')
-            #self.embedding_matrix = load_embeddings(opt, self.word_dict.tok2ind)
-            self.embedding_matrix = None
+            self.word_dict = None
+            embedding_dict = EmbeddingsDict(opt, opt.get('embedding_dim'))
             self.num_ngrams = None
         if self.model_name == 'log_reg' or self.model_name == 'svc':
             self.word_dict = None
-            self.embedding_matrix = None
+            embedding_dict = None
             self.num_ngrams = 6
 
         print('create model', self.model_name)
-        self.model = InsultsModel(self.model_name, self.word_dict, self.embedding_matrix, opt)
+        self.model = InsultsModel(self.model_name, self.word_dict, embedding_dict, opt)
         self.n_examples = 0
 
         if (self.model.from_saved == True ):
@@ -272,19 +262,12 @@ class OneEpochAgent(InsultsAgent):
             for i in range(len(predictions)):
                 batch_reply[valid_inds[i]]['text'] = predictions_text[i]
                 batch_reply[valid_inds[i]]['score'] = predictions[i]
-            #comment = 'shut the fuck up .. you and the rest of your faggot friend should be burned at the stake'
-            #print('Predicted for comment', self.model.predict([comment]))
         return batch_reply
 
     def save(self):
         if not self.is_shared:
             train_data = [observation['text'] for observation in self.observations_ if 'text' in observation.keys()]
             train_labels = self._text2predictions([observation['labels'][0] for observation in self.observations_ if 'labels' in observation.keys()])
-
-            #with open(self.opt['model_file'] + '_using_train.txt', 'w') as f:
-            #    for comment in train_data:
-            #        f.write(comment + '\n')
-
 
             self.model.num_ngrams = self.num_ngrams
 
@@ -302,15 +285,9 @@ class OneEpochAgent(InsultsAgent):
                 print('\n[model] trained loss = %.4f | acc = %.4f | auc = %.4f' %
                       (self.model.train_loss, self.model.train_acc, self.model.train_auc,))
                 self.model.save()
-
-
-
                 return
 
-        comment = 'shut the fuck up .. you and the rest of your faggot friend should be burned at the stake'
-        print('Predicted for comment', self.model.predict([comment]))
-
-        self.model.save()
+        #self.model.save()
         return
 
 

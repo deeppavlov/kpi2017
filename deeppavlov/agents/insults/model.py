@@ -2,7 +2,6 @@ from .metrics import roc_auc_score
 import os
 import numpy as np
 import copy
-import tensorflow as tf
 from keras.layers import Dense, Activation, Input, Embedding, concatenate
 from keras.models import Model
 from keras.layers.embeddings import Embedding
@@ -23,10 +22,10 @@ from .embeddings_dict import EmbeddingsDict
 
 class InsultsModel(object):
 
-    def __init__(self, model_name, word_index, embedding_matrix, opt):
+    def __init__(self, model_name, word_index, embedding_dict, opt):
         self.model_name = model_name
         self.word_index = word_index
-        self.embedding_matrix = embedding_matrix
+        self.embedding_dict = None
         self.opt = copy.deepcopy(opt)
         self.kernel_sizes = [int(x) for x in opt['kernel_sizes'].split(' ')]
         self.pool_sizes = [int(x) for x in opt['pool_sizes'].split(' ')]
@@ -35,6 +34,8 @@ class InsultsModel(object):
 
         if self.model_name == 'cnn_word':
             self.model_type = 'nn'
+            self.embedding_dict = embedding_dict if embedding_dict is not None else EmbeddingsDict(opt, self.opt['embedding_dim'])
+
         if self.model_name == 'log_reg' or self.model_name == 'svc':
             self.model_type = 'ngrams'
             self.num_ngrams = None
@@ -53,23 +54,20 @@ class InsultsModel(object):
                      os.path.isfile(self.opt['model_file'] + '_ngrams_vect_general_4.bin') and
                      os.path.isfile(self.opt['model_file'] + '_ngrams_vect_general_5.bin') and
                              self.model_type == 'ngrams') ):
-            print('Initializing model from saved')
+            print('[Initializing model from saved]')
             self.from_saved = True
             self._init_from_saved(opt['model_file'])
         else:
             if self.opt.get('pretrained_model'):
-                print('Initializing model from pretrained')
+                print('[Initializing model from pretrained]')
                 self.from_saved = True
                 self._init_from_saved(opt['pretrained_model'])
             else:
+                print('[ Initializing model from scratch ]')
                 self._init_from_scratch()
+
         self.opt['cuda'] = not self.opt['no_cuda']
-        # if self.opt['cuda']:
-        #     print('[ Using CUDA (GPU %d) ]' % opt['gpu'])
-        #     config = tf.ConfigProto()
-        #     config.gpu_options.per_process_gpu_memory_fraction = 0.45
-        #     config.gpu_options.visible_device_list = str(opt['gpu'])
-        #     set_session(tf.Session(config=config))
+
         self.n_examples = 0
         self.updates = 0
         self.train_loss = 0.0
@@ -81,7 +79,6 @@ class InsultsModel(object):
 
 
     def _init_from_scratch(self):
-        print('[ Initializing model from scratch ]')
         if self.model_name == 'log_reg':
             self.model = self.log_reg_model()
         if self.model_name == 'svc':
@@ -103,6 +100,7 @@ class InsultsModel(object):
             if self.model_type == 'nn':
                 print("[ saving model: " + fname + " ]")
                 self.model.save_weights(fname + '.h5')
+                self.embedding_dict.save_items(fname)
 
             if self.model_type == 'ngrams':
                 print("[ saving model: " + fname + " ]")
@@ -156,13 +154,17 @@ class InsultsModel(object):
         if self.model_type == 'nn':
             question = []
             for ex in batch:
-                question.append(word_dict.txt2vec(ex['question']))
-            question = pad_sequences(question, maxlen=self.opt['max_sequence_length'], padding='post')
+                question.append(ex['question'])
+                #question.append(word_dict.txt2vec(ex['question']))
+            #question = pad_sequences(question, maxlen=self.opt['max_sequence_length'], padding='post')
+            self.embedding_dict.add_items(question)
+            embedding_batch = self.create_batch(question)
+
             if len(batch[0]) == 2:
                 y = [1 if ex['labels'][0] == 'Insult' else 0 for ex in batch]
-                return question, y
+                return embedding_batch, y
             else:
-                return question
+                return embedding_batch
 
         if self.model_type == 'ngrams':
             question = []
@@ -174,6 +176,22 @@ class InsultsModel(object):
                 return question, y
             else:
                 return question
+
+    def create_batch(self, sentence_li):
+        embeddings_batch = []
+        for sen in sentence_li:
+            embeddings = []
+            tokens = sen.split(' ')
+            tokens = [el for el in tokens if el != '']
+            for tok in tokens:
+                embeddings.append(self.embedding_dict.tok2emb.get(tok))
+            if len(tokens) < self.opt['max_sequence_length']:
+                pads = [np.zeros(self.opt['embedding_dim']) for _ in range(self.opt['max_sequence_length'] - len(tokens))]
+                embeddings = pads + embeddings
+            embeddings = np.asarray(embeddings)
+            embeddings_batch.append(embeddings)
+        embeddings_batch = np.asarray(embeddings_batch)
+        return embeddings_batch
 
     def update(self, batch):
         x, y = batch
@@ -205,6 +223,9 @@ class InsultsModel(object):
             predictions = np.array(self.model.predict_proba(x)[:,1]).reshape(-1)
             return predictions
 
+    def shutdown(self):
+        self.embedding_dict = None
+
     def log_reg_model(self):
         model = linear_model.LogisticRegression(C=10.)
         return model
@@ -215,11 +236,13 @@ class InsultsModel(object):
 
     def cnn_word_model(self):
 
-        input = Input(shape=(self.opt['max_sequence_length'],))
-        embed_input = Embedding(len(self.word_index) + 1, self.opt['embedding_dim'],
-                                weights=[self.embedding_matrix] if self.embedding_matrix is not None else None,
-                                input_length=self.opt['max_sequence_length'],
-                                trainable=self.embedding_matrix is None)(input)
+        #input = Input(shape=(self.opt['max_sequence_length'],))
+        #embed_input = Embedding(len(self.word_index) + 1, self.opt['embedding_dim'],
+        #                        weights=[self.embedding_matrix] if self.embedding_matrix is not None else None,
+        #                        input_length=self.opt['max_sequence_length'],
+        #                        trainable=self.embedding_matrix is None)(input)
+
+        embed_input = Input(shape=(self.opt['max_sequence_length'], self.opt['embedding_dim'],))
 
         output_0 = Conv1D(self.opt['num_filters'], kernel_size=self.kernel_sizes[0], activation='relu',
                           kernel_regularizer=l2(self.opt['regul_coef_conv']), padding='same')(embed_input)
@@ -242,5 +265,5 @@ class InsultsModel(object):
         output = Dropout(rate=self.opt['dropout_rate'])(output)
         output = Dense(1, activation=None, kernel_regularizer=l2(self.opt['regul_coef_dense']))(output)
         act_output = Activation('sigmoid')(output)
-        model = Model(inputs=input, outputs=act_output)
+        model = Model(inputs=embed_input, outputs=act_output)
         return model

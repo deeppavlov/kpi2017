@@ -2,7 +2,7 @@
 
 python3 utils/train_model.py -t deeppavlov.tasks.insults.agents \
                          -m deeppavlov.agents.insults.insults_agents:InsultsAgent \
-                         -mf C:/Users/Dilyara/ParlAI/tmp/insults_cnn_word \
+                         -mf C:/Users/Dilyara/ParlAI/tmp/insults_cnn_word/cnn_word \
                          -dt train:ordered \
                          --model_name cnn_word \
                          --log-every-n-secs 5 \
@@ -20,7 +20,9 @@ python3 utils/train_model.py -t deeppavlov.tasks.insults.agents \
                          --regul_coef_dense 0.01 \
                          --pool_sizes "2 2 2" \
                          --dropout_rate 0.5 \
-                         --dense_dim 100
+                         --dense_dim 100 \
+                         --fasttext_model C:/Users/Dilyara/Documents/DataScience/Insults_kaggle/data/fasttext_model.bin \
+                         --fasttext_embeddings_dict C:/Users/Dilyara/Documents/DataScience/Insults_kaggle/data/train_norm_emb_dict.emb
 
 python3 utils/train_model.py -t deeppavlov.tasks.insults.agents:FullTeacher \
                          -m deeppavlov.agents.insults.insults_agents:OneEpochAgent \
