@@ -24,7 +24,7 @@ class EnsembleInsultsAgent(Agent):
                               help='list of all the model names for the ensemble')
         ensemble.add_argument('--model_coefs', type=str, default=None, nargs='+',
                               help='list of all the model coefs for the ensemble')
-    
+
     def __init__(self, opt, shared=None):
         self.id = 'InsultsAgent'
         self.episode_done = True
