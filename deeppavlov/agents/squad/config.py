@@ -5,8 +5,6 @@ import logging
 def add_cmdline_args(parser):
     # Runtime environment
     agent = parser.add_argument_group('Paraphraser Arguments')
-    agent.add_argument('--no_cuda', type='bool', default=False)
-    agent.add_argument('--gpu', type=int, default=-1)
     agent.add_argument('--random_seed', type=int, default=1013)
 
     # Basics
@@ -19,38 +17,56 @@ def add_cmdline_args(parser):
                        help='fasttext trained model file name')
 
     # Model details
-    agent.add_argument('--model_name', default='squad default')
-    agent.add_argument('--max_context_length', type=int, default=300)
-    agent.add_argument('--max_question_length', type=int, default=30)
-    agent.add_argument('--embedding_dim', type=int, default=300)
-    agent.add_argument('--learning_rate', type=float, default=1e-5)
-    agent.add_argument('--epoch_num', type=int, default=1)
-    agent.add_argument('--seed', type=int, default=243)
-    agent.add_argument('--hidden_dim', type=int, default=200)
-    agent.add_argument('--attention_dim', type=int, default=25)
-    agent.add_argument('--perspective_num', type=int, default=10)
-    agent.add_argument('--aggregation_dim', type=int, default=200)
-    agent.add_argument('--dense_dim', type=int, default=50)
-    agent.add_argument('--ldrop_val', type=float, default=0.0)
-    agent.add_argument('--dropout_val', type=float, default=0.0)
-    agent.add_argument('--recdrop_val', type=float, default=0.0)
-    agent.add_argument('--inpdrop_val', type=float, default=0.0)
+
+
+    # Word embeddings
+    agent.add_argument('--embedding_dim', type=int, default=300,
+                        help='Word embedding dimension')
+
+    # Context and question embeddings
+    agent.add_argument('--context_embedding_dim', type=int, default=308,
+                        help='Shape of context token vector')
+    agent.add_argument('--question_embedding_dim', type=int, default=300,
+                        help='Shape of question token vector')
+
+    # Char embeddings
+    agent.add_argument('--char_embedding_dim', type=int, default=32,
+                        help='Char embedding vector shape')
+
+    # Encoder
+    agent.add_argument('--encoder_hidden_dim', type=int, default=128,
+                        help='Hidden dimension of encoder')
+    agent.add_argument('--question_enc_layers', type=int, default=3,
+                        help='Number of layers in question encoder')
+    agent.add_argument('--context_enc_layers', type=int, default=3,
+                        help='Number of layers in context encoder')
+
+    # Projection
+    agent.add_argument('--projection_dim', type=int, default=128,
+                        help='Number of layers in context encoder')
+
+    # Start end poiners
+    agent.add_argument('--pointer_dim', type=int, default=50,
+                        help='Number of layers in context encoder')
+
+    # Dropout settings
+    agent.add_argument('--embedding_dropout', type=float, default=0.2)
+    agent.add_argument('--linear_dropout', type=float, default=0.2)
+    agent.add_argument('--rnn_dropout', type=float, default=0.2)
+    agent.add_argument('--recurrent_dropout', type=float, default=0.05)
+
+
 
     # Basics
     agent.add_argument('--embedding_file', type=str, default=None,
                         help='File of space separated embeddings: w e1 ... ed')
 
-    # Model-specific
-    agent.add_argument('--concat_rnn_layers', type='bool', default=True)
-    agent.add_argument('--question_merge', type=str, default='self_attn',
-                        help='The way of computing question representation')
-    agent.add_argument('--use_qemb', type='bool', default=True,
-                        help='Whether to use weighted question embeddings')
+    # Additional features
     agent.add_argument('--use_in_question', type='bool', default=True,
                         help='Whether to use in_question features')
     agent.add_argument('--use_tf', type='bool', default=True,
                         help='Whether to use tf features')
-    agent.add_argument('--use_time', type=int, default=0,
+    agent.add_argument('--use_time', type=int, default=5,
                         help='Time features marking how recent word was said')
 
 

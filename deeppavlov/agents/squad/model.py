@@ -12,7 +12,7 @@ from keras.layers import Input, Dense, Activation, Lambda,  multiply, Masking
 from keras.layers.wrappers import Bidirectional, TimeDistributed
 from keras.layers.recurrent import LSTM
 from keras.activations import softmax as Softmax
-from keras.optimizers import Adam
+from keras.optimizers import Adamax
 from keras.callbacks import ModelCheckpoint
 from .utils import AverageMeter
 
@@ -26,45 +26,18 @@ set_session(tf.Session(config=config))
 # import layers
 from .layers import *
 
-# Default parameters
-default_opt = {}
-default_opt['max_context_length'] = 300
-default_opt['max_question_length'] = 30
-default_opt['embedding_dim'] = 363
-default_opt['learning_rate'] = 0.001
-default_opt['batch_size'] = None
-default_opt['epoch_num'] = 20
-default_opt['seed'] = 42
-default_opt['hidden_dim'] = 128
-default_opt['dropout_val'] = 0.2
-default_opt['recdrop_val'] = 0.0
-default_opt['inpdrop_val'] = 0.2
-default_opt['model_name'] = 'FastQA'
-
 '''
 --------------- Model ----------------------------
 '''
 
 class SquadModel(object):
-    def __init__(self, opt = None, word_dict = None, feature_dict = None, weights_path = None ):
-        if opt == None:
-            opt = default_opt
+    def __init__(self, opt, word_dict = None, feature_dict = None, weights_path = None ):
 
-        self.opt = copy.deepcopy(opt)
+        for k, v in opt.items():
+            setattr(self, k, v)
+
         self.word_dict = word_dict
         self.feature_dict = feature_dict
-
-        self.max_context_length = None
-        self.max_question_length = None
-        self.embedding_dim = 300
-        self.learning_rate = opt['learning_rate']
-        self.epoch_num = opt['epoch_num']
-        self.seed = opt['seed']
-        self.hidden_dim = opt['hidden_dim']
-        self.dropout_val = opt['dropout_val']
-        self.recdrop_val = opt['recdrop_val']
-        self.inpdrop_val = opt['inpdrop_val']
-        self.model_name = opt['model_name']
 
         self.n_examples = 0
         self.updates = 0
@@ -72,7 +45,8 @@ class SquadModel(object):
         self.train_acc = AverageMeter()
 
         self.model = self.fastqa_default()
-        optimizer = Adam(lr=self.learning_rate)
+        optimizer = Adamax(decay=0.0)
+
         self.model.compile(loss='categorical_crossentropy',
                            optimizer=optimizer,
                            metrics=['accuracy'])
@@ -108,7 +82,8 @@ class SquadModel(object):
 
         answ_start = []
         answ_end = []
-        x, y = [batch[0], batch[3]], [cat(batch[5]), cat(batch[6])]
+
+        x, y = [np.concatenate((batch[0], batch[1]), axis=2), batch[3]], [cat(batch[5]), cat(batch[6])]
 
         output = self.model.train_on_batch(x, y)
         self.train_loss.update(output[0])
@@ -152,55 +127,45 @@ class SquadModel(object):
 
         return inputs
 
-    def train_generator(self, train_data_gen, valid_data_gen, path):
-        self.model.fit_generator(
-            generator=train_data_gen,
-            steps_per_epoch=train_data_gen.steps(),
-            validation_data=valid_data_gen,
-            validation_steps=valid_data_gen.steps(),
-            epochs=self.epoch_num,
-            callbacks=[
-                ModelCheckpoint(path, verbose=1, save_best_only=True)
-            ])
-
-    def predict_generator(self, dev_data_gen):
-        return self.model.predict_generator(generator=dev_data_gen,
-                                            steps=dev_data_gen.steps(),
-                                            verbose=1)
 
     def fastqa_default(self):
+
         '''Inputs'''
-        print('Emb dim: ', self.embedding_dim)
-        P = Input(shape=(self.max_context_length, self.embedding_dim), name='context_input')
-        Q = Input(shape=(self.max_question_length, self.embedding_dim), name='question_input')
+        P = Input(shape=(None, self.context_embedding_dim), name='context_input')
+        Q = Input(shape=(None, self.question_embedding_dim), name='question_input')
 
         passage_input = P
         question_input = Q
 
         '''Encoding'''
-        encoder = Bidirectional(LSTM(units=self.hidden_dim,
-                                     return_sequences=True,
-                                     dropout=self.dropout_val,
-                                     unroll=False))
-
         passage_encoding = passage_input
         passage_encoding = Masking()(passage_encoding)
-        passage_encoding = encoder(passage_encoding)
-        passage_encoding = projection(passage_encoding, self.embedding_dim)
+        passage_encoding = biLSTM_encoder(
+            passage_encoding,
+            self.encoder_hidden_dim,
+            self.rnn_dropout,
+            self.recurrent_dropout,
+            self.question_enc_layers)
+        passage_encoding = projection(passage_encoding, self.projection_dim)
 
         question_encoding = question_input
         question_encoding = Masking()(question_encoding)
-        question_encoding = encoder(question_encoding)
-        question_encoding = projection(question_encoding, self.embedding_dim)
+        question_encoding = biLSTM_encoder(
+            question_encoding,
+            self.encoder_hidden_dim,
+            self.rnn_dropout,
+            self.recurrent_dropout,
+            self.context_enc_layers)
+        question_encoding = projection(question_encoding, self.projection_dim)
 
         '''Attention over question'''
         question_attention_vector = question_attn_vector(question_encoding, passage_encoding)
 
         '''Answer span prediction'''
         # Answer start prediction
-        answer_start = answer_start_pred(passage_encoding, question_attention_vector, self.embedding_dim)
+        answer_start = answer_start_pred(passage_encoding, question_attention_vector, self.pointer_dim)
         # Answer end prediction
-        answer_end = answer_end_pred(passage_encoding, question_attention_vector, answer_start, self.embedding_dim)
+        answer_end = answer_end_pred(passage_encoding, question_attention_vector, answer_start, self.pointer_dim)
 
         input_placeholders = [P, Q]
         inputs = input_placeholders

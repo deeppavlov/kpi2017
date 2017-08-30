@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import keras.backend as K
-from keras.layers import TimeDistributed, Lambda, Dense, Activation, multiply
+from keras.layers import TimeDistributed, Lambda, Dense, Activation, multiply, LSTM, Bidirectional
 from keras.activations import softmax as Softmax
 
 '''
@@ -25,8 +25,32 @@ def flatten(value):
 ---------- Layers -------------------------
 '''
 
-def biLSTM_encoder():
-    pass
+def biLSTM_encoder(input, units, dropout, recurrent_dropout, num_layers):
+    ''' Question and context encoder '''
+    encoder = input
+    for i in range(num_layers):
+        encoder = Bidirectional(LSTM(units=units,
+                                activation='tanh',
+                                recurrent_activation='hard_sigmoid',
+                                use_bias=True,
+                                kernel_initializer='glorot_uniform',
+                                recurrent_initializer='orthogonal',
+                                bias_initializer='zeros',
+                                unit_forget_bias=True,
+                                kernel_regularizer=None,
+                                recurrent_regularizer=None,
+                                bias_regularizer=None,
+                                activity_regularizer=None,
+                                kernel_constraint=None,
+                                recurrent_constraint=None,
+                                bias_constraint=None,
+                                return_sequences=True,
+                                dropout=dropout,
+                                recurrent_dropout = recurrent_dropout,
+                                unroll=False)) (encoder)
+
+    return encoder
+
 
 def projection(encoding, W):
     return TimeDistributed(
