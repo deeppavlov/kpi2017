@@ -55,9 +55,9 @@ def add_cmdline_args(parser):
 
     # Dropout settings
     agent.add_argument('--embedding_dropout', type=float, default=0.3)
-    agent.add_argument('--linear_dropout', type=float, default=0.2)
+    agent.add_argument('--linear_dropout', type=float, default=0.3)
     agent.add_argument('--rnn_dropout', type=float, default=0.3)
-    agent.add_argument('--recurrent_dropout', type=float, default=0.05)
+    agent.add_argument('--recurrent_dropout', type=float, default=0.3)
 
 
     # Basics
