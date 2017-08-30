@@ -19,7 +19,7 @@ def normalize_text(text):
 
 def load_embeddings(opt, word_dict):
     """Initialize embeddings from file of pretrained vectors."""
-    embeddings = np.random.normal(0.0, 1.0, (len(word_dict), opt['embedding_dim']))
+    embeddings = np.random.normal(0.0, 1.0, (len(word_dict), opt['word_embedding_dim']))
 
     # Fill in embeddings
     if not opt.get('embedding_file'):
@@ -29,14 +29,14 @@ def load_embeddings(opt, word_dict):
             parsed = line.rstrip().split(' ')
             if len(parsed)==2:
                 continue
-            assert(len(parsed) == opt['embedding_dim'] + 1)
+            assert(len(parsed) == opt['word_embedding_dim'] + 1)
             w = normalize_text(parsed[0])
             if w in word_dict:
                 vec = np.array([float(i) for i in parsed[1:]])
                 embeddings[word_dict[w]] = vec
 
     # Zero NULL token
-    embeddings[word_dict['__NULL__']] = np.zeros(opt['embedding_dim'])
+    embeddings[word_dict['__NULL__']] = np.zeros(opt['word_embedding_dim'])
 
     return embeddings
 

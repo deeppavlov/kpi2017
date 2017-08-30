@@ -20,7 +20,7 @@ def add_cmdline_args(parser):
 
 
     # Word embeddings
-    agent.add_argument('--embedding_dim', type=int, default=300,
+    agent.add_argument('--word_embedding_dim', type=int, default=300,
                         help='Word embedding dimension')
 
     # Context and question embeddings
@@ -32,6 +32,10 @@ def add_cmdline_args(parser):
     # Char embeddings
     agent.add_argument('--char_embedding_dim', type=int, default=32,
                         help='Char embedding vector shape')
+
+    # Aligned question representation
+    agent.add_argument('--aligned_question_dim', type=int, default=300,
+                        help='Inner dim in aligned question layer')
 
     # Encoder
     agent.add_argument('--encoder_hidden_dim', type=int, default=128,

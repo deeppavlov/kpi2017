@@ -25,10 +25,15 @@ def flatten(value):
 ---------- Layers -------------------------
 '''
 
-def learnable_wiq(question, context, layer_dim):
-    ''' '''
+def learnable_wiq(context, question, layer_dim):
+    ''' Aligned question embedding'''
     question_enc = TimeDistributed(Dense(units=layer_dim, activation='relu'))(question)
     context_enc = TimeDistributed(Dense(units=layer_dim, activation='relu'))(context)
+    question_enc = Lambda(lambda q: tf.transpose(q, [0, 2, 1]))(question_enc)
+    matrix = Lambda(lambda q: tf.matmul(q[0], q[1]))([context_enc, question_enc])
+    coefs = Lambda(lambda q: Softmax(q, axis=2))(matrix)
+    aligned_question_enc = Lambda(lambda q: tf.matmul(q[0], q[1]))([coefs, question])
+    return(aligned_question_enc)
 
 
 def biLSTM_encoder(input, units, dropout, recurrent_dropout, num_layers):

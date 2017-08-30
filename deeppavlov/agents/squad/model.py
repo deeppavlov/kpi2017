@@ -8,7 +8,7 @@ import pickle
 from keras import backend as K
 from keras.utils import np_utils
 from keras.models import Model
-from keras.layers import Input, Dense, Activation, Lambda,  multiply, Masking
+from keras.layers import Input, Dense, Activation, Lambda,  multiply, Masking, Dropout
 from keras.layers.wrappers import Bidirectional, TimeDistributed
 from keras.layers.recurrent import LSTM
 from keras.activations import softmax as Softmax
@@ -85,7 +85,7 @@ class SquadModel(object):
         answ_start = []
         answ_end = []
 
-        x, y = [np.concatenate((batch[0], batch[1]), axis=2), batch[3]], [cat(batch[5]), cat(batch[6])]
+        x, y = [batch[0], batch[1], batch[3]], [cat(batch[5]), cat(batch[6])]
 
         output = self.model.train_on_batch(x, y)
         self.train_loss.update(output[0])
@@ -94,7 +94,7 @@ class SquadModel(object):
 
     def predict(self, batch):
 
-        score_s, score_e = self.model.predict_on_batch([np.concatenate((batch[0], batch[1]), axis=2), batch[3]])
+        score_s, score_e = self.model.predict_on_batch([batch[0], batch[1], batch[3]])
         s_ind, e_ind = np.argmax(score_s, axis=1), np.argmax(score_e, axis=1)
         # Get argmax text spans
         text = batch[-2]
@@ -133,13 +133,23 @@ class SquadModel(object):
     def fastqa_default(self):
 
         '''Inputs'''
-        P = Input(shape=(None, self.context_embedding_dim), name='context_input')
-        Q = Input(shape=(None, self.question_embedding_dim), name='question_input')
+        P = Input(shape=(None, self.word_embedding_dim), name='context_input')
+        Q = Input(shape=(None, self.word_embedding_dim), name='question_input')
+        P_f = Input(shape=(None, self.context_embedding_dim - self.word_embedding_dim), name='context_features')
 
-        passage_input = P
+        passage_input = Lambda(lambda q: tf.concat(q, axis=2))([P, P_f])
         question_input = Q
 
-        '''Encoding'''
+        ''' CharEmbedding'''
+
+        ''' Aligned question embedding '''
+        aligned_question = learnable_wiq(P, Q, layer_dim=self.aligned_question_dim)
+        passage_input = Lambda(lambda q: tf.concat(q, axis=2))([P, aligned_question])
+
+        passage_input = Dropout(rate=self.embedding_dropout)(passage_input)
+        question_input = Dropout(rate=self.embedding_dropout)(question_input)
+
+        ''' Encoding '''
         passage_encoding = passage_input
         passage_encoding = Masking()(passage_encoding)
         passage_encoding = biLSTM_encoder(
@@ -169,7 +179,7 @@ class SquadModel(object):
         # Answer end prediction
         answer_end = answer_end_pred(passage_encoding, question_attention_vector, answer_start, self.pointer_dim)
 
-        input_placeholders = [P, Q]
+        input_placeholders = [P, P_f, Q]
         inputs = input_placeholders
         outputs = [answer_start, answer_end]
 
@@ -182,7 +192,7 @@ if __name__ == "__main__":
     opt = {}
     opt['max_context_length'] = 768
     opt['max_question_length'] = 100
-    opt['embedding_dim'] = 300
+    opt['word_embedding_dim'] = 300
     opt['learning_rate'] = 0.001
     opt['batch_size'] = None
     opt['epoch_num'] = 20
