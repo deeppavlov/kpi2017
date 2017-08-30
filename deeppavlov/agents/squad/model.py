@@ -92,7 +92,7 @@ class SquadModel(object):
 
     def predict(self, batch):
 
-        score_s, score_e = self.model.predict_on_batch([batch[0], batch[3]])
+        score_s, score_e = self.model.predict_on_batch([np.concatenate((batch[0], batch[1]), axis=2), batch[3]])
         s_ind, e_ind = np.argmax(score_s, axis=1), np.argmax(score_e, axis=1)
         # Get argmax text spans
         text = batch[-2]
