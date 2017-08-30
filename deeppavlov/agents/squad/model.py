@@ -175,7 +175,7 @@ class SquadModel(object):
 
         '''Answer span prediction'''
         # Answer start prediction
-        answer_start = answer_start_pred(passage_encoding, question_attention_vector, self.pointer_dim, self.l)
+        answer_start = answer_start_pred(passage_encoding, question_attention_vector, self.pointer_dim)
         # Answer end prediction
         answer_end = answer_end_pred(passage_encoding, question_attention_vector, answer_start, self.pointer_dim)
 
