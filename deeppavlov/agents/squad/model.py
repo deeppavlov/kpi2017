@@ -33,6 +33,8 @@ from .layers import *
 class SquadModel(object):
     def __init__(self, opt, word_dict = None, feature_dict = None, weights_path = None ):
 
+        self.opt = copy.deepcopy(opt)
+
         for k, v in opt.items():
             setattr(self, k, v)
 

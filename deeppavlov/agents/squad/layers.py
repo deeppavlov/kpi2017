@@ -25,6 +25,12 @@ def flatten(value):
 ---------- Layers -------------------------
 '''
 
+def learnable_wiq(question, context, layer_dim):
+    ''' '''
+    question_enc = TimeDistributed(Dense(units=layer_dim, activation='relu'))(question)
+    context_enc = TimeDistributed(Dense(units=layer_dim, activation='relu'))(context)
+
+
 def biLSTM_encoder(input, units, dropout, recurrent_dropout, num_layers):
     ''' Question and context encoder '''
     encoder = input
