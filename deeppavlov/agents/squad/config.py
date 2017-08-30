@@ -50,7 +50,7 @@ def add_cmdline_args(parser):
                         help='Number of layers in context encoder')
 
     # Start end poiners
-    agent.add_argument('--pointer_dim', type=int, default=50,
+    agent.add_argument('--pointer_dim', type=int, default=128,
                         help='Number of layers in context encoder')
 
     # Dropout settings
@@ -58,7 +58,6 @@ def add_cmdline_args(parser):
     agent.add_argument('--linear_dropout', type=float, default=0.2)
     agent.add_argument('--rnn_dropout', type=float, default=0.3)
     agent.add_argument('--recurrent_dropout', type=float, default=0.05)
-
 
 
     # Basics
