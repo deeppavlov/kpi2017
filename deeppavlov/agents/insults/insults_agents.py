@@ -152,7 +152,7 @@ class InsultsAgent(Agent):
         self.model = InsultsModel(self.model_name, self.word_dict, embedding_dict, opt)
         self.n_examples = 0
 
-        if (self.model.from_saved == True ):
+        if (self.model.from_saved == True and self.model.model_type == 'ngrams'):
             print ('Reading vectorizers and selectors')
             self.model.vectorizers, self.model.selectors = get_vectorizer_selector(self.opt['model_file'],  self.num_ngrams)
 
