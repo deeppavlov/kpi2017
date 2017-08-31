@@ -183,10 +183,13 @@ class InsultsModel(object):
             embeddings = []
             tokens = sen.split(' ')
             tokens = [el for el in tokens if el != '']
+            if len(tokens) > self.opt['max_sequence_length']:
+                tokens = tokens[:self.opt['max_sequence_length']]
             for tok in tokens:
                 embeddings.append(self.embedding_dict.tok2emb.get(tok))
             if len(tokens) < self.opt['max_sequence_length']:
-                pads = [np.zeros(self.opt['embedding_dim']) for _ in range(self.opt['max_sequence_length'] - len(tokens))]
+                pads = [np.zeros(self.opt['embedding_dim'])
+                        for _ in range(self.opt['max_sequence_length'] - len(tokens))]
                 embeddings = pads + embeddings
             embeddings = np.asarray(embeddings)
             embeddings_batch.append(embeddings)

@@ -13,7 +13,7 @@ def add_cmdline_args(parser):
     agent.add_argument('--log_file', type=str, default=None)
     agent.add_argument('--model_file', type=str, default=None)
     agent.add_argument('--max_sequence_length', type=int, default=100)
-    agent.add_argument('--embedding_dim', type=int, default=128)
+    agent.add_argument('--embedding_dim', type=int, default=100)
     agent.add_argument('--learning_rate', type=float, default=1e-1)
     agent.add_argument('--learning_decay', type=float, default=0.)
     agent.add_argument('--seed', type=int, default=243)

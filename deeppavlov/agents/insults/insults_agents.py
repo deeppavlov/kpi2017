@@ -186,9 +186,10 @@ class InsultsAgent(Agent):
             self.n_examples += len(examples)
             batch = self.model._batchify(examples)
             predictions = self.model.update(batch)
-            predictions = self._predictions2text(predictions)
+            predictions_text = self._predictions2text(predictions)
             for i in range(len(predictions)):
-                batch_reply[valid_inds[i]]['text'] = predictions[i]
+                batch_reply[valid_inds[i]]['text'] = predictions_text[i]
+                batch_reply[valid_inds[i]]['score'] = predictions[i]
         else:
             batch = self.model._batchify(examples)
             predictions = self.model.predict(batch)
