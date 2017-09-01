@@ -146,8 +146,8 @@ class SquadModel(object):
         aligned_question = learnable_wiq(P, Q, layer_dim=self.aligned_question_dim)
         passage_input = Lambda(lambda q: tf.concat(q, axis=2))([P, aligned_question])
 
-        passage_input = Dropout(rate=self.embedding_dropout)(passage_input)
-        question_input = Dropout(rate=self.embedding_dropout)(question_input)
+        #passage_input = Dropout(rate=self.embedding_dropout)(passage_input)
+        #question_input = Dropout(rate=self.embedding_dropout)(question_input)
 
         ''' Encoding '''
         passage_encoding = passage_input

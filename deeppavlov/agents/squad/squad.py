@@ -53,6 +53,7 @@ class SquadAgent(Agent):
         self.embeddings = load_embeddings(opt, word_dict)
         self.n_examples = 0
 
+
     def _init_from_scratch(self):
         '''
         Initializes model from scratch
