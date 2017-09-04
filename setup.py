@@ -46,5 +46,6 @@ setup(name='deeppavlov',
                 'named entity recognition',
                 'coreference resolution',
                 'text comprehension',
-                'insult detection'],
+                'insult detection',
+                'AI'],
       )
