@@ -29,35 +29,35 @@ class NERTagger:
         self.n_char_cnn_filters = n_char_cnn_filters
         self.opt = copy.deepcopy(opt)
         vocab_size = len(word_dict)
+        char_vocab_size = len(word_dict.char_dict)
         tag_vocab_size = len(word_dict.labels_dict)
 
         if state_dict:
             self.load_state_dict(state_dict)
 
         x_w = tf.placeholder(dtype=tf.int32, shape=[None, None], name='x_word')
-        # x_c = tf.placeholder(dtype=tf.int32, shape=[batch_size, T, max_char])
+        x_c = tf.placeholder(dtype=tf.int32, shape=[None, None, None], name='x_char')
         y_t = tf.placeholder(dtype=tf.int32, shape=[None, None], name='y_tag')
 
         # Load embeddings
-        w_embeddings = np.random.randn(vocab_size, token_emb_dim).astype(np.float32)
-        # c_embeddings = np.random.randn(n_chars, char_emb_dim).astype(np.float32)
+        w_embeddings = np.random.randn(vocab_size, token_emb_dim).astype(np.float32) / np.sqrt(token_emb_dim)
+        c_embeddings = np.random.randn(char_vocab_size, char_emb_dim).astype(np.float32) / np.sqrt(char_emb_dim)
 
         # Word embedding layer
         w_emb = tf.nn.embedding_lookup(w_embeddings, x_w, name='word_emb')
+        c_emb = tf.nn.embedding_lookup(c_embeddings, x_c, name='char_emb')
 
-        # # Character embedding network
-        # with tf.variable_scope('Char_Emb_Network'):
-        #     # Character embedding layer
-        #     c_emb = tf.nn.embedding_lookup(c_embeddings, x_c)
-        #
-        #     # Character embedding network
-        #     char_conv = tf.layers.conv2d(c_emb, char_n_filters, (1, char_filter_width), padding='same')
-        #     char_emb = tf.reduce_max(char_conv, axis=2)
-        #
-        # wc_features = tf.concat([char_emb, w_emb], axis=-1)
-        # n_filters_dilated = char_n_filters + token_emb_dim
+        # Character embedding network
+        with tf.variable_scope('Char_Emb_Network'):
+            char_filter_width = 3
+            char_conv = tf.layers.conv2d(c_emb,
+                                         n_char_cnn_filters,
+                                         (1, char_filter_width),
+                                         padding='same',
+                                         name='char_conv')
+            char_emb = tf.reduce_max(char_conv, axis=2)
 
-        wc_features = w_emb
+        wc_features = tf.concat([w_emb, char_emb], axis=-1)
         n_filters_dilated = token_emb_dim
 
         units = wc_features
@@ -70,7 +70,6 @@ class NERTagger:
                                          n_filters_dilated,
                                          dilated_filter_width,
                                          padding='same',
-                                         dilation_rate=2 ** n_layer,
                                          name='Layer_' + str(n_layer),
                                          reuse=reuse_layer,
                                          activation=None)
@@ -79,6 +78,8 @@ class NERTagger:
         logits = tf.layers.dense(units, tag_vocab_size, name='Dense')
         ground_truth_labels = tf.one_hot(y_t, tag_vocab_size, name='one_hot_tag_indxs')
         loss_tensor = tf.losses.softmax_cross_entropy(ground_truth_labels, logits)
+        padding_mask = tf.cast(tf.not_equal(x_w, word_dict[word_dict.null_token]), tf.float32)
+        loss_tensor = loss_tensor * padding_mask
         loss = tf.reduce_mean(loss_tensor)
 
         self.loss = loss
@@ -86,14 +87,15 @@ class NERTagger:
         self.sess = tf.Session()
         self.sess.run(tf.global_variables_initializer())
         self.x = x_w
+        self.xc = x_c
         self.y_ground_truth = y_t
         self.y_predicted = tf.argmax(logits)
 
     def character_embedding_network(self, x_char, n_filters, filter_width):
         pass
 
-    def train_on_batch(self, x, y):
-        loss, _ = self.sess.run([self.loss, self.train_op], feed_dict={self.x: x, self.y_ground_truth: y})
+    def train_on_batch(self, x, xc, y):
+        loss, _ = self.sess.run([self.loss, self.train_op], feed_dict={self.x: x, self.xc: xc, self.y_ground_truth: y})
         return loss
 
     def eval(self, x, y):
