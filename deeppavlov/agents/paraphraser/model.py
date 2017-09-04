@@ -1,3 +1,19 @@
+"""
+Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
 import os
 import numpy as np
 import copy
@@ -5,7 +21,7 @@ import json
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
 config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction = 0.95
+config.gpu_options.per_process_gpu_memory_fraction = 0.8
 config.gpu_options.visible_device_list = '0'
 set_session(tf.Session(config=config))
 
@@ -17,6 +33,7 @@ from keras.layers.wrappers import Bidirectional
 from keras.initializers import glorot_uniform, Orthogonal
 from keras import backend as K
 from keras.optimizers import Adam
+from nltk.tokenize import sent_tokenize, word_tokenize
 
 
 class ParaphraserModel(object):
@@ -54,6 +71,7 @@ class ParaphraserModel(object):
 
     def shutdown(self):
         self.embdict = None
+        # tf.reset_default_graph()
 
     def _init_params(self, param_dict=None):
         if param_dict is None:
@@ -164,7 +182,9 @@ class ParaphraserModel(object):
         embeddings_batch = []
         for sen in sentence_li:
             embeddings = []
-            tokens = sen.split(' ')
+            sent_toks = sent_tokenize(sen)
+            word_toks = [word_tokenize(el) for el in sent_toks]
+            tokens = [val for sublist in word_toks for val in sublist]
             tokens = [el for el in tokens if el != '']
             for tok in tokens:
                 embeddings.append(self.embdict.tok2emb.get(tok))
@@ -336,7 +356,8 @@ class ParaphraserModel(object):
         inp_b = Input(shape=(input_dim_b, self.hidden_dim,))
         W = []
         for i in range(self.perspective_num):
-            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0, seed=self.seed)
+            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0,
+                                           seed=self.seed if self.seed is not None else 243)
             W.append(wi)
 
         val = np.concatenate((np.zeros((self.max_sequence_length-1,1)), np.ones((1,1))), axis=0)
@@ -365,7 +386,8 @@ class ParaphraserModel(object):
         inp_b = Input(shape=(input_dim_b, self.hidden_dim,))
         W = []
         for i in range(self.perspective_num):
-            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0, seed=self.seed)
+            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0,
+                                           seed=self.seed if self.seed is not None else 243)
             W.append(wi)
 
         val = np.concatenate((np.ones((1, 1)), np.zeros((self.max_sequence_length - 1, 1))), axis=0)
@@ -394,7 +416,8 @@ class ParaphraserModel(object):
         inp_b = Input(shape=(input_dim_b, self.hidden_dim,))
         W = []
         for i in range(self.perspective_num):
-            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0, seed=self.seed)
+            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0,
+                                           seed=self.seed if self.seed is not None else 243)
             W.append(wi)
 
         m = []
@@ -421,7 +444,8 @@ class ParaphraserModel(object):
 
         w = []
         for i in range(self.perspective_num):
-            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0, seed=self.seed)
+            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0,
+                                           seed=self.seed if self.seed is not None else 243)
             w.append(wi)
 
         outp_a = Lambda(lambda x: K.l2_normalize(x, -1))(inp_a)
@@ -456,7 +480,8 @@ class ParaphraserModel(object):
 
         W = []
         for i in range(self.perspective_num):
-            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0, seed=self.seed)
+            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0,
+                                           seed=self.seed if self.seed is not None else 243)
             W.append(wi)
 
         outp_a = Lambda(lambda x: K.l2_normalize(x, -1))(inp_a)

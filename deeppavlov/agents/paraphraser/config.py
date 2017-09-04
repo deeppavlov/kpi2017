@@ -1,3 +1,20 @@
+"""
+Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
+
 def add_cmdline_args(parser):
     # Runtime environment
     agent = parser.add_argument_group('Paraphraser Arguments')
@@ -20,12 +37,12 @@ def add_cmdline_args(parser):
 
     # Model details
     agent.add_argument('--model_name', default='maxpool_match')
-    agent.add_argument('--max_sequence_length', type=int, default=24)
+    agent.add_argument('--max_sequence_length', type=int, default=28)
     agent.add_argument('--embedding_dim', type=int, default=300)
     agent.add_argument('--learning_rate', type=float, default=1e-5)
     agent.add_argument('--batch_size', type=int, default=256)
     agent.add_argument('--epoch_num', type=int, default=1)
-    agent.add_argument('--seed', type=int, default=243)
+    agent.add_argument('--seed', type=int, default=None)
     agent.add_argument('--hidden_dim', type=int, default=200)
     agent.add_argument('--attention_dim', type=int, default=25)
     agent.add_argument('--perspective_num', type=int, default=10)
