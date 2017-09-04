@@ -175,6 +175,8 @@ class ParaphraserModel(object):
             if len(tokens) < self.max_sequence_length:
                 pads = [np.zeros(self.embedding_dim) for _ in range(self.max_sequence_length - len(tokens))]
                 embeddings = pads + embeddings
+            else:
+                embeddings = embeddings[-self.max_sequence_length:]
             embeddings = np.asarray(embeddings)
             embeddings_batch.append(embeddings)
         embeddings_batch = np.asarray(embeddings_batch)
