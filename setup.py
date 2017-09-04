@@ -44,5 +44,7 @@ setup(name='deeppavlov',
                 'paraphrase',
                 'NER',
                 'named entity recognition',
-                'coreference resolution'],
+                'coreference resolution',
+                'text comprehension',
+                'insult detection'],
       )
