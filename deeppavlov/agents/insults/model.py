@@ -2,9 +2,9 @@ from .metrics import roc_auc_score
 import os
 import numpy as np
 import copy
-from keras.layers import Dense, Activation, Input, Embedding, concatenate
+from keras.layers import Dense, Activation, Input, concatenate
 from keras.models import Model
-from keras.layers.embeddings import Embedding
+
 from keras.layers.pooling import MaxPooling1D
 from keras.layers.convolutional import Conv1D
 from keras.layers.core import Dropout, Reshape
@@ -17,7 +17,7 @@ from keras.metrics import binary_accuracy
 import json
 import pickle
 from .utils import vectorize_select_from_data
-from keras.preprocessing.sequence import pad_sequences
+
 from .embeddings_dict import EmbeddingsDict
 
 class InsultsModel(object):
@@ -155,8 +155,6 @@ class InsultsModel(object):
             question = []
             for ex in batch:
                 question.append(ex['question'])
-                #question.append(word_dict.txt2vec(ex['question']))
-            #question = pad_sequences(question, maxlen=self.opt['max_sequence_length'], padding='post')
             self.embedding_dict.add_items(question)
             embedding_batch = self.create_batch(question)
 
@@ -238,13 +236,6 @@ class InsultsModel(object):
         return model
 
     def cnn_word_model(self):
-
-        #input = Input(shape=(self.opt['max_sequence_length'],))
-        #embed_input = Embedding(len(self.word_index) + 1, self.opt['embedding_dim'],
-        #                        weights=[self.embedding_matrix] if self.embedding_matrix is not None else None,
-        #                        input_length=self.opt['max_sequence_length'],
-        #                        trainable=self.embedding_matrix is None)(input)
-
         embed_input = Input(shape=(self.opt['max_sequence_length'], self.opt['embedding_dim'],))
 
         output_0 = Conv1D(self.opt['num_filters'], kernel_size=self.kernel_sizes[0], activation='relu',
