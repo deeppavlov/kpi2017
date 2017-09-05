@@ -19,15 +19,3 @@ python3 ./utils/train_model.py -t deeppavlov.tasks.paraphrases.agents \
                          --validation-patience 3 \
                          --chosen-metric f1
 #                         --pretrained_model '/tmp/paraphraser'
-
-python3 ./utils/train_model.py -t deeppavlov.tasks.paraphrases.agents \
-                         -m deeppavlov.agents.paraphraser.paraphraser:EnsembleParaphraserAgent \
-                         -mf /tmp/paraphraser \
-                         --model_files /tmp/paraphraser \
-                         --datatype test \
-                         --batchsize 256 \
-                         --display-examples False \
-                         --fasttext_embeddings_dict "/tmp/paraphraser.emb" \
-                         --fasttext_model '/tmp/ft_0.8.3_nltk_yalen_sg_300.bin' \
-                         --cross-validation-splits-count 5 \
-                         --chosen-metric f1
