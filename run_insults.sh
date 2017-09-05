@@ -54,10 +54,14 @@ python utils/train_model.py -t deeppavlov.tasks.insults.agents \
                             --cross-validation-splits-count 3
 
 
-python3 ./utils/train_model.py -t deeppavlov.tasks.insults.agents \
+python3 ./utils/train_model.py -t deeppavlov.tasks.insults.agents:FullTeacher \
                                -m deeppavlov.agents.insults.insults_agents:EnsembleInsultsAgent \
                                -mf C:/Users/Dilyara/ParlAI/tmp/insults_ensemble \
-                               --model_files C:/Users/Dilyara/ParlAI/tmp/insults_log_reg/log_reg  C:/Users/Dilyara/ParlAI/tmp/insults_svc/svc \
+                               --model_files C:/Users/Dilyara/ParlAI/tmp/insults_cnn_word/cnn_word_0 \
+                                             C:/Users/Dilyara/ParlAI/tmp/insults_cnn_word/cnn_word_1 \
+                                             C:/Users/Dilyara/ParlAI/tmp/insults_cnn_word/cnn_word_2 \
+                                             C:/Users/Dilyara/ParlAI/tmp/insults_log_reg/log_reg \
+                                             C:/Users/Dilyara/ParlAI/tmp/insults_svc/svc \
                                --model_names cnn_word cnn_word cnn_word log_reg svc \
                                --model_coefs 0.1 0.1 0.1 0.1 0.6 \
                                --datatype test \

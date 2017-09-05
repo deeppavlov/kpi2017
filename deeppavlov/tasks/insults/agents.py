@@ -188,3 +188,4 @@ class FullTeacher(DefaultTeacher):
             # get current label, both as a digit and as a text
             # yield tuple with information and episode_done? flag
             yield (questions[i], y[i]), episode_done
+
