@@ -19,6 +19,7 @@ from .build import build
 import os
 import xml.etree.ElementTree as ET
 import random
+from .metric import BinaryClassificationMetrics
 
 
 def _path(opt):
@@ -41,6 +42,12 @@ class DefaultTeacher(DialogTeacher):
 
         # store identifier for the teacher in the dialog
         self.id = 'ner_teacher'
+
+        if shared and shared.get('metrics'):
+            self.metrics = shared['metrics']
+        else:
+            self.metrics = BinaryClassificationMetrics(opt['model_file'])
+
         # define standard question, since it doesn't change for this task
         super().__init__(opt, shared)
 

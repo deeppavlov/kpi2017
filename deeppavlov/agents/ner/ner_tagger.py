@@ -89,7 +89,7 @@ class NERTagger:
         self.x = x_w
         self.xc = x_c
         self.y_ground_truth = y_t
-        self.y_predicted = tf.argmax(logits)
+        self.y_predicted = tf.argmax(logits, axis=2)
 
     def character_embedding_network(self, x_char, n_filters, filter_width):
         pass
@@ -102,8 +102,8 @@ class NERTagger:
         loss = self.sess.run(self.loss, feed_dict={self.x: x, self.y_ground_truth: y})
         return loss
 
-    def predict(self, x):
-        y = self.sess.run(self.y_predicted, feed_dict={self.x: x})
+    def predict(self, x, xc):
+        y = self.sess.run(self.y_predicted, feed_dict={self.x: x, self.xc: xc})
         return y
 
     def save(self, file_path):
