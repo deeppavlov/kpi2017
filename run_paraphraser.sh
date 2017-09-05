@@ -6,7 +6,7 @@ python3 ./utils/train_model.py -t deeppavlov.tasks.paraphrases.agents \
                          --batchsize 256 \
                          --display-examples False \
                          --max-train-time -1 \
-                         --num-epochs -1 \
+                         --num-epochs 1 \
                          --log-every-n-secs -1 \
                          --log-every-n-epochs 1 \
                          --learning_rate 0.0001 \
