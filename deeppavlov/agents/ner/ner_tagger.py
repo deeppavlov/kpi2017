@@ -2,6 +2,7 @@ import copy
 import tensorflow as tf
 import numpy as np
 from collections import namedtuple
+from tensorflow.contrib.layers import xavier_initializer
 
 
 # from torch.multiprocessing.pool import Pool
@@ -61,19 +62,7 @@ class NERTagger:
         n_filters_dilated = token_emb_dim
 
         units = wc_features
-        # Stack blocks of dilated layers with shared weights (all blocks share weights)
-        for n_block in range(n_blocks):
-
-            reuse_layer = n_block > 0
-            for n_layer in range(n_layers_per_block):
-                units = tf.layers.conv1d(units,
-                                         n_filters_dilated,
-                                         dilated_filter_width,
-                                         padding='same',
-                                         name='Layer_' + str(n_layer),
-                                         reuse=reuse_layer,
-                                         activation=None)
-                units = tf.nn.relu(units)
+        units, auxilary_outputs = self.dense_network(units, n_layers_per_block, dilated_filter_width)
 
         logits = tf.layers.dense(units, tag_vocab_size, name='Dense')
         ground_truth_labels = tf.one_hot(y_t, tag_vocab_size, name='one_hot_tag_indxs')
@@ -90,6 +79,30 @@ class NERTagger:
         self.xc = x_c
         self.y_ground_truth = y_t
         self.y_predicted = tf.argmax(logits, axis=2)
+
+    def dense_network(self, units, n_layers, filter_width):
+        n_filters = units.get_shape().as_list()[-1]
+        outputs = [units]
+        auxilary_outputs = []
+        for n_layer in range(n_layers):
+            if len(outputs) > 1:
+                units = tf.concat(outputs, axis=-1)
+            else:
+                units = outputs[0]
+            units = tf.layers.conv1d(units,
+                                     n_filters,
+                                     filter_width,
+                                     padding='same',
+                                     name='Layer_' + str(n_layer),
+                                     activation=None,
+                                     kernel_initializer=xavier_initializer())
+            auxilary_outputs.append(units)
+            units = tf.nn.relu(units)
+            outputs.append(units)
+        units = tf.concat(outputs, axis=-1)
+        # Project down to the input dimensionality
+        # units = tf.layers.dense(units, n_filters, name='Output_Projection')
+        return units, auxilary_outputs
 
     def character_embedding_network(self, x_char, n_filters, filter_width):
         pass

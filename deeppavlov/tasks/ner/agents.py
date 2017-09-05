@@ -19,7 +19,7 @@ from .build import build
 import os
 import xml.etree.ElementTree as ET
 import random
-from .metric import BinaryClassificationMetrics
+from .metric import ClassificationMetrics
 
 
 def _path(opt):
@@ -34,7 +34,6 @@ class DefaultTeacher(DialogTeacher):
     def __init__(self, opt, shared=None):
         assert opt['train_part'] + opt['test_part'] + opt['valid_part'] == 1
         self.parts = [opt['train_part'], opt['valid_part'], opt['test_part']]
-        random.seed(opt['teacher_seed'])
         # store datatype
         self.dt = opt['datatype'].split(':')[0]
         self.opt = opt
@@ -43,10 +42,15 @@ class DefaultTeacher(DialogTeacher):
         # store identifier for the teacher in the dialog
         self.id = 'ner_teacher'
 
+        random_state = random.getstate()
+        random.seed(opt.get('teacher_seed'))
+        self.random_state = random.getstate()
+        random.setstate(random_state)
+
         if shared and shared.get('metrics'):
             self.metrics = shared['metrics']
         else:
-            self.metrics = BinaryClassificationMetrics(opt['model_file'])
+            self.metrics = ClassificationMetrics(opt['model_file'])
 
         # define standard question, since it doesn't change for this task
         super().__init__(opt, shared)
@@ -85,7 +89,11 @@ class DefaultTeacher(DialogTeacher):
                     tags = []
 
         questions_and_ys = list(zip(questions, y))
+        random_state = random.getstate()
+        random.setstate(self.random_state)
         random.shuffle(questions_and_ys)
+        self.random_state = random.getstate()
+        random.setstate(random_state)
         questions, y = list(zip(*questions_and_ys))
 
         if self.dt == 'train':
@@ -112,5 +120,16 @@ class DefaultTeacher(DialogTeacher):
             yield (questions[i], y[i]), episode_done
 
     def reset(self):
+        random_state = random.getstate()
+        random.setstate(self.random_state)
         random.shuffle(self.data.data)
-        super().reset()
+        self.random_state = random.getstate()
+        random.setstate(random_state)
+
+        self.lastY = None
+        self.episode_idx = self.data_offset - self.step_size
+        self.episode_done = True
+        self.epochDone = False
+        if not self.random and self.data_offset >= self.data.num_episodes():
+            # could have bigger batchsize then episodes... so nothing to do
+            self.epochDone = True

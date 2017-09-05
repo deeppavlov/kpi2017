@@ -1,7 +1,7 @@
 import os
 
 
-class BinaryClassificationMetrics(object):
+class ClassificationMetrics(object):
 
     def __init__(self, model_files_path):
         self.model_files_path = model_files_path
@@ -49,9 +49,9 @@ class BinaryClassificationMetrics(object):
             with open(report_filepath) as f:
                 # Header to trash
                 _ = f.readline()
-                overall_items = f.readline().split(' ')
+                overall_items = [item for item in f.readline().split(' ') if len(item) > 0]
                 f_score = float(overall_items[-1].strip())
-                accuracy = float(overall_items[2][:-2])
+                accuracy = float(overall_items[1][:-2])
             return f_score, accuracy
         except FileNotFoundError:
             raise FileNotFoundError('There is no ' + report_filepath +
