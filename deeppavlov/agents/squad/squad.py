@@ -42,8 +42,8 @@ class SquadAgent(Agent):
         self.opt = copy.deepcopy(opt)
         config.set_defaults(self.opt)
 
-        if self.opt.get('model-file') and os.path.isfile(opt['model-file']):
-            self._init_from_saved(opt['model-file'])
+        if self.opt.get('model_file') and os.path.isfile(opt['model_file']):
+            self._init_from_saved(opt['model_file'])
         else:
             if self.opt.get('pretrained_model'):
                 self._init_from_saved(opt['pretrained_model'])

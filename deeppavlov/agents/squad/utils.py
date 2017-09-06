@@ -267,6 +267,6 @@ def score(pred, truth):
         total += 1
         em += _exact_match(p, t)
         f1 += _f1_score(p, t)
-    em = em / total
-    f1 = f1 / total
+    em = 100.0 * em / total
+    f1 = 100.0 * f1 / total
     return em, f1

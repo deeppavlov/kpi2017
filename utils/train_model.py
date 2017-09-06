@@ -192,7 +192,7 @@ def train_model(opt):
                     if 0 < opt['validation_patience'] <= impatience:
                         print('[ ran out of patience! stopping training. ]')
                         break
-                    if 0 < opt['lr-drop-patience'] <= lr_drop_impatience:
+                    if 0 < opt['lr_drop_patience'] <= lr_drop_impatience:
                         if hasattr(agent, 'drop_lr'):
                             print('[ validation metric is decreasing, dropping learning rate ]')
                             train_report = agent.drop_lr()
@@ -266,7 +266,7 @@ def main(args=None):
                         help='build dictionary first before training agent')
     train.add_argument('--chosen-metric', default='accuracy',
                        help='metric with which to measure improvement')
-    train.add_argument('-lr_drop', '--lr-drop-patience', default=-1,
+    train.add_argument('--lr-drop', '--lr-drop-patience', type=int, default=-1,
                        help='drop learning rate if validation metric is not improving')
     opt = parser.parse_args(args=args)
     if opt.get('cross_validation_splits_count', 0) > 1 and opt.get('cross_validation_model_index') is None:
