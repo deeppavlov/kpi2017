@@ -43,7 +43,7 @@ class EmbeddingsDict(object):
             except:
                 raise RuntimeError('Looks like the `IPAVLOV_FTP` variable is set incorrectly')
         self.fasttext_model = fasttext.load_model(self.fasttext_model_file)
-        
+
     def add_items(self, sentence_li):
         for sen in sentence_li:
             tokens = sen.split(' ')

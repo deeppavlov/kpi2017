@@ -279,11 +279,11 @@ class InsultsModel(object):
     def lstm_word_model(self):
         embed_input = Input(shape=(self.opt['max_sequence_length'], self.opt['embedding_dim'],))
 
-        output_0 = Bidirectional(LSTM(self.opt['num_filters'], kernel_regularizer=l2(self.opt['regul_coef_lstm']), dropout=self.opt['dropout_rate']))(embed_input)
+        output_0 = Bidirectional(LSTM(self.opt['num_nodes_lstm'], kernel_regularizer=l2(self.opt['regul_coef_lstm']), dropout=self.opt['dropout_rate']))(embed_input)
 
-        output_1 = Bidirectional(LSTM(self.opt['num_filters'], kernel_regularizer=l2(self.opt['regul_coef_lstm']), dropout=self.opt['dropout_rate']))(embed_input)
+        output_1 = Bidirectional(LSTM(self.opt['num_nodes_lstm'], kernel_regularizer=l2(self.opt['regul_coef_lstm']), dropout=self.opt['dropout_rate']))(embed_input)
 
-        output_2 = Bidirectional(LSTM(self.opt['num_filters'], kernel_regularizer=l2(self.opt['regul_coef_lstm']), dropout=self.opt['dropout_rate']))(embed_input)
+        output_2 = Bidirectional(LSTM(self.opt['num_nodes_lstm'], kernel_regularizer=l2(self.opt['regul_coef_lstm']), dropout=self.opt['dropout_rate']))(embed_input)
 
         output = concatenate([output_0, output_1, output_2], axis=1)
 

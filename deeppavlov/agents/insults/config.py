@@ -18,6 +18,7 @@ def add_cmdline_args(parser):
     agent.add_argument('--learning_decay', type=float, default=0.)
     agent.add_argument('--seed', type=int, default=243)
     agent.add_argument('--num_filters', type=int, default=128)
+    agent.add_argument('--num_nodes_lstm', type=int, default=128)
     agent.add_argument('--kernel_sizes',  default='3 4 5')
     agent.add_argument('--regul_coef_conv', type=float, default=1e-2)
     agent.add_argument('--regul_coef_lstm', type=float, default=1e-2)
