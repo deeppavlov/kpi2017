@@ -14,6 +14,8 @@ from keras.models import Model
 
 from keras.layers.pooling import MaxPooling1D
 from keras.layers.convolutional import Conv1D
+from keras.layers.recurrent import LSTM
+from keras.layers.wrappers import Bidirectional
 from keras.layers.core import Dropout, Reshape
 from keras.regularizers import l2
 from keras.optimizers import Adam
@@ -39,7 +41,7 @@ class InsultsModel(object):
         self.model_type = None
         self.from_saved = False
 
-        if self.model_name == 'cnn_word':
+        if self.model_name == 'cnn_word' or self.model_name == 'lstm_word':
             self.model_type = 'nn'
             self.embedding_dict = embedding_dict if embedding_dict is not None else EmbeddingsDict(opt, self.opt['embedding_dim'])
 
@@ -92,6 +94,8 @@ class InsultsModel(object):
             self.model = self.svc_model()
         if self.model_name == 'cnn_word':
             self.model = self.cnn_word_model()
+        if self.model_name == 'lstm_word':
+            self.model = self.lstm_word_model()
 
         if self.model_type == 'nn':
             optimizer = Adam(lr=self.opt['learning_rate'], decay=self.opt['learning_decay'])
@@ -125,6 +129,9 @@ class InsultsModel(object):
         if self.model_type == 'nn':
             if self.model_name == 'cnn_word':
                 self.model = self.cnn_word_model()
+            if self.model_name == 'lstm_word':
+                self.model = self.lstm_word_model()
+
             optimizer = Adam(lr=self.opt['learning_rate'], decay=self.opt['learning_decay'])
             self.model.compile(loss='binary_crossentropy',
                                optimizer=optimizer,
@@ -260,6 +267,26 @@ class InsultsModel(object):
         output = Reshape(((self.opt['max_sequence_length']
                            * len(self.kernel_sizes))
                           * self.opt['num_filters'],))(output)
+        output = Dropout(rate=self.opt['dropout_rate'])(output)
+        output = Dense(self.opt['dense_dim'], activation='relu',
+                       kernel_regularizer=l2(self.opt['regul_coef_dense']))(output)
+        output = Dropout(rate=self.opt['dropout_rate'])(output)
+        output = Dense(1, activation=None, kernel_regularizer=l2(self.opt['regul_coef_dense']))(output)
+        act_output = Activation('sigmoid')(output)
+        model = Model(inputs=embed_input, outputs=act_output)
+        return model
+
+    def lstm_word_model(self):
+        embed_input = Input(shape=(self.opt['max_sequence_length'], self.opt['embedding_dim'],))
+
+        output_0 = Bidirectional(LSTM(self.opt['num_filters'], kernel_regularizer=l2(self.opt['regul_coef_lstm']), dropout=self.opt['dropout_rate']))(embed_input)
+
+        output_1 = Bidirectional(LSTM(self.opt['num_filters'], kernel_regularizer=l2(self.opt['regul_coef_lstm']), dropout=self.opt['dropout_rate']))(embed_input)
+
+        output_2 = Bidirectional(LSTM(self.opt['num_filters'], kernel_regularizer=l2(self.opt['regul_coef_lstm']), dropout=self.opt['dropout_rate']))(embed_input)
+
+        output = concatenate([output_0, output_1, output_2], axis=1)
+
         output = Dropout(rate=self.opt['dropout_rate'])(output)
         output = Dense(self.opt['dense_dim'], activation='relu',
                        kernel_regularizer=l2(self.opt['regul_coef_dense']))(output)
