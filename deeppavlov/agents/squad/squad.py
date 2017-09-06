@@ -42,8 +42,8 @@ class SquadAgent(Agent):
         self.opt = copy.deepcopy(opt)
         config.set_defaults(self.opt)
 
-        if self.opt.get('model_file') and os.path.isfile(opt['model_file']):
-            self._init_from_saved(opt['model_file'])
+        if self.opt.get('model-file') and os.path.isfile(opt['model-file']):
+            self._init_from_saved(opt['model-file'])
         else:
             if self.opt.get('pretrained_model'):
                 self._init_from_saved(opt['pretrained_model'])
@@ -152,6 +152,9 @@ class SquadAgent(Agent):
 
         return batch_reply
 
+    def drop_lr(self):
+        ''' Decreases learning rate if validation score is not increasing'''
+        self.model.model.optimizer.lr = self.model.model.optimizer.lr * self.opt['lr_drop']
 
     def save(self, fname=None):
         """Save the parameters of the agent to a file."""
@@ -163,12 +166,14 @@ class SquadAgent(Agent):
     def report(self):
 
         output = (
-            '[train] updates = %d | exs = %d | loss = %.4f | acc = %.4f'%
+            '[train] updates = %d | exs = %d | loss = %.4f | acc = %.4f | f1 = %.4f | em = %.4f'%
             (self.model.updates, self.n_examples,
-             self.model.train_loss.avg, self.model.train_acc.avg))
+             self.model.train_loss.avg, self.model.train_acc.avg, self.model.train_f1.avg, self.model.train_em.avg))
 
         self.model.train_loss.reset()
         self.model.train_acc.reset()
+        self.model.train_f1.reset()
+        self.model.train_em.reset()
 
         return output
 

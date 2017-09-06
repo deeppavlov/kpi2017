@@ -10,14 +10,24 @@ def add_cmdline_args(parser):
     # Basics
     agent.add_argument('--pretrained_model', type=str, default=None,
                        help='Load dict/features/weights/opts from this file prefix')
-    agent.add_argument('--log_file', type=str, default=None)
-    agent.add_argument('--model_file', type=str, default=None,
-                       help='Save dict/features/weights/opts from this file')
-    agent.add_argument('--fasttext_model', type=str, default=None,
-                       help='fasttext trained model file name')
 
     # Model details
 
+    # Predictions
+    agent.add_argument('--answ_maxlen', type=int, default=15,
+                       help='Maximum answer length')
+
+    # Optimizer
+    agent.add_argument('--optimizer', type=str, default='Adamax',
+                        help='Optimizer to use')
+    agent.add_argument('--grad_norm_clip', type=float, default=10.0,
+                        help='Gradient norm clipping')
+    agent.add_argument('--exp_decay', type=float, default=0.0,
+                       help='Decay in learning rate after each iteration')
+    agent.add_argument('--lr_drop', type=float, default=0.5,
+                       help='Decrease learning rate if validation F1 score is not dropping')
+    agent.add_argument('--lr_drop_patience', type=int, default=1,
+                       help='How much epochs to wait before decreasing learning rate')
 
     # Word embeddings
     agent.add_argument('--word_embedding_dim', type=int, default=300,
@@ -54,10 +64,10 @@ def add_cmdline_args(parser):
                         help='Number of layers in context encoder')
 
     # Dropout settings
-    agent.add_argument('--embedding_dropout', type=float, default=0.3)
-    agent.add_argument('--linear_dropout', type=float, default=0.3)
-    agent.add_argument('--rnn_dropout', type=float, default=0.3)
-    agent.add_argument('--recurrent_dropout', type=float, default=0.3)
+    agent.add_argument('--embedding_dropout', type=float, default=0.5)
+    agent.add_argument('--linear_dropout', type=float, default=0.25)
+    agent.add_argument('--rnn_dropout', type=float, default=0.25)
+    agent.add_argument('--recurrent_dropout', type=float, default=0.25)
 
 
     # Basics

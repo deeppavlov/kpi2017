@@ -7,8 +7,32 @@
 import time
 import unicodedata
 import numpy as np
+import re
+import string
 from collections import Counter
+from keras.optimizers import Adam, Adamax, Adadelta
 
+# ------------------------------------------------------------------------------
+# Optimizer presets.
+# ------------------------------------------------------------------------------
+def getOptimizer(optim, exp_decay, grad_norm_clip):
+    '''
+    Function for setting up optimizer, combines several presets from
+    published well performing models on SQuAD.
+    '''
+    optimizers = {
+        'Adam': Adam(lr=0.001, decay=exp_decay, clipnorm=grad_norm_clip),
+        'Adamax': Adamax(lr=0.002, decay=exp_decay, clipnorm=grad_norm_clip),
+        'Adadelta': Adadelta(lr=1.0, rho=0.95, epsilon=1e-06, decay=exp_decay, clipnorm=grad_norm_clip)
+    }
+
+    try:
+        optimizer = optimizers[optim]
+    except KeyError as e:
+        raise ValueError('problems with defining optimizer: {}'.format(e.args[0]))
+
+    del (optimizers)
+    return optimizer
 
 # ------------------------------------------------------------------------------
 # Data/model utilities.
@@ -185,3 +209,64 @@ class AverageMeter(object):
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
+
+
+# ------------------------------------------------------------------------------
+# Scoring utilities.
+# ------------------------------------------------------------------------------
+
+def _normalize_answer(s):
+    def remove_articles(text):
+        return re.sub(r'\b(a|an|the)\b', ' ', text)
+
+    def white_space_fix(text):
+        return ' '.join(text.split())
+
+    def remove_punc(text):
+        exclude = set(string.punctuation)
+        return ''.join(ch for ch in text if ch not in exclude)
+
+    def lower(text):
+        return text.lower()
+
+    return white_space_fix(remove_articles(remove_punc(lower(s))))
+
+
+def _exact_match(pred, answers):
+    if pred is None or answers is None:
+        return False
+    pred = _normalize_answer(pred)
+    for a in answers:
+        if pred == _normalize_answer(a):
+            return True
+    return False
+
+
+def _f1_score(pred, answers):
+    def _score(g_tokens, a_tokens):
+        common = Counter(g_tokens) & Counter(a_tokens)
+        num_same = sum(common.values())
+        if num_same == 0:
+            return 0
+        precision = 1. * num_same / len(g_tokens)
+        recall = 1. * num_same / len(a_tokens)
+        f1 = (2 * precision * recall) / (precision + recall)
+        return f1
+
+    if pred is None or answers is None:
+        return 0
+    g_tokens = _normalize_answer(pred).split()
+    scores = [_score(g_tokens, _normalize_answer(a).split()) for a in answers]
+    return max(scores)
+
+
+def score(pred, truth):
+    assert len(pred) == len(truth)
+    f1 = em = total = 0
+    for p, t in zip(pred, truth):
+        total += 1
+        em += _exact_match(p, t)
+        f1 += _f1_score(p, t)
+    em = em / total
+    f1 = f1 / total
+    return em, f1

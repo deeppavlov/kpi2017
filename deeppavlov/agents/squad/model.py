@@ -12,9 +12,9 @@ from keras.layers import Input, Dense, Activation, Lambda,  multiply, Masking, D
 from keras.layers.wrappers import Bidirectional, TimeDistributed
 from keras.layers.recurrent import LSTM
 from keras.activations import softmax as Softmax
-from keras.optimizers import Adamax
+from keras.optimizers import Adamax, Adam, Adadelta
 from keras.callbacks import ModelCheckpoint
-from .utils import AverageMeter
+from .utils import AverageMeter, getOptimizer, score
 
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
@@ -45,9 +45,12 @@ class SquadModel(object):
         self.updates = 0
         self.train_loss = AverageMeter()
         self.train_acc = AverageMeter()
+        self.train_f1 = AverageMeter()
+        self.train_em = AverageMeter()
 
         self.model = self.fastqa_default()
-        optimizer = Adamax(decay=0.0)
+
+        optimizer = getOptimizer(self.optimizer, self.exp_decay, self.grad_norm_clip)
 
         self.model.compile(loss='categorical_crossentropy',
                            optimizer=optimizer,
@@ -92,24 +95,36 @@ class SquadModel(object):
         self.train_acc.update((output[3] + output[4])/2)
         self.updates += 1
 
+        # Sometimes update F1 training score to be aware of overfitting
+        if self.updates % 5 == 0:
+            text = batch[-2]
+            spans = batch[-1]
+            answ_s, answ_e = batch[-4], batch[-3]
+            answers = []
+            for i in range(len(text)):
+                answers.append(text[i][spans[i][answ_s[i]][0]:spans[i][answ_e[i]][1]])
+            predictions = self.predict(batch)
+            scorer = score(predictions, answers)
+            self.train_f1.update(scorer[1])
+            self.train_em.update(scorer[0])
+
     def predict(self, batch):
 
         score_s, score_e = self.model.predict_on_batch([batch[0], batch[1], batch[3]])
-        s_ind, e_ind = np.argmax(score_s, axis=1), np.argmax(score_e, axis=1)
-        # Get argmax text spans
+
         text = batch[-2]
         spans = batch[-1]
         predictions = []
 
         # Return predictions in the form of text
-        max_len = score_s.shape[1]
+        max_len = self.answ_maxlen or score_s.shape[1]
 
         for i in range(score_s.shape[0]):
-            if s_ind[i] < e_ind[i]:
-                s_offset, e_offset = spans[i][s_ind[i]][0], spans[i][e_ind[i]][1]
-                predictions.append(text[i][s_offset:e_offset])
-            else:
-                predictions.append(' ')
+            scores = np.outer(score_s[i], score_e[i])
+            scores = np.tril(np.triu(scores), max_len-1)
+            s_ind, e_ind = np.unravel_index(np.argmax(scores), scores.shape)
+            s_offset, e_offset = spans[i][s_ind][0], spans[i][e_ind][1]
+            predictions.append(text[i][s_offset:e_offset])
 
         return predictions
 
@@ -118,8 +133,8 @@ class SquadModel(object):
         if 'text' not in ex:
             return
 
-        """Find the token span of the answer in the context for this example.
-        """
+        '''Find the token span of the answer in the context for this example.
+        '''
         inputs = dict()
         texts = ex['text'].split('\n')
         inputs['context'] = texts[1]
@@ -140,14 +155,18 @@ class SquadModel(object):
         passage_input = Lambda(lambda q: tf.concat(q, axis=2))([P, P_f])
         question_input = Q
 
-        ''' CharEmbedding'''
-
         ''' Aligned question embedding '''
         aligned_question = learnable_wiq(P, Q, layer_dim=self.aligned_question_dim)
-        passage_input = Lambda(lambda q: tf.concat(q, axis=2))([P, aligned_question])
+        passage_input = Lambda(lambda q: tf.concat(q, axis=2))([P, P_f, aligned_question])
 
-        #passage_input = Dropout(rate=self.embedding_dropout)(passage_input)
-        #question_input = Dropout(rate=self.embedding_dropout)(question_input)
+        ''' Emdedding dropout (with similar mask for all timesteps) '''
+        passage_input = Dropout(
+            rate=self.embedding_dropout,
+            noise_shape=(tf.shape(P)[0], 1, self.context_embedding_dim + self.aligned_question_dim))(passage_input)
+
+        question_input = Dropout(
+            rate=self.embedding_dropout,
+            noise_shape=(tf.shape(Q)[0], 1, self.word_embedding_dim))(question_input)
 
         ''' Encoding '''
         passage_encoding = passage_input
@@ -158,7 +177,7 @@ class SquadModel(object):
             self.rnn_dropout,
             self.recurrent_dropout,
             self.question_enc_layers)
-        passage_encoding = projection(passage_encoding, self.projection_dim)
+        passage_encoding = projection(passage_encoding, self.projection_dim, self.linear_dropout)
 
         question_encoding = question_input
         question_encoding = Masking()(question_encoding)
@@ -168,16 +187,16 @@ class SquadModel(object):
             self.rnn_dropout,
             self.recurrent_dropout,
             self.context_enc_layers)
-        question_encoding = projection(question_encoding, self.projection_dim)
+        question_encoding = projection(question_encoding, self.projection_dim, self.linear_dropout)
 
         '''Attention over question'''
         question_attention_vector = question_attn_vector(question_encoding, passage_encoding)
 
         '''Answer span prediction'''
         # Answer start prediction
-        answer_start = answer_start_pred(passage_encoding, question_attention_vector, self.pointer_dim)
+        answer_start = answer_start_pred(passage_encoding, question_attention_vector, self.pointer_dim, self.linear_dropout)
         # Answer end prediction
-        answer_end = answer_end_pred(passage_encoding, question_attention_vector, answer_start, self.pointer_dim)
+        answer_end = answer_end_pred(passage_encoding, question_attention_vector, answer_start, self.pointer_dim, self.linear_dropout)
 
         input_placeholders = [P, P_f, Q]
         inputs = input_placeholders
@@ -186,22 +205,3 @@ class SquadModel(object):
         model = Model(inputs=inputs, outputs=outputs)
         return model
 
-if __name__ == "__main__":
-
-    # Default parameters
-    opt = {}
-    opt['max_context_length'] = 768
-    opt['max_question_length'] = 100
-    opt['word_embedding_dim'] = 300
-    opt['learning_rate'] = 0.001
-    opt['batch_size'] = None
-    opt['epoch_num'] = 20
-    opt['seed'] = 42
-    opt['hidden_dim'] = 128
-    opt['dropout_val'] = 0.2
-    opt['recdrop_val'] = 0.0
-    opt['inpdrop_val'] = 0.2
-    opt['model_name'] = 'FastQA'
-
-    # Initializing model
-    fasqa = SquadModel(opt)

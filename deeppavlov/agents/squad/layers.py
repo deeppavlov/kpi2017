@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import keras.backend as K
-from keras.layers import TimeDistributed, Lambda, Dense, Activation, multiply, LSTM, Bidirectional
+from keras.layers import TimeDistributed, Lambda, Dense, Activation, multiply, LSTM, Bidirectional, Dropout
 from keras.activations import softmax as Softmax
 
 '''
@@ -63,12 +63,17 @@ def biLSTM_encoder(input, units, dropout, recurrent_dropout, num_layers):
     return encoder
 
 
-def projection(encoding, W):
-    return TimeDistributed(
+def projection(encoding, W, dropout_rate):
+    ''' Projection layear
+    in FastQA is applied after encoder, to project context and question representations
+    into different spaces '''
+    proj = TimeDistributed(
         Dense(W,
               use_bias=False,
               trainable=True,
               weights=np.concatenate((np.eye(W), np.eye(W)), axis=1)))(encoding)
+    proj = Dropout(rate=dropout_rate)(proj)
+    return proj
 
 
 def question_attn_vector(question_encoding, context_encoding):
@@ -83,7 +88,7 @@ def question_attn_vector(question_encoding, context_encoding):
     return question_attention_vector
 
 
-def answer_start_pred(context_encoding, question_attention_vector, W):
+def answer_start_pred(context_encoding, question_attention_vector, W, dropout_rate):
     ''' Answer start prediction layer '''
     answer_start = Lambda(lambda arg:
                           concatenate([arg[0], arg[1], arg[2]]))([
@@ -92,15 +97,15 @@ def answer_start_pred(context_encoding, question_attention_vector, W):
         multiply([context_encoding, question_attention_vector])])
 
     answer_start = TimeDistributed(Dense(W, activation='relu'))(answer_start)
+    answer_start = Dropout(rate=dropout_rate)(answer_start)
     answer_start = TimeDistributed(Dense(1))(answer_start)
     answer_start = Lambda(lambda q: flatten(q))(answer_start)
     answer_start = Activation('softmax')(answer_start)
     return answer_start
 
 
-def answer_end_pred(context_encoding, question_attention_vector, answer_start_distribution, W):
+def answer_end_pred(context_encoding, question_attention_vector, answer_start_distribution, W, dropout_rate):
     ''' Answer end prediction layer '''
-
     # Answer end prediction depends on the start prediction
     def s_answer_feature(x):
         maxind = K.argmax(
@@ -125,6 +130,7 @@ def answer_end_pred(context_encoding, question_attention_vector, answer_start_di
     ]))([context_encoding, question_attention_vector, start_feature])
 
     answer_end = TimeDistributed(Dense(W, activation='relu'))(answer_end)
+    answer_end = Dropout(rate=dropout_rate)(answer_end)
     answer_end = TimeDistributed(Dense(1))(answer_end)
     answer_end = Lambda(lambda q: flatten(q))(answer_end)
     answer_end = Activation('softmax')(answer_end)
