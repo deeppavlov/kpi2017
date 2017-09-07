@@ -1,6 +1,7 @@
 def add_cmdline_args(parser):
     # Runtime environment
-    agent = parser.add_argument_group('DrQA Arguments')
+    agent = parser.add_argument_group('NER Agent Arguments')
+    agent.add_argument('--pretrained-model', type=str)
     agent.add_argument('--cuda', type='bool', default=False)
     agent.add_argument('--gpu', type=int, default=-1)
     # agent.add_argument('--random_seed', type=int, default=1013)
