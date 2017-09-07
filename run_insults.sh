@@ -38,12 +38,12 @@ python utils/train_model.py -t deeppavlov.tasks.insults.agents \
                             --batchsize 64 \
                             --display-examples False \
                             --max-train-time -1 \
-                            --num-epochs 1 \
+                            --num-epochs 50 \
                             --max_sequence_length 100 \
                             --learning_rate 0.01 \
                             --learning_decay 0.1 \
-                            --num_filters 128 \
-                            --kernel_sizes "3 4 5" \
+                            --num_filters 256 \
+                            --kernel_sizes "3 3 3" \
                             --regul_coef_conv 0.001 \
                             --regul_coef_dense 0.001 \
                             --pool_sizes "2 2 2"  \
@@ -53,6 +53,29 @@ python utils/train_model.py -t deeppavlov.tasks.insults.agents \
                             --fasttext_embeddings_dict C:/Users/Dilyara/Documents/DataScience/Insults_kaggle/data/emb_dict.emb \
                             --cross-validation-splits-count 3
 
+
+python utils/train_model.py -t deeppavlov.tasks.insults.agents \
+                            -m deeppavlov.agents.insults.insults_agents:InsultsAgent \
+                            -mf C:/Users/Dilyara/ParlAI/tmp/insults_lstm_word/lstm_word \
+                            -dt train:ordered \
+                            --model_name lstm_word  \
+                            --log-every-n-secs 30 \
+                            --raw-dataset-path C:/Users/Dilyara/Documents/DataScience/Insults_kaggle/data \
+                            --batchsize 64 \
+                            --display-examples False \
+                            --max-train-time -1 \
+                            --num-epochs 50 \
+                            --max_sequence_length 100 \
+                            --learning_rate 0.01 \
+                            --learning_decay 0.1 \
+                            --num_nodes_lstm 128 \
+                            --regul_coef_lstm 0.001 \
+                            --regul_coef_dense 0.001 \
+                            --dropout_rate 0.5 \
+                            --dense_dim 100 \
+                            --fasttext_model C:/Users/Dilyara/Documents/DataScience/Insults_kaggle/data/reddit_fasttext_model.bin \
+                            --fasttext_embeddings_dict C:/Users/Dilyara/Documents/DataScience/Insults_kaggle/data/emb_dict.emb \
+                            --cross-validation-splits-count 3
 
 python3 ./utils/train_model.py -t deeppavlov.tasks.insults.agents:FullTeacher \
                                -m deeppavlov.agents.insults.insults_agents:EnsembleInsultsAgent \
