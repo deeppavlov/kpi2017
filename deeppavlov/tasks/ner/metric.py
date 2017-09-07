@@ -1,7 +1,7 @@
 import os
 
 
-class ClassificationMetrics(object):
+class CoNLLClassificationMetrics(object):
 
     def __init__(self, model_files_path):
         self.model_files_path = model_files_path

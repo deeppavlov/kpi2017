@@ -19,7 +19,7 @@ from .build import build
 import os
 import xml.etree.ElementTree as ET
 import random
-from .metric import ClassificationMetrics
+from .metric import CoNLLClassificationMetrics
 
 
 def _path(opt):
@@ -50,7 +50,7 @@ class DefaultTeacher(DialogTeacher):
         if shared and shared.get('metrics'):
             self.metrics = shared['metrics']
         else:
-            self.metrics = ClassificationMetrics(opt['model_file'])
+            self.metrics = CoNLLClassificationMetrics(opt['model_file'])
 
         # define standard question, since it doesn't change for this task
         super().__init__(opt, shared)
@@ -65,28 +65,48 @@ class DefaultTeacher(DialogTeacher):
         group.add_argument('--valid-part', type=int, default=0.1)
         group.add_argument('--test-part', type=int, default=0.1)
 
+    @staticmethod
+    def split_sentences(x, y):
+        sentences = []
+        tags = []
+        tmp_sentence = []
+        tmp_tags = []
+        prev_token = ' '
+        sentence_endings = set(['.', '?', '!'])
+        for tok, tag in zip(x, y):
+            if prev_token in sentence_endings and tok[0].isupper():
+                sentences.append(tmp_sentence)
+                tags.append(tmp_tags)
+                tmp_sentence = [tok]
+                tmp_tags = [tag]
+            else:
+                tmp_sentence.append(tok)
+                tmp_tags.append(tag)
+            prev_token = tok
+        return sentences, tags
+
     def setup_data(self, path):
         print('loading: ' + path)
 
         questions = []
         y = []
-
         # open data file with labels
         # (path will be provided to setup_data from opt['datafile'] defined above)
 
         with open(path) as heap_file:
-            tokens = []
-            tags = []
+            tokens_long = []
+            tags_long = []
             for line in heap_file:
                 if len(line) > 2:
                     token, tag = line.split()
-                    tokens.append(token)
-                    tags.append(tag)
+                    tokens_long.append(token)
+                    tags_long.append(tag)
                 else:
-                    questions.append(' '.join(tokens))
-                    y.append([' '.join(tags)])
-                    tokens = []
-                    tags = []
+                    for tokens, tags in zip(*self.split_sentences(tokens_long, tags_long)):
+                        questions.append(' '.join(tokens))
+                        y.append([' '.join(tags)])
+                    tokens_long = []
+                    tags_long = []
 
         questions_and_ys = list(zip(questions, y))
         random_state = random.getstate()

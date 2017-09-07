@@ -116,7 +116,6 @@ class NERAgent(Agent):
         fname = self.opt.get('model_file', None) if fname is None else fname
         if fname:
             print("[ saving model: " + fname + " ]")
-
             try:
                 self.network.save(fname)
             except BaseException:

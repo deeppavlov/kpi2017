@@ -44,7 +44,7 @@ def build(opt):
 
         if len(iob_files) != 97:
             raise RuntimeError('There must be 97 .iob files. To get the corpus please contact authors'
-                          ' of https://link.springer.com/chapter/10.1007/978-3-642-37247-6_27')
+                               ' of https://link.springer.com/chapter/10.1007/978-3-642-37247-6_27')
         with open(os.path.join(dpath, 'heap.txt'), 'w') as outfile:
             for iob in iob_files:
                 with open(iob) as infile:

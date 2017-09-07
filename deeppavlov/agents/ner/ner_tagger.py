@@ -3,6 +3,7 @@ import tensorflow as tf
 import numpy as np
 from collections import namedtuple
 from tensorflow.contrib.layers import xavier_initializer
+import os
 
 
 # from torch.multiprocessing.pool import Pool
@@ -12,7 +13,6 @@ POS_Tagger_State = namedtuple('POS_Tagger_State', 'words char_embs input_index w
 
 
 class NERTagger:
-
     def __init__(self,
                  opt,
                  word_dict,
@@ -59,9 +59,10 @@ class NERTagger:
             char_emb = tf.reduce_max(char_conv, axis=2)
 
         wc_features = tf.concat([w_emb, char_emb], axis=-1)
-        n_filters_dilated = token_emb_dim
 
-        units = wc_features
+        # Cutdown dimensionality of the network via projection
+        units = tf.layers.dense(wc_features, 60, kernel_initializer=xavier_initializer())
+
         units, auxilary_outputs = self.dense_network(units, n_layers_per_block, dilated_filter_width)
 
         logits = tf.layers.dense(units, tag_vocab_size, name='Dense')
@@ -74,7 +75,12 @@ class NERTagger:
         self.loss = loss
         self.train_op = tf.train.AdamOptimizer(learning_rate).minimize(loss)
         self.sess = tf.Session()
-        self.sess.run(tf.global_variables_initializer())
+        if self.opt.get('pretrained_model'):
+            self.sess.run(tf.global_variables_initializer())
+            self.load(self.opt.get('pretrained_model'))
+        else:
+            self.sess.run(tf.global_variables_initializer())
+        # print(self.sess.run())
         self.x = x_w
         self.xc = x_c
         self.y_ground_truth = y_t
@@ -100,8 +106,6 @@ class NERTagger:
             units = tf.nn.relu(units)
             outputs.append(units)
         units = tf.concat(outputs, axis=-1)
-        # Project down to the input dimensionality
-        # units = tf.layers.dense(units, n_filters, name='Output_Projection')
         return units, auxilary_outputs
 
     def character_embedding_network(self, x_char, n_filters, filter_width):
@@ -120,12 +124,18 @@ class NERTagger:
         return y
 
     def save(self, file_path):
+        print(self.sess.run(tf.trainable_variables()[0][0]))
         saver = tf.train.Saver()
-        saver.save(self.sess, file_path)
+        print('saving path ' + os.path.join(file_path, 'model.ckpt'))
+        # print('Some value from some weight matrix: ', self.sess.run(self.))
+        saver.save(self.sess, os.path.join(file_path, 'model.ckpt'))
 
     def load(self, file_path):
+
         saver = tf.train.Saver()
-        saver.restore(self.sess, file_path)
+        print('loading path ' + os.path.join(file_path, 'model.ckpt'))
+        saver.restore(self.sess, os.path.join(file_path, 'model.ckpt'))
+        print(self.sess.run(tf.trainable_variables()[0][0]))
 
     def shutdown(self):
         tf.reset_default_graph()
