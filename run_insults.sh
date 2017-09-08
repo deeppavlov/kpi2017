@@ -33,7 +33,7 @@ python3 ./utils/train_model.py -t deeppavlov.tasks.insults.agents:FullTeacher \
 
 python utils/train_model.py -t deeppavlov.tasks.insults.agents \
                             -m deeppavlov.agents.insults.insults_agents:InsultsAgent \
-                            -model_file "$PATH_TO_PARLAI"/tmp/insults_cnn_word/cnn_word \
+                            --model_file "$PATH_TO_PARLAI"/tmp/insults_cnn_word/cnn_word \
                             -dt train:ordered \
                             --model_name cnn_word  \
                             --log-every-n-secs 30 \
@@ -60,7 +60,7 @@ python utils/train_model.py -t deeppavlov.tasks.insults.agents \
 
 python utils/train_model.py -t deeppavlov.tasks.insults.agents \
                             -m deeppavlov.agents.insults.insults_agents:InsultsAgent \
-                            -model_file "$PATH_TO_PARLAI"/tmp/insults_lstm_word/lstm_word \
+                            --model_file "$PATH_TO_PARLAI"/tmp/insults_lstm_word/lstm_word \
                             -dt train:ordered \
                             --model_name lstm_word  \
                             --log-every-n-secs 30 \
@@ -84,7 +84,7 @@ python utils/train_model.py -t deeppavlov.tasks.insults.agents \
 
 python3 ./utils/train_model.py -t deeppavlov.tasks.insults.agents:FullTeacher \
                                -m deeppavlov.agents.insults.insults_agents:EnsembleInsultsAgent \
-                               -model_file "$PATH_TO_PARLAI"//tmp/insults_ensemble \
+                               --model_file "$PATH_TO_PARLAI"//tmp/insults_ensemble \
                                --model_files "$PATH_TO_PARLAI"/tmp/insults_cnn_word/cnn_word_0 \
                                              "$PATH_TO_PARLAI"/tmp/insults_cnn_word/cnn_word_1 \
                                              "$PATH_TO_PARLAI"/tmp/insults_cnn_word/cnn_word_2 \

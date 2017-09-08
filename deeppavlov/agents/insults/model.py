@@ -253,18 +253,14 @@ class InsultsModel(object):
     def cnn_word_model(self):
         embed_input = Input(shape=(self.opt['max_sequence_length'], self.opt['embedding_dim'],))
 
-        output_0 = Conv1D(self.opt['filters_cnn'], kernel_size=self.kernel_sizes[0], activation='relu',
-                          kernel_regularizer=l2(self.opt['regul_coef_conv']), padding='same')(embed_input)
-        output_0 = MaxPooling1D(pool_size=self.pool_sizes[0], strides=1, padding='same')(output_0)
+        outputs = []
+        for i in range(len(self.kernel_sizes)):
+            output_i = Conv1D(self.opt['filters_cnn'], kernel_size=self.kernel_sizes[i], activation='relu',
+                              kernel_regularizer=l2(self.opt['regul_coef_conv']), padding='same')(embed_input)
+            output_i = MaxPooling1D(pool_size=self.pool_sizes[i], strides=1, padding='same')(output_i)
+            outputs.append(output_i)
 
-        output_1 = Conv1D(self.opt['filters_cnn'], kernel_size=self.kernel_sizes[1], activation='relu',
-                          kernel_regularizer=l2(self.opt['regul_coef_conv']), padding='same')(embed_input)
-        output_1 = MaxPooling1D(pool_size=self.pool_sizes[1], strides=1, padding='same')(output_1)
-
-        output_2 = Conv1D(self.opt['filters_cnn'], kernel_size=self.kernel_sizes[2], activation='relu',
-                          kernel_regularizer=l2(self.opt['regul_coef_conv']), padding='same')(embed_input)
-        output_2 = MaxPooling1D(pool_size=self.pool_sizes[2], strides=1, padding='same')(output_2)
-        output = concatenate([output_0, output_1, output_2], axis=1)
+        output = concatenate(outputs, axis=1)
         output = Reshape(((self.opt['max_sequence_length']
                            * len(self.kernel_sizes))
                           * self.opt['filters_cnn'],))(output)
