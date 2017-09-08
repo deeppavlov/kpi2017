@@ -159,20 +159,20 @@ def batchify(batch, null=0):
     max_length = max([d.shape[0] for d in docs])
     emb_dim = docs[0].shape[1]
     x1 = np.zeros((len(docs), max_length, emb_dim))
-    x1_mask = np.ones((len(docs), max_length, emb_dim))
+    x1_mask = np.zeros((len(docs), max_length))
     x1_f = np.zeros((len(docs), max_length, features[0].shape[1]))
     for i, d in enumerate(docs):
         x1[i, :d.shape[0], :] = d
-        x1_mask[i, :d.shape[0], :] = 0
+        x1_mask[i, :d.shape[0]] = 1.0
         x1_f[i, :d.shape[0]] = features[i]
 
     # Batch questions
     max_length = max([q.shape[0] for q in questions])
     x2 = np.zeros((len(questions), max_length, emb_dim))
-    x2_mask = np.ones((len(questions), max_length, emb_dim))
+    x2_mask = np.zeros((len(questions), max_length))
     for i, q in enumerate(questions):
         x2[i, :q.shape[0], :] = q
-        x2_mask[i, :q.shape[0]] = 0
+        x2_mask[i, :q.shape[0]] = 1.0
 
     # Maybe return without targets
     if len(batch[0]) == NUM_INPUTS + NUM_EXTRA:

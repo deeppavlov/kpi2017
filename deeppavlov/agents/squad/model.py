@@ -88,7 +88,7 @@ class SquadModel(object):
         answ_start = []
         answ_end = []
 
-        x, y = [batch[0], batch[1], batch[3]], [cat(batch[5]), cat(batch[6])]
+        x, y = [batch[0], batch[1], batch[3], batch[2], batch[4]], [cat(batch[5]), cat(batch[6])]
 
         output = self.model.train_on_batch(x, y)
         self.train_loss.update(output[0])
@@ -110,7 +110,7 @@ class SquadModel(object):
 
     def predict(self, batch):
 
-        score_s, score_e = self.model.predict_on_batch([batch[0], batch[1], batch[3]])
+        score_s, score_e = self.model.predict_on_batch([batch[0], batch[1], batch[3], batch[2], batch[4]])
 
         text = batch[-2]
         spans = batch[-1]
@@ -152,11 +152,15 @@ class SquadModel(object):
         Q = Input(shape=(None, self.word_embedding_dim), name='question_input')
         P_f = Input(shape=(None, self.context_embedding_dim - self.word_embedding_dim), name='context_features')
 
+        '''Masking inputs'''
+        P_mask = Input(shape=(None,), name='context_mask')
+        Q_mask = Input(shape=(None,), name='question_mask')
+
         passage_input = Lambda(lambda q: tf.concat(q, axis=2))([P, P_f])
         question_input = Q
 
         ''' Aligned question embedding '''
-        aligned_question = learnable_wiq(P, Q, layer_dim=self.aligned_question_dim)
+        aligned_question = learnable_wiq(P, Q, Q_mask, layer_dim=self.aligned_question_dim)
         passage_input = Lambda(lambda q: tf.concat(q, axis=2))([P, P_f, aligned_question])
 
         ''' Emdedding dropout (with similar mask for all timesteps) '''
@@ -190,15 +194,15 @@ class SquadModel(object):
         question_encoding = projection(question_encoding, self.projection_dim, self.linear_dropout)
 
         '''Attention over question'''
-        question_attention_vector = question_attn_vector(question_encoding, passage_encoding)
+        question_attention_vector = question_attn_vector(question_encoding, Q_mask, passage_encoding)
 
         '''Answer span prediction'''
         # Answer start prediction
-        answer_start = answer_start_pred(passage_encoding, question_attention_vector, self.pointer_dim, self.linear_dropout)
+        answer_start = answer_start_pred(passage_encoding, question_attention_vector, P_mask, self.pointer_dim, self.linear_dropout)
         # Answer end prediction
-        answer_end = answer_end_pred(passage_encoding, question_attention_vector, answer_start, self.pointer_dim, self.linear_dropout)
+        answer_end = answer_end_pred(passage_encoding, question_attention_vector, P_mask, answer_start, self.pointer_dim, self.linear_dropout)
 
-        input_placeholders = [P, P_f, Q]
+        input_placeholders = [P, P_f, Q, P_mask, Q_mask]
         inputs = input_placeholders
         outputs = [answer_start, answer_end]
 

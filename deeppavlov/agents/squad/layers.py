@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import keras.backend as K
-from keras.layers import TimeDistributed, Lambda, Dense, Activation, multiply, LSTM, Bidirectional, Dropout
+from keras.layers import TimeDistributed, Lambda, Dense, Activation, multiply, LSTM, Bidirectional, Dropout, merge
 from keras.activations import softmax as Softmax
 
 '''
@@ -21,17 +21,26 @@ def concatenate(values):
 def flatten(value):
     return tf.contrib.layers.flatten(value)
 
+def masked_softmax(tensor, mask, expand=2, axis=1):
+    '''Masked soft-max using Lambda and merge-multiplication'''
+    mask = tf.expand_dims(mask, axis=expand)
+    exponentiate = Lambda(lambda x: K.exp(x))(tensor)
+    masked = tf.multiply(exponentiate, mask)
+    div = tf.expand_dims(tf.reduce_sum(masked, axis=axis), axis=axis)
+    predicted = tf.divide(masked, div)
+    return predicted
+
 '''
 ---------- Layers -------------------------
 '''
 
-def learnable_wiq(context, question, layer_dim):
+def learnable_wiq(context, question, question_mask, layer_dim):
     ''' Aligned question embedding'''
     question_enc = TimeDistributed(Dense(units=layer_dim, activation='relu'))(question)
     context_enc = TimeDistributed(Dense(units=layer_dim, activation='relu'))(context)
     question_enc = Lambda(lambda q: tf.transpose(q, [0, 2, 1]))(question_enc)
     matrix = Lambda(lambda q: tf.matmul(q[0], q[1]))([context_enc, question_enc])
-    coefs = Lambda(lambda q: Softmax(q, axis=2))(matrix)
+    coefs = Lambda(lambda q: masked_softmax(matrix, question_mask, axis=2, expand=1))([matrix, question_mask])
     aligned_question_enc = Lambda(lambda q: tf.matmul(q[0], q[1]))([coefs, question])
     return(aligned_question_enc)
 
@@ -76,19 +85,19 @@ def projection(encoding, W, dropout_rate):
     return proj
 
 
-def question_attn_vector(question_encoding, context_encoding):
+def question_attn_vector(question_encoding, question_mask, context_encoding):
     ''' Attention over question '''
     question_attention_vector = TimeDistributed(Dense(1))(question_encoding)
-    question_attention_vector = Lambda(lambda q: Softmax(q, axis=1))(question_attention_vector)
+    # apply masking
+    question_attention_vector = Lambda(lambda q: masked_softmax(q[0], q[1]))([question_attention_vector, question_mask])
     # apply the attention
     question_attention_vector = Lambda(lambda q: q[0] * q[1])([question_encoding, question_attention_vector])
     question_attention_vector = Lambda(lambda q: K.sum(q, axis=1))(question_attention_vector)
     question_attention_vector = Lambda(lambda q: repeat_vector(q[0], q[1]))([question_attention_vector, context_encoding])
-    question_attention_vector = Lambda(lambda q: Softmax(q, axis=1))(question_attention_vector)
     return question_attention_vector
 
 
-def answer_start_pred(context_encoding, question_attention_vector, W, dropout_rate):
+def answer_start_pred(context_encoding, question_attention_vector, context_mask, W, dropout_rate):
     ''' Answer start prediction layer '''
     answer_start = Lambda(lambda arg:
                           concatenate([arg[0], arg[1], arg[2]]))([
@@ -99,12 +108,14 @@ def answer_start_pred(context_encoding, question_attention_vector, W, dropout_ra
     answer_start = TimeDistributed(Dense(W, activation='relu'))(answer_start)
     answer_start = Dropout(rate=dropout_rate)(answer_start)
     answer_start = TimeDistributed(Dense(1))(answer_start)
+
+    # apply masking
+    answer_start = Lambda(lambda q: masked_softmax(q[0], q[1]))([answer_start, context_mask])
     answer_start = Lambda(lambda q: flatten(q))(answer_start)
-    answer_start = Activation('softmax')(answer_start)
     return answer_start
 
 
-def answer_end_pred(context_encoding, question_attention_vector, answer_start_distribution, W, dropout_rate):
+def answer_end_pred(context_encoding, question_attention_vector, context_mask, answer_start_distribution, W, dropout_rate):
     ''' Answer end prediction layer '''
     # Answer end prediction depends on the start prediction
     def s_answer_feature(x):
@@ -132,6 +143,8 @@ def answer_end_pred(context_encoding, question_attention_vector, answer_start_di
     answer_end = TimeDistributed(Dense(W, activation='relu'))(answer_end)
     answer_end = Dropout(rate=dropout_rate)(answer_end)
     answer_end = TimeDistributed(Dense(1))(answer_end)
+
+    # apply masking
+    answer_end = Lambda(lambda q: masked_softmax(q[0], q[1]))([answer_end, context_mask])
     answer_end = Lambda(lambda q: flatten(q))(answer_end)
-    answer_end = Activation('softmax')(answer_end)
     return answer_end
