@@ -4,6 +4,7 @@ import numpy as np
 from collections import namedtuple
 from tensorflow.contrib.layers import xavier_initializer
 import os
+import pickle
 
 
 # from torch.multiprocessing.pool import Pool
@@ -24,7 +25,7 @@ class NERTagger:
                  dilated_filter_width=3,
                  n_blocks=1,
                  learning_rate=1e-3):
-
+        tf.reset_default_graph()
         self.token_emb_dim = token_emb_dim
         self.char_emb_dim = char_emb_dim
         self.n_char_cnn_filters = n_char_cnn_filters
@@ -32,9 +33,6 @@ class NERTagger:
         vocab_size = len(word_dict)
         char_vocab_size = len(word_dict.char_dict)
         tag_vocab_size = len(word_dict.labels_dict)
-
-        if state_dict:
-            self.load_state_dict(state_dict)
 
         x_w = tf.placeholder(dtype=tf.int32, shape=[None, None], name='x_word')
         x_c = tf.placeholder(dtype=tf.int32, shape=[None, None, None], name='x_char')
@@ -75,16 +73,16 @@ class NERTagger:
         self.loss = loss
         self.train_op = tf.train.AdamOptimizer(learning_rate).minimize(loss)
         self.sess = tf.Session()
-        if self.opt.get('pretrained_model'):
-            self.sess.run(tf.global_variables_initializer())
-            self.load(self.opt.get('pretrained_model'))
-        else:
-            self.sess.run(tf.global_variables_initializer())
-        # print(self.sess.run())
+
         self.x = x_w
         self.xc = x_c
         self.y_ground_truth = y_t
         self.y_predicted = tf.argmax(logits, axis=2)
+        if self.opt.get('pretrained_model'):
+            # self.sess.run(tf.global_variables_initializer())
+            self.load(self.opt.get('pretrained_model'))
+        else:
+            self.sess.run(tf.global_variables_initializer())
 
     def dense_network(self, units, n_layers, filter_width):
         n_filters = units.get_shape().as_list()[-1]
@@ -124,18 +122,23 @@ class NERTagger:
         return y
 
     def save(self, file_path):
-        print(self.sess.run(tf.trainable_variables()[0][0]))
+        with open('da_save.pcl', 'wb') as f:
+            vars = tf.trainable_variables()
+            vars_vals = self.sess.run(vars)
+            pickle.dump(vars_vals, f)
         saver = tf.train.Saver()
         print('saving path ' + os.path.join(file_path, 'model.ckpt'))
         # print('Some value from some weight matrix: ', self.sess.run(self.))
         saver.save(self.sess, os.path.join(file_path, 'model.ckpt'))
 
     def load(self, file_path):
-
         saver = tf.train.Saver()
         print('loading path ' + os.path.join(file_path, 'model.ckpt'))
         saver.restore(self.sess, os.path.join(file_path, 'model.ckpt'))
-        print(self.sess.run(tf.trainable_variables()[0][0]))
+        with open('da_load.pcl', 'wb') as f:
+            vars = tf.trainable_variables()
+            vars_vals = self.sess.run(vars)
+            pickle.dump(vars_vals, f)
 
     def shutdown(self):
         tf.reset_default_graph()
