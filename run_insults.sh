@@ -42,9 +42,9 @@ python utils/train_model.py -t deeppavlov.tasks.insults.agents \
                             --max_sequence_length 100 \
                             --learning_rate 0.01 \
                             --learning_decay 0.1 \
-                            --filters_cnn 128 \
+                            --filters_cnn 256 \
                             --embedding_dim 100 \
-                            --kernel_sizes_cnn "1 2 3" \
+                            --kernel_sizes_cnn "3 3 3" \
                             --regul_coef_conv 0.001 \
                             --regul_coef_dense 0.001 \
                             --pool_sizes_cnn "2 2 2"  \
@@ -101,8 +101,8 @@ python3 ./utils/train_model.py -t deeppavlov.tasks.insults.agents:FullTeacher \
                                --max_sequence_length 100 \
                                --learning_rate 0.01 \
                                --learning_decay 0.1 \
-                               --filters_cnn 128 \
-                               --kernel_sizes_cnn "1 2 3" \
+                               --filters_cnn 256 \
+                               --kernel_sizes_cnn "3 3 3" \
                                --regul_coef_conv 0.001 \
                                --regul_coef_dense 0.001 \
                                --pool_sizes_cnn "2 2 2"  \
