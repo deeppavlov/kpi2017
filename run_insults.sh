@@ -42,11 +42,12 @@ python utils/train_model.py -t deeppavlov.tasks.insults.agents \
                             --max_sequence_length 100 \
                             --learning_rate 0.01 \
                             --learning_decay 0.1 \
-                            --num_filters 256 \
-                            --kernel_sizes "3 3 3" \
+                            --filters_cnn 128 \
+                            --embedding_dim 100 \
+                            --kernel_sizes_cnn "1 2 3" \
                             --regul_coef_conv 0.001 \
                             --regul_coef_dense 0.001 \
-                            --pool_sizes "2 2 2"  \
+                            --pool_sizes_cnn "2 2 2"  \
                             --dropout_rate 0.5 \
                             --dense_dim 100 \
                             --fasttext_model C:/Users/Dilyara/Documents/DataScience/Insults_kaggle/data/reddit_fasttext_model.bin \
@@ -68,7 +69,8 @@ python utils/train_model.py -t deeppavlov.tasks.insults.agents \
                             --max_sequence_length 100 \
                             --learning_rate 0.01 \
                             --learning_decay 0.1 \
-                            --num_nodes_lstm 128 \
+                            --units_lstm 128 \
+                            --embedding_dim 100 \
                             --regul_coef_lstm 0.001 \
                             --regul_coef_dense 0.001 \
                             --dropout_rate 0.5 \
@@ -83,10 +85,13 @@ python3 ./utils/train_model.py -t deeppavlov.tasks.insults.agents:FullTeacher \
                                --model_files C:/Users/Dilyara/ParlAI/tmp/insults_cnn_word/cnn_word_0 \
                                              C:/Users/Dilyara/ParlAI/tmp/insults_cnn_word/cnn_word_1 \
                                              C:/Users/Dilyara/ParlAI/tmp/insults_cnn_word/cnn_word_2 \
+                                             C:/Users/Dilyara/ParlAI/tmp/insults_lstm_word/lstm_word_0 \
+                                             C:/Users/Dilyara/ParlAI/tmp/insults_lstm_word/lstm_word_1 \
+                                             C:/Users/Dilyara/ParlAI/tmp/insults_lstm_word/lstm_word_2 \
                                              C:/Users/Dilyara/ParlAI/tmp/insults_log_reg/log_reg \
                                              C:/Users/Dilyara/ParlAI/tmp/insults_svc/svc \
-                               --model_names cnn_word cnn_word cnn_word log_reg svc \
-                               --model_coefs 0.1 0.1 0.1 0.1 0.6 \
+                               --model_names cnn_word cnn_word cnn_word lstm_word lstm_word lstm_word log_reg svc \
+                               --model_coefs 0.05 0.05 0.05 0.05 0.05 0.05 0.2 0.5 \
                                --datatype test \
                                --batchsize 64 \
                                --display-examples False \
@@ -96,11 +101,14 @@ python3 ./utils/train_model.py -t deeppavlov.tasks.insults.agents:FullTeacher \
                                --max_sequence_length 100 \
                                --learning_rate 0.01 \
                                --learning_decay 0.1 \
-                               --num_filters 64 \
-                               --kernel_sizes "3 4 5" \
+                               --filters_cnn 128 \
+                               --kernel_sizes_cnn "1 2 3" \
                                --regul_coef_conv 0.001 \
                                --regul_coef_dense 0.001 \
-                               --pool_sizes "2 2 2"  \
+                               --pool_sizes_cnn "2 2 2"  \
+                               --units_lstm 128 \
+                               --embedding_dim 100 \
+                               --regul_coef_lstm 0.001 \
                                --dropout_rate 0.5 \
                                --dense_dim 100 \
                                --fasttext_model C:/Users/Dilyara/Documents/DataScience/Insults_kaggle/data/reddit_fasttext_model.bin

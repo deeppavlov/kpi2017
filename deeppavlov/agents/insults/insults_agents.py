@@ -4,8 +4,6 @@ from . import config
 from .model import InsultsModel
 from .utils import create_vectorizer_selector, get_vectorizer_selector
 from .embeddings_dict import EmbeddingsDict
-from keras.wrappers.scikit_learn import KerasClassifier
-from sklearn.ensemble import AdaBoostClassifier
 
 class EnsembleInsultsAgent(Agent):
 

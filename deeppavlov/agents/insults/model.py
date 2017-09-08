@@ -1,7 +1,8 @@
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
 config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction = 0.95
+#config.gpu_options.per_process_gpu_memory_fraction = 0.95
+config.gpu_options.allow_growth=True
 config.gpu_options.visible_device_list = '0'
 set_session(tf.Session(config=config))
 
@@ -36,8 +37,8 @@ class InsultsModel(object):
         self.word_index = word_index
         self.embedding_dict = None
         self.opt = copy.deepcopy(opt)
-        self.kernel_sizes = [int(x) for x in opt['kernel_sizes'].split(' ')]
-        self.pool_sizes = [int(x) for x in opt['pool_sizes'].split(' ')]
+        self.kernel_sizes = [int(x) for x in opt['kernel_sizes_cnn'].split(' ')]
+        self.pool_sizes = [int(x) for x in opt['pool_sizes_cnn'].split(' ')]
         self.model_type = None
         self.from_saved = False
 
@@ -252,21 +253,21 @@ class InsultsModel(object):
     def cnn_word_model(self):
         embed_input = Input(shape=(self.opt['max_sequence_length'], self.opt['embedding_dim'],))
 
-        output_0 = Conv1D(self.opt['num_filters'], kernel_size=self.kernel_sizes[0], activation='relu',
+        output_0 = Conv1D(self.opt['filters_cnn'], kernel_size=self.kernel_sizes[0], activation='relu',
                           kernel_regularizer=l2(self.opt['regul_coef_conv']), padding='same')(embed_input)
         output_0 = MaxPooling1D(pool_size=self.pool_sizes[0], strides=1, padding='same')(output_0)
 
-        output_1 = Conv1D(self.opt['num_filters'], kernel_size=self.kernel_sizes[1], activation='relu',
+        output_1 = Conv1D(self.opt['filters_cnn'], kernel_size=self.kernel_sizes[1], activation='relu',
                           kernel_regularizer=l2(self.opt['regul_coef_conv']), padding='same')(embed_input)
         output_1 = MaxPooling1D(pool_size=self.pool_sizes[1], strides=1, padding='same')(output_1)
 
-        output_2 = Conv1D(self.opt['num_filters'], kernel_size=self.kernel_sizes[2], activation='relu',
+        output_2 = Conv1D(self.opt['filters_cnn'], kernel_size=self.kernel_sizes[2], activation='relu',
                           kernel_regularizer=l2(self.opt['regul_coef_conv']), padding='same')(embed_input)
         output_2 = MaxPooling1D(pool_size=self.pool_sizes[2], strides=1, padding='same')(output_2)
         output = concatenate([output_0, output_1, output_2], axis=1)
         output = Reshape(((self.opt['max_sequence_length']
                            * len(self.kernel_sizes))
-                          * self.opt['num_filters'],))(output)
+                          * self.opt['filters_cnn'],))(output)
         output = Dropout(rate=self.opt['dropout_rate'])(output)
         output = Dense(self.opt['dense_dim'], activation='relu',
                        kernel_regularizer=l2(self.opt['regul_coef_dense']))(output)
@@ -279,11 +280,17 @@ class InsultsModel(object):
     def lstm_word_model(self):
         embed_input = Input(shape=(self.opt['max_sequence_length'], self.opt['embedding_dim'],))
 
-        output_0 = Bidirectional(LSTM(self.opt['num_nodes_lstm'], kernel_regularizer=l2(self.opt['regul_coef_lstm']), dropout=self.opt['dropout_rate']))(embed_input)
+        output_0 = Bidirectional(LSTM(self.opt['units_lstm'],
+                                      kernel_regularizer=l2(self.opt['regul_coef_lstm']),
+                                      dropout=self.opt['dropout_rate']))(embed_input)
 
-        output_1 = Bidirectional(LSTM(self.opt['num_nodes_lstm'], kernel_regularizer=l2(self.opt['regul_coef_lstm']), dropout=self.opt['dropout_rate']))(embed_input)
+        output_1 = Bidirectional(LSTM(self.opt['units_lstm'],
+                                      kernel_regularizer=l2(self.opt['regul_coef_lstm']),
+                                      dropout=self.opt['dropout_rate']))(embed_input)
 
-        output_2 = Bidirectional(LSTM(self.opt['num_nodes_lstm'], kernel_regularizer=l2(self.opt['regul_coef_lstm']), dropout=self.opt['dropout_rate']))(embed_input)
+        output_2 = Bidirectional(LSTM(self.opt['units_lstm'],
+                                      kernel_regularizer=l2(self.opt['regul_coef_lstm']),
+                                      dropout=self.opt['dropout_rate']))(embed_input)
 
         output = concatenate([output_0, output_1, output_2], axis=1)
 
@@ -291,7 +298,10 @@ class InsultsModel(object):
         output = Dense(self.opt['dense_dim'], activation='relu',
                        kernel_regularizer=l2(self.opt['regul_coef_dense']))(output)
         output = Dropout(rate=self.opt['dropout_rate'])(output)
-        output = Dense(1, activation=None, kernel_regularizer=l2(self.opt['regul_coef_dense']))(output)
+        output = Dense(1, activation=None,
+                       kernel_regularizer=l2(self.opt['regul_coef_dense']))(output)
         act_output = Activation('sigmoid')(output)
         model = Model(inputs=embed_input, outputs=act_output)
         return model
+
+
