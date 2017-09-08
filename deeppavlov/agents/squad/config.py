@@ -24,6 +24,8 @@ def add_cmdline_args(parser):
                         help='Gradient norm clipping')
     agent.add_argument('--exp_decay', type=float, default=0.0,
                        help='Decay in learning rate after each iteration')
+    agent.add_argument('--lr', type=float, default=0.0005,
+                       help='Initial learning rate')
     agent.add_argument('--lr_drop', type=float, default=0.5,
                        help='Decrease learning rate if validation F1 score is not dropping')
     agent.add_argument('--lr_drop_patience', type=int, default=1,

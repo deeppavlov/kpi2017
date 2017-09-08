@@ -50,7 +50,7 @@ class SquadModel(object):
 
         self.model = self.fastqa_default()
 
-        optimizer = getOptimizer(self.optimizer, self.exp_decay, self.grad_norm_clip)
+        optimizer = getOptimizer(self.optimizer, self.exp_decay, self.grad_norm_clip, self.lr)
 
         self.model.compile(loss='categorical_crossentropy',
                            optimizer=optimizer,

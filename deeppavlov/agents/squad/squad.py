@@ -153,7 +153,8 @@ class SquadAgent(Agent):
         return batch_reply
 
     def drop_lr(self):
-        ''' Decreases learning rate if validation score is not increasing'''
+        ''' Reset optimizer and reset learning rate if validation score is not increasing'''
+        self.model.model.optimizer.set_state()
         self.model.model.optimizer.lr = self.model.model.optimizer.lr * self.opt['lr_drop']
 
     def save(self, fname=None):

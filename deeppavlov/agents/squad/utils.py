@@ -15,14 +15,14 @@ from keras.optimizers import Adam, Adamax, Adadelta
 # ------------------------------------------------------------------------------
 # Optimizer presets.
 # ------------------------------------------------------------------------------
-def getOptimizer(optim, exp_decay, grad_norm_clip):
+def getOptimizer(optim, exp_decay, grad_norm_clip, lr = 0.001):
     '''
     Function for setting up optimizer, combines several presets from
     published well performing models on SQuAD.
     '''
     optimizers = {
-        'Adam': Adam(lr=0.001, decay=exp_decay, clipnorm=grad_norm_clip),
-        'Adamax': Adamax(lr=0.002, decay=exp_decay, clipnorm=grad_norm_clip),
+        'Adam': Adam(lr=lr, decay=exp_decay, clipnorm=grad_norm_clip),
+        'Adamax': Adamax(lr=lr, decay=exp_decay, clipnorm=grad_norm_clip),
         'Adadelta': Adadelta(lr=1.0, rho=0.95, epsilon=1e-06, decay=exp_decay, clipnorm=grad_norm_clip)
     }
 
