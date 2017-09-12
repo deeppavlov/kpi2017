@@ -19,6 +19,10 @@ import copy
 import numpy as np
 import urllib.request
 import fasttext
+
+import nltk
+nltk.download('punkt')
+
 from nltk.tokenize import sent_tokenize, word_tokenize
 
 
