@@ -1,8 +1,10 @@
 import os
-import utils.train_model as tm
+import utils.train_model as model
+from utils.model_tests import KPIException
 
 def train_paraphraser_model(ctx):
-    tm.main(['-t', 'deeppavlov.tasks.paraphrases.agents',
+
+    metric = model.main(['-t', 'deeppavlov.tasks.paraphrases.agents',
                          '-m', 'deeppavlov.agents.paraphraser.paraphraser:ParaphraserAgent',
                          '-mf', './build/paraphraser',
                          '--datatype', 'train:ordered',
@@ -23,7 +25,11 @@ def train_paraphraser_model(ctx):
                          '--chosen-metric', 'f1'
 #,                         '--pretrained_model', './build/paraphraser'
 	])
-    tm.main(['-t', 'deeppavlov.tasks.paraphrases.agents',
+
+    return
+
+def test_paraphraser_model(ctx):
+    metric = model.main(['-t', 'deeppavlov.tasks.paraphrases.agents',
                          '-m', 'deeppavlov.agents.paraphraser.paraphraser:EnsembleParaphraserAgent',
                          '-mf', './build/paraphraser',
                          '--model_files', './build/paraphraser',
@@ -35,10 +41,8 @@ def train_paraphraser_model(ctx):
                          '--cross-validation-splits-count', '5'
                          '--chosen-metric', 'f1'
 	])
-    return
-
-def test_paraphraser_model(ctx):
-    
+    if metric['f1'] < 0.8:
+        raise KPIException('KPI has not been satisfied')
     return
 
 

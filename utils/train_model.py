@@ -203,24 +203,26 @@ def train_model(opt):
         agent = create_agent(opt)
 
         run_eval(agent, opt, 'valid', write_log=True)
-        run_eval(agent, opt, 'test', write_log=True)
+        metric, _ = run_eval(agent, opt, 'test', write_log=True)
     else:
-        run_eval(agent, opt, opt['datatype'], write_log=True)
+        metric, _ = run_eval(agent, opt, opt['datatype'], write_log=True)
     agent.shutdown()
+    return metric
 
 
 def train_cross_valid(opt):
     if opt.get('model_files'):
         opt['model_files'] = [fname+'_'+str(i) for fname in opt['model_files']
                               for i in range(opt['cross_validation_splits_count'])]
-        train_model(opt)
-        return
+        return train_model(opt)
+    metric = {'f1': 0, 'accuracy': 0}
     for i in range(opt['cross_validation_splits_count']):
         print("Training fold number %i" % (i+1))
         local_opt = copy.deepcopy(opt)
         local_opt['model_file'] = opt.get('model_file', '') + '_' + str(i)
         local_opt['cross_validation_model_index'] = i
-        train_model(local_opt)
+        metric = train_model(local_opt)
+    return metric
 
 
 def main(args=None):
@@ -258,9 +260,9 @@ def main(args=None):
                        help='metric with which to measure improvement')
     opt = parser.parse_args(args=args)
     if opt.get('cross_validation_splits_count', 0) > 1 and opt.get('cross_validation_model_index') is None:
-        train_cross_valid(opt)
+        return train_cross_valid(opt)
     else:
-        train_model(opt)
+        return train_model(opt)
 
 
 if __name__ == '__main__':
