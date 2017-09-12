@@ -19,10 +19,7 @@ import copy
 import numpy as np
 import urllib.request
 import fasttext
-
 import nltk
-nltk.download('punkt')
-
 from nltk.tokenize import sent_tokenize, word_tokenize
 
 
@@ -32,6 +29,8 @@ class EmbeddingsDict(object):
         self.embedding_dim = embedding_dim
         self.opt = copy.deepcopy(opt)
         self.load_items()
+
+        nltk.download('punkt')
 
         if not self.opt.get('fasttext_model'):
             raise RuntimeError('No pretrained fasttext model provided')
