@@ -38,7 +38,8 @@ class EmbeddingsDict(object):
             fname = os.path.basename(self.fasttext_model_file)
             try:
                 print('Trying to download a pretrained fasttext model from the ftp server')
-                urllib.request.urlretrieve(ftppath + '/insults_data/' + fname, self.fasttext_model_file)
+                url = os.path.join(os.path.join(ftppath, 'insults_data'), fname)
+                urllib.request.urlretrieve(url, self.fasttext_model_file)
                 print('Downloaded a fasttext model')
             except:
                 raise RuntimeError('Looks like the `IPAVLOV_FTP` variable is set incorrectly')
