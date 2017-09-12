@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+
+mkdir -p ./build
+
 python3 ./utils/train_model.py -t deeppavlov.tasks.paraphrases.agents \
                          -m deeppavlov.agents.paraphraser.paraphraser:ParaphraserAgent \
                          -mf ./build/paraphraser \

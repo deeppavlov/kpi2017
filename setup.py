@@ -30,7 +30,7 @@ def read_requirements():
     return reqs
 
 setup(name='deeppavlov',
-      version='0.0.1',
+      version='0.0.2',
       description='Open source NLP framework',
       url='https://github.com/deepmipt/deeppavlov',
       author='Neural Networks and Deep Learning lab, MIPT',
