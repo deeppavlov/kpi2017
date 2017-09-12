@@ -4,6 +4,7 @@ import re
 import string
 import numpy as np
 import pandas as pd
+import urllib
 
 
 def data_preprocessing(f):
@@ -146,9 +147,19 @@ def build(opt):
         print('[building data: ' + dpath + ']')
 
         if not opt.get('raw_dataset_path'):
-            raise RuntimeError('Please download dataset files from'
+            ftppath = os.environ.get('IPAVLOV_FTP')
+            if not ftppath:
+                raise RuntimeError('Please download dataset files from'
                                ' https://www.kaggle.com/c/detecting-insults-in-social-commentary/data'
                                ' and set path to their directory in raw-dataset-path parameter')
+            try:
+                print('Trying to download a insults dataset from the ftp server')
+                build_data.download(os.path.join(ftppath,'datasets'), dpath, 'insults.tar.gz')
+                build_data.untar(dpath, 'insults.tar.gz')
+                opt['raw_dataset_path'] = dpath
+                print('Downloaded a insults dataset')
+            except:
+                raise RuntimeError('Looks like the `IPAVLOV_FTP` variable is set incorrectly')
         raw_path = os.path.abspath(opt['raw_dataset_path'])
         train_file = os.path.join(raw_path, 'train.csv')
         valid_file = os.path.join(raw_path, 'test_with_solutions.csv')
