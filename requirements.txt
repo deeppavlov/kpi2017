@@ -7,3 +7,4 @@ Keras>=2.0.6
 h5py>=2.7.0
 fasttext==0.8.3
 pandas>=0.20.3
+nltk>=3.2.4
