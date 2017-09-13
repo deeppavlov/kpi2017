@@ -189,8 +189,7 @@ def bilinear_attn(context_encoding, question_attention_vector, context_mask):
     answer_start = Lambda(lambda q: masked_softmax(q[0], q[1]))([xWy, context_mask])
     answer_start = Lambda(lambda q: flatten(q))(answer_start)
 
-    return Lambda(lambda q: K.in_train_phase(lambda: tf.log(q), lambda: q))(answer_start)
-
+    return answer_start
 
 def answer_start_pred(context_encoding, question_attention_vector, context_mask, W, dropout_rate):
     ''' Answer start prediction layer '''
