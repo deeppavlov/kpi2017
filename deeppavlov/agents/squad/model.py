@@ -199,21 +199,13 @@ class SquadModel(object):
         ))(question_encoding)
 
         '''Attention over question'''
-        question_attention_vector = question_attn_vector(question_encoding, Q_mask, passage_encoding)
-
+        question_attention_vector = question_attn_vector(question_encoding, Q_mask, passage_encoding, repeat=False)
 
         '''Answer span prediction'''
         # Answer start prediction
-        answer_start = answer_start_pred(passage_encoding, question_attention_vector, P_mask, self.pointer_dim, self.linear_dropout)
+        answer_start = bilinear_attn(passage_encoding, question_attention_vector, P_mask)
         # Answer end prediction
-        answer_end = answer_end_pred(passage_encoding, question_attention_vector, P_mask, answer_start, self.pointer_dim, self.linear_dropout)
-
-
-#        '''Answer span prediction'''
-#        # Answer start prediction
-#        answer_start = bilinear_attn(passage_encoding, question_attention_vector, P_mask)
-#        # Answer end prediction
-#        answer_end = bilinear_attn(passage_encoding, question_attention_vector, P_mask)
+        answer_end = bilinear_attn(passage_encoding, question_attention_vector, P_mask)
 
         input_placeholders = [P, P_f, Q, P_mask, Q_mask]
         inputs = input_placeholders

@@ -134,7 +134,7 @@ def projection(encoding, W, dropout_rate):
     return proj
 
 
-def question_attn_vector(question_encoding, question_mask, context_encoding):
+def question_attn_vector(question_encoding, question_mask, context_encoding, repeat=True):
     ''' Attention over question '''
     question_attention_vector = TimeDistributed(Dense(1))(question_encoding)
     # apply masking
@@ -142,24 +142,22 @@ def question_attn_vector(question_encoding, question_mask, context_encoding):
     # apply the attention
     question_attention_vector = Lambda(lambda q: q[0] * q[1])([question_encoding, question_attention_vector])
     question_attention_vector = Lambda(lambda q: K.sum(q, axis=1))(question_attention_vector)
-    question_attention_vector = Lambda(lambda q: repeat_vector(q[0], q[1]))([question_attention_vector, context_encoding])
+    if repeat==True:
+        question_attention_vector = Lambda(lambda q: repeat_vector(q[0], q[1]))([question_attention_vector, context_encoding])
     return question_attention_vector
 
 
 def bilinear_attn(context_encoding, question_attention_vector, context_mask):
     ''' DRQA variant of answer start and end pointer layer '''
-    #x = question_attention_vector
-    #x = Lambda(lambda q: tf.transpose(q, [0,2,1]))(x)
-    #Wy = TimeDistributed(Dense(768))(context_encoding)
-    #xWy = Lambda(lambda q: tf.matmul(q[0], q[1]))([Wy, x])
+    x = question_attention_vector
+    x = Lambda(lambda q: tf.transpose(q, [0,2,1]))(x)
+    Wy = TimeDistributed(Dense(768))(context_encoding)
+    xWy = Lambda(lambda q: tf.matmul(q[0], q[1]))([Wy, x])
 
-    answer_start = TimeDistributed(Dense(128, activation='relu'))(context_encoding)
-    answer_start = TimeDistributed(Dense(1))(answer_start)
     # apply masking
     answer_start = Lambda(lambda q: masked_softmax(q[0], q[1]))([xWy, context_mask])
-    #print(answer_start)
     answer_start = Lambda(lambda q: flatten(q))(answer_start)
-    #print(answer_start)
+
     return Lambda(lambda q: K.in_train_phase(lambda: tf.log(q), lambda: q))(answer_start)
 
 
