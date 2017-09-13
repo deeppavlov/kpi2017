@@ -174,7 +174,7 @@ class SquadModel(object):
         ''' Encoding '''
         passage_encoding = passage_input
         passage_encoding = Lambda(lambda q: masked_tensor(q[0], q[1]))([passage_encoding, P_mask])
-        passage_encoding = Lambda(lambda q: biLSTM_encoder(
+        passage_encoding = Lambda(lambda q: biLSTM_encoder2(
             q,
             self.encoder_hidden_dim,
             self.rnn_dropout,
@@ -187,7 +187,7 @@ class SquadModel(object):
 
         question_encoding = question_input
         question_encoding = Lambda(lambda q: masked_tensor(q[0], q[1]))([question_encoding, Q_mask])
-        question_encoding = Lambda(lambda  q: biLSTM_encoder(
+        question_encoding = Lambda(lambda  q: biLSTM_encoder2(
             q,
             self.encoder_hidden_dim,
             self.rnn_dropout,
@@ -201,11 +201,19 @@ class SquadModel(object):
         '''Attention over question'''
         question_attention_vector = question_attn_vector(question_encoding, Q_mask, passage_encoding)
 
+
         '''Answer span prediction'''
         # Answer start prediction
-        answer_start = bilinear_attn(passage_encoding, question_attention_vector, P_mask)
+        answer_start = answer_start_pred(passage_encoding, question_attention_vector, P_mask, self.pointer_dim, self.linear_dropout)
         # Answer end prediction
-        answer_end = bilinear_attn(passage_encoding, question_attention_vector, P_mask)
+        answer_end = answer_end_pred(passage_encoding, question_attention_vector, P_mask, answer_start, self.pointer_dim, self.linear_dropout)
+
+
+#        '''Answer span prediction'''
+#        # Answer start prediction
+#        answer_start = bilinear_attn(passage_encoding, question_attention_vector, P_mask)
+#        # Answer end prediction
+#        answer_end = bilinear_attn(passage_encoding, question_attention_vector, P_mask)
 
         input_placeholders = [P, P_f, Q, P_mask, Q_mask]
         inputs = input_placeholders
