@@ -176,7 +176,7 @@ class BilinearProductLayer(Layer):
 
   def compute_output_shape(self, input_shape):
     # print (input_shape)
-    batch_size = input_shape[0][0]
+    batch_size = input_shape[0]
     return (batch_size, self.output_dim)
 
 
