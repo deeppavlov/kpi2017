@@ -3,6 +3,10 @@ import numpy as np
 import keras.backend as K
 from keras.layers import TimeDistributed, Lambda, Dense, Activation, multiply, LSTM, Bidirectional, Dropout, merge
 from keras.activations import softmax as Softmax
+import scipy.stats as stats
+from keras import backend as K
+from keras.engine.topology import Layer
+
 
 '''
 ----------- Lambda functions --------------
@@ -147,14 +151,40 @@ def question_attn_vector(question_encoding, question_mask, context_encoding, rep
     return question_attention_vector
 
 
+class BilinearProductLayer(Layer):
+  def __init__(self, output_dim, input_dim=None, **kwargs):
+    self.output_dim = output_dim #k
+    self.input_dim = input_dim   #d
+    if self.input_dim:
+      kwargs['input_shape'] = (self.input_dim,)
+    super(BilinearProductLayer, self).__init__(**kwargs)
+
+  def build(self, input_shape):
+    mean = 0.0
+    std = 1.0
+    d = self.input_dim
+    initial_W_values = stats.truncnorm.rvs(-2 * std, 2 * std, loc=mean, scale=std, size=(d,d))
+    self.W = K.variable(initial_W_values)
+    self.trainable_weights = [self.W]
+
+  def call(self, inputs, mask=None):
+    if type(inputs) is not list or len(inputs) <= 1:
+      raise Exception('BilinearProductLayer must be called on a list of tensors '
+                      '(at least 2). Got: ' + str(inputs))
+    e1 = inputs[0]
+    e2 = inputs[1]
+    batch_size = K.shape(e1)[0]
+    return K.sum((e2 * K.dot(e1, self.W[0])), axis=1)
+
+  def compute_output_shape(self, input_shape):
+    # print (input_shape)
+    batch_size = input_shape[0][0]
+    return (batch_size, self.output_dim)
+
+
 def bilinear_attn(context_encoding, question_attention_vector, context_mask):
     ''' DRQA variant of answer start and end pointer layer '''
-
-    x = question_attention_vector
-
-    Wy = TimeDistributed(Dense(768))(context_encoding)
-    xWy = Lambda(lambda q: tf.multiply(q[0], q[1]))([Wy, x])
-    xWy = Lambda(lambda q: tf.reduce_sum(q, 2, keep_dims=True))(xWy)
+    xWy = TimeDistributed(BilinearProductLayer)(question_attention_vector, context_encoding)
 
     # apply masking
     answer_start = Lambda(lambda q: masked_softmax(q[0], q[1]))([xWy, context_mask])
