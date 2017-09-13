@@ -14,7 +14,7 @@ python3 utils/train_model.py -t squad \
                          --lr-drop-patience 1 \
                          --lr 0.001 \
                          --lr_drop 0.2 \
-                         --model 'drqa' \
+                         --type 'drqa_clone' \
                          --concat True \
                          --embedding_dropout 0.2 \
                          --linear_dropout 0.0 \
