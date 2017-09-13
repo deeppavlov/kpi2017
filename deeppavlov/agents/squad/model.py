@@ -174,7 +174,7 @@ class SquadModel(object):
         ''' Encoding '''
         passage_encoding = passage_input
         passage_encoding = Lambda(lambda q: masked_tensor(q[0], q[1]))([passage_encoding, P_mask])
-        passage_encoding = Lambda(lambda q: biLSTM_encoder2(
+        passage_encoding = Lambda(lambda q: biLSTM_encoder(
             q,
             self.encoder_hidden_dim,
             self.rnn_dropout,
@@ -187,7 +187,7 @@ class SquadModel(object):
 
         question_encoding = question_input
         question_encoding = Lambda(lambda q: masked_tensor(q[0], q[1]))([question_encoding, Q_mask])
-        question_encoding = Lambda(lambda  q: biLSTM_encoder2(
+        question_encoding = Lambda(lambda  q: biLSTM_encoder(
             q,
             self.encoder_hidden_dim,
             self.rnn_dropout,
