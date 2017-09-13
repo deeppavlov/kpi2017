@@ -150,8 +150,8 @@ def bilinear_attn(context_encoding, question_attention_vector, context_mask):
     ''' DRQA variant of answer start and end pointer layer '''
     x = question_attention_vector
     Wy = TimeDistributed(Dense(768))(context_encoding)
-    Wy = K.permute_dimensions(Wy, (0,2,1))
-    xWy = K.dot(x, Wy)
+    Wy = Lambda(lambda q: K.permute_dimensions(q, (0,2,1)))(Wy)
+    xWy = Lambda( lambda q: K.dot(q[0], q[1]))([x, Wy])
     # apply masking
     answer_start = Lambda(lambda q: masked_softmax(q[0], q[1]))([xWy, context_mask])
     answer_start = Lambda(lambda q: flatten(q))(answer_start)
