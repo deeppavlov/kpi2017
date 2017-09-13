@@ -151,7 +151,8 @@ def bilinear_attn(context_encoding, question_attention_vector, context_mask):
     x = question_attention_vector
     Wy = TimeDistributed(Dense(768))(context_encoding)
     Wy = Lambda(lambda q: K.permute_dimensions(q, (0,2,1)))(Wy)
-    xWy = Lambda( lambda q: K.dot(q[0], q[1]))([x, Wy])
+    xWy = Lambda(lambda q: K.dot(q[0], q[1]))([x, Wy])
+    xWy = Lambda(lambda q: tf.expand_dims(q, axis=2))(xWy)
     # apply masking
     answer_start = Lambda(lambda q: masked_softmax(q[0], q[1]))([xWy, context_mask])
     answer_start = Lambda(lambda q: flatten(q))(answer_start)
