@@ -149,7 +149,7 @@ def question_attn_vector(question_encoding, question_mask, context_encoding):
 def bilinear_attn(context_encoding, question_attention_vector, context_mask):
     ''' DRQA variant of answer start and end pointer layer '''
     n =  K.tf.cast(tf.shape(question_attention_vector)[1], dtype=K.tf.int32)
-    Wy = TimeDistributed(Dense(n))(context_encoding)
+    Wy = TimeDistributed(Dense(768))(context_encoding)
     xWy = multiply(Wy, question_attention_vector)
 
     # apply masking
