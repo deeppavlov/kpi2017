@@ -161,7 +161,7 @@ class BilinearProductLayer(Layer):
 
   def build(self, input_shape):
     mean = 0.0
-    std = 0.001
+    std = 1.0
     d = self.input_dim
     initial_W_values = stats.truncnorm.rvs(-2 * std, 2 * std, loc=mean, scale=std, size=(d,d))
     self.W = K.variable(initial_W_values)
@@ -189,7 +189,8 @@ def bilinear_attn(context_encoding, question_attention_vector, context_mask):
     answer_start = Lambda(lambda q: masked_softmax(q[0], q[1]))([xWy, context_mask])
     answer_start = Lambda(lambda q: flatten(q))(answer_start)
 
-    return answer_start
+    return  answer_start #Lambda(lambda q: K.in_train_phase(lambda: tf.log(q), lambda: q))(answer_start)
+
 
 def answer_start_pred(context_encoding, question_attention_vector, context_mask, W, dropout_rate):
     ''' Answer start prediction layer '''
