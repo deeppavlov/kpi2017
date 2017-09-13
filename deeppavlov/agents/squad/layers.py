@@ -153,11 +153,13 @@ def bilinear_attn(context_encoding, question_attention_vector, context_mask):
     Wy = TimeDistributed(Dense(768))(context_encoding)
     xWy = Lambda(lambda q: tf.matmul(q[0], q[1]))([Wy, x])
 
+    answer_start = TimeDistributed(Dense(768, activation='relu'))(context_encoding)
+    answer_start = TimeDistributed(Dense(1))(answer_start)
     # apply masking
     answer_start = Lambda(lambda q: masked_softmax(q[0], q[1]))([xWy, context_mask])
-    print(answer_start)
+    #print(answer_start)
     answer_start = Lambda(lambda q: flatten(q))(answer_start)
-    print(answer_start)
+    #print(answer_start)
     return Lambda(lambda q: K.in_train_phase(lambda: tf.log(q), lambda: q))(answer_start)
 
 
