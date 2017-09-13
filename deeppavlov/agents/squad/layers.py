@@ -151,45 +151,18 @@ def question_attn_vector(question_encoding, question_mask, context_encoding, rep
     return question_attention_vector
 
 
-class BilinearProductLayer(Layer):
-  def __init__(self, output_dim, input_dim=None, **kwargs):
-    self.output_dim = output_dim #k
-    self.input_dim = input_dim   #d
-    if self.input_dim:
-      kwargs['input_shape'] = (self.input_dim,)
-    super(BilinearProductLayer, self).__init__(**kwargs)
-
-  def build(self, input_shape):
-    mean = 0.0
-    std = 1.0
-    d = self.input_dim
-    initial_W_values = stats.truncnorm.rvs(-2 * std, 2 * std, loc=mean, scale=std, size=(d,d))
-    self.W = K.variable(initial_W_values)
-    self.trainable_weights = [self.W]
-
-  def call(self, inputs, mask=None):
-
-    e1 = inputs[:,:768]
-    e2 = inputs[:,768:]
-    batch_size = K.shape(e1)[0]
-    return K.sum((e2 * K.dot(e1, self.W)), axis=1)
-
-  def compute_output_shape(self, input_shape):
-    # print (input_shape)
-    batch_size = input_shape[0]
-    return (batch_size, self.output_dim)
-
-
 def bilinear_attn(context_encoding, question_attention_vector, context_mask):
     ''' DRQA variant of answer start and end pointer layer '''
-    merged = Lambda(lambda q: tf.concat(q, 2))([question_attention_vector, context_encoding])
-    xWy = TimeDistributed(BilinearProductLayer(output_dim=1, input_dim=768))(merged)
+
+    x = context_encoding
+    Wy = Dense(768)(question_attention_vector[:,0,:])
+    xWy = Lambda(lambda q: tf.reduce_sum(tf.multiply([q[0],q[1]]), axis=2, keep_dims=True))([context_encoding, question_attention_vector])
 
     # apply masking
     answer_start = Lambda(lambda q: masked_softmax(q[0], q[1]))([xWy, context_mask])
     answer_start = Lambda(lambda q: flatten(q))(answer_start)
 
-    return  answer_start #Lambda(lambda q: K.in_train_phase(lambda: tf.log(q), lambda: q))(answer_start)
+    return  answer_start
 
 
 def answer_start_pred(context_encoding, question_attention_vector, context_mask, W, dropout_rate):

@@ -173,6 +173,7 @@ class SquadModel(object):
 
         ''' Encoding '''
         passage_encoding = passage_input
+        passage_encoding = Masking()(passage_encoding)
         passage_encoding = Lambda(lambda q: biLSTM_encoder2(
             q,
             self.encoder_hidden_dim,
@@ -183,9 +184,10 @@ class SquadModel(object):
             self.output_dropout,
             True
         ))(passage_encoding)
-        #passage_encoding = Lambda(lambda q: masked_tensor(q[0], q[1]))([passage_encoding, P_mask])
+        passage_encoding = Lambda(lambda q: masked_tensor(q[0], q[1]))([passage_encoding, P_mask])
 
         question_encoding = question_input
+        question_encoding = Masking()(question_encoding)
         question_encoding = Lambda(lambda  q: biLSTM_encoder2(
             q,
             self.encoder_hidden_dim,
@@ -196,7 +198,7 @@ class SquadModel(object):
             self.output_dropout,
             True
         ))(question_encoding)
-        #question_encoding = Lambda(lambda q: masked_tensor(q[0], q[1]))([question_encoding, Q_mask])
+        question_encoding = Lambda(lambda q: masked_tensor(q[0], q[1]))([question_encoding, Q_mask])
 
         '''Attention over question'''
         question_attention_vector = question_attn_vector(question_encoding, Q_mask, passage_encoding)
@@ -245,23 +247,31 @@ class SquadModel(object):
         ''' Encoding '''
         passage_encoding = passage_input
         passage_encoding = Masking()(passage_encoding)
-        passage_encoding = biLSTM_encoder(
-            passage_encoding,
+        passage_encoding = Lambda(lambda q: biLSTM_encoder2(
+            q,
             self.encoder_hidden_dim,
             self.rnn_dropout,
             self.recurrent_dropout,
-            self.question_enc_layers)
-        passage_encoding = projection(passage_encoding, self.projection_dim, self.linear_dropout)
+            self.question_enc_layers,
+            self.input_dropout,
+            self.output_dropout,
+            True
+        ))(passage_encoding)
+        passage_encoding = Lambda(lambda q: masked_tensor(q[0], q[1]))([passage_encoding, P_mask])
 
         question_encoding = question_input
         question_encoding = Masking()(question_encoding)
-        question_encoding = biLSTM_encoder(
-            question_encoding,
+        question_encoding = Lambda(lambda  q: biLSTM_encoder2(
+            q,
             self.encoder_hidden_dim,
             self.rnn_dropout,
             self.recurrent_dropout,
-            self.context_enc_layers)
-        question_encoding = projection(question_encoding, self.projection_dim, self.linear_dropout)
+            self.context_enc_layers,
+            self.input_dropout,
+            self.output_dropout,
+            True
+        ))(question_encoding)
+        question_encoding = Lambda(lambda q: masked_tensor(q[0], q[1]))([question_encoding, Q_mask])
 
         '''Attention over question'''
         question_attention_vector = question_attn_vector(question_encoding, Q_mask, passage_encoding)
@@ -278,10 +288,4 @@ class SquadModel(object):
 
         model = Model(inputs=inputs, outputs=outputs)
         return model
-
-
-    def hybrid_default(self):
-        '''Hybrid architecture that uses DRQA style encoders and fastqa style pointers'''
-
-        pass
 
