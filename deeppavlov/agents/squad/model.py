@@ -203,9 +203,9 @@ class SquadModel(object):
 
         '''Answer span prediction'''
         # Answer start prediction
-        answer_start = answer_start_pred(passage_encoding, question_attention_vector, P_mask, self.pointer_dim, self.linear_dropout)#bilinear_attn(passage_encoding, question_attention_vector, P_mask)
+        answer_start = bilinear_attn(passage_encoding, question_attention_vector, P_mask)
         # Answer end prediction
-        answer_end = answer_start_pred(passage_encoding, question_attention_vector, P_mask, self.pointer_dim, self.linear_dropout)#bilinear_attn(passage_encoding, question_attention_vector, P_mask)
+        answer_end = bilinear_attn(passage_encoding, question_attention_vector, P_mask)
 
         input_placeholders = [P, P_f, Q, P_mask, Q_mask]
         inputs = input_placeholders
@@ -278,4 +278,10 @@ class SquadModel(object):
 
         model = Model(inputs=inputs, outputs=outputs)
         return model
+
+
+    def hybrid_default(self):
+        '''Hybrid architecture that uses DRQA style encoders and fastqa style pointers'''
+
+        pass
 
