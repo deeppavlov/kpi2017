@@ -12,7 +12,7 @@ def add_cmdline_args(parser):
                        help='Load dict/features/weights/opts from this file prefix')
 
     # Model details
-    agent.add_argument('--model', type=str, default='drqa',
+    agent.add_argument('--model', type=str, default='drqa_clone',
                        help='What model to use')
 
     # Predictions

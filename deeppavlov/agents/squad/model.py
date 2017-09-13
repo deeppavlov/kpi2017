@@ -50,7 +50,7 @@ class SquadModel(object):
 
         if self.model == 'fastqa':
             self.model = self.fastqa_default()
-        elif self.model == 'drqa':
+        elif self.model == 'drqa_clone':
             self.model = self.drqa_default()
         else:
             raise NameError('There is no model with name: {}'.format(self.model))
