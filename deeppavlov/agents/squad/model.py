@@ -162,14 +162,14 @@ class SquadModel(object):
         Q_mask = Input(shape=(None,), name='question_mask')
 
         '''Emdedding dropout (with similar mask for all timesteps)'''
-        P = Dropout(rate=self.embedding_dropout)(P)
-        Q = Dropout(rate=self.embedding_dropout)(Q)
+        P_drop = Dropout(rate=self.embedding_dropout)(P)
+        Q_drop = Dropout(rate=self.embedding_dropout)(Q)
 
         ''' Aligned question embedding '''
-        aligned_question = learnable_wiq(P, Q, Q_mask, layer_dim=self.aligned_question_dim)
-        passage_input = Lambda(lambda q: tf.concat(q, axis=2))([P, P_f, aligned_question])
+        aligned_question = learnable_wiq(P_drop, Q_drop, Q_mask, layer_dim=self.aligned_question_dim)
+        passage_input = Lambda(lambda q: tf.concat(q, axis=2))([P_drop, P_f, aligned_question])
 
-        question_input = Q
+        question_input = Q_drop
 
         ''' Encoding '''
         passage_encoding = passage_input
