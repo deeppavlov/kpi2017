@@ -23,5 +23,4 @@ python3 utils/train_model.py -t squad \
                          --input_dropout 0.3 \
                          --output_dropout 0.3 \
                          --model-file '../save/squad/squad_drqa/squad' \
-                         --pretrained_model '../save/squad/squad_6sept2017/fastqa_drqa' \
                          --embedding_file '../embeddings/wiki-news-300d-1M.vec'
