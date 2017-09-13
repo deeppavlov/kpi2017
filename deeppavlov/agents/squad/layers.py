@@ -140,7 +140,7 @@ def projection(encoding, W, dropout_rate):
 
 def question_attn_vector(question_encoding, question_mask, context_encoding, repeat=True):
     ''' Attention over question '''
-    question_attention_vector = TimeDistributed(Dense(1))(question_encoding)
+    question_attention_vector = TimeDistributed(Dense(1, use_bias=False))(question_encoding)
     # apply masking
     question_attention_vector = Lambda(lambda q: masked_softmax(q[0], q[1]))([question_attention_vector, question_mask])
     # apply the attention
@@ -175,7 +175,7 @@ def answer_start_pred(context_encoding, question_attention_vector, context_mask,
 
     answer_start = TimeDistributed(Dense(W, activation='relu'))(answer_start)
     answer_start = Dropout(rate=dropout_rate)(answer_start)
-    answer_start = TimeDistributed(Dense(1, use_bias=False))(answer_start)
+    answer_start = TimeDistributed(Dense(1))(answer_start)
 
     # apply masking
     answer_start = Lambda(lambda q: masked_softmax(q[0], q[1]))([answer_start, context_mask])
