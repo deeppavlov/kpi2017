@@ -171,8 +171,8 @@ class BilinearProductLayer(Layer):
     if type(inputs) is not list or len(inputs) <= 1:
       raise Exception('BilinearProductLayer must be called on a list of tensors '
                       '(at least 2). Got: ' + str(inputs))
-    e1 = inputs[0]
-    e2 = inputs[1]
+    e1 = inputs[:,:,:768]
+    e2 = inputs[:,:,768:]
     batch_size = K.shape(e1)[0]
     return K.sum((e2 * K.dot(e1, self.W[0])), axis=1)
 
@@ -184,7 +184,8 @@ class BilinearProductLayer(Layer):
 
 def bilinear_attn(context_encoding, question_attention_vector, context_mask):
     ''' DRQA variant of answer start and end pointer layer '''
-    xWy = TimeDistributed(BilinearProductLayer)([question_attention_vector, context_encoding])
+    merged = Lambda(lambda q: tf.concat(q, 2))([question_attention_vector, context_encoding])
+    xWy = TimeDistributed(BilinearProductLayer)(merged)
 
     # apply masking
     answer_start = Lambda(lambda q: masked_softmax(q[0], q[1]))([xWy, context_mask])
