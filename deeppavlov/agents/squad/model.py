@@ -173,7 +173,6 @@ class SquadModel(object):
 
         ''' Encoding '''
         passage_encoding = passage_input
-        passage_encoding = Lambda(lambda q: masked_tensor(q[0], q[1]))([passage_encoding, P_mask])
         passage_encoding = Lambda(lambda q: biLSTM_encoder2(
             q,
             self.encoder_hidden_dim,
@@ -184,9 +183,9 @@ class SquadModel(object):
             self.output_dropout,
             True
         ))(passage_encoding)
+        passage_encoding = Lambda(lambda q: masked_tensor(q[0], q[1]))([passage_encoding, P_mask])
 
         question_encoding = question_input
-        question_encoding = Lambda(lambda q: masked_tensor(q[0], q[1]))([question_encoding, Q_mask])
         question_encoding = Lambda(lambda  q: biLSTM_encoder2(
             q,
             self.encoder_hidden_dim,
@@ -197,6 +196,7 @@ class SquadModel(object):
             self.output_dropout,
             True
         ))(question_encoding)
+        question_encoding = Lambda(lambda q: masked_tensor(q[0], q[1]))([question_encoding, Q_mask])
 
         '''Attention over question'''
         question_attention_vector = question_attn_vector(question_encoding, Q_mask, passage_encoding, repeat=False)
