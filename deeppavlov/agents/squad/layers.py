@@ -153,7 +153,7 @@ def bilinear_attn(context_encoding, question_attention_vector, context_mask):
     x = question_attention_vector
 
     Wy = TimeDistributed(Dense(768))(context_encoding)
-    xWy = Lambda(lambda q: tf.multply(q[0], q[1]))([Wy, x])
+    xWy = Lambda(lambda q: tf.multiply(q[0], q[1]))([Wy, x])
     xWy = Lambda(lambda q: tf.reduce_sum(q, 2, keep_dims=True))(xWy)
 
     # apply masking
