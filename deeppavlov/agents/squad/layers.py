@@ -151,12 +151,10 @@ def bilinear_attn(context_encoding, question_attention_vector, context_mask):
     ''' DRQA variant of answer start and end pointer layer '''
 
     x = question_attention_vector
-    x = Lambda(lambda q: tf.expand_dims(q, 1))(x)
 
     Wy = TimeDistributed(Dense(768))(context_encoding)
-    Wy = Lambda(lambda q: tf.transpose(q, [0,2,1]))(Wy)
-    xWy = Lambda(lambda q: tf.matmul(q[0], q[1]))([Wy, x])
-    xWy = Lambda(lambda q: tf.transpose(q, [0,2,1]))(xWy)
+    xWy = Lambda(lambda q: tf.multply(q[0], q[1]))([Wy, x])
+    xWy = Lambda(lambda q: tf.reduce_sum(q, 2, keep_dims=True))(xWy)
 
     # apply masking
     answer_start = Lambda(lambda q: masked_softmax(q[0], q[1]))([xWy, context_mask])
