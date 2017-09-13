@@ -172,7 +172,7 @@ class BilinearProductLayer(Layer):
     e1 = inputs[:,:768]
     e2 = inputs[:,768:]
     batch_size = K.shape(e1)[0]
-    return K.sum((e2 * K.dot(e1, self.W[0])), axis=1)
+    return K.sum((e2 * K.dot(e1, self.W)), axis=1)
 
   def compute_output_shape(self, input_shape):
     # print (input_shape)
