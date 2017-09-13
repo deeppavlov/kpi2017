@@ -199,7 +199,7 @@ class SquadModel(object):
         #question_encoding = Lambda(lambda q: masked_tensor(q[0], q[1]))([question_encoding, Q_mask])
 
         '''Attention over question'''
-        question_attention_vector = question_attn_vector(question_encoding, Q_mask, passage_encoding)
+        question_attention_vector = question_attn_vector(question_encoding, Q_mask, passage_encoding, repeat=False)
 
         '''Answer span prediction'''
         # Answer start prediction
