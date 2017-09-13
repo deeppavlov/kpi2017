@@ -30,6 +30,11 @@ def masked_softmax(tensor, mask, expand=2, axis=1):
     predicted = tf.divide(masked, div)
     return predicted
 
+def masked_tensor(tensor, mask):
+    mask = tf.expand_dims(mask, axis=2)
+    return tf.multiply(tensor, mask)
+
+
 '''
 ---------- Layers -------------------------
 '''
@@ -43,6 +48,7 @@ def learnable_wiq(context, question, question_mask, layer_dim):
     coefs = Lambda(lambda q: masked_softmax(matrix, question_mask, axis=2, expand=1))([matrix, question_mask])
     aligned_question_enc = Lambda(lambda q: tf.matmul(q[0], q[1]))([coefs, question])
     return(aligned_question_enc)
+
 
 
 def biLSTM_encoder(input, units, dropout, recurrent_dropout, num_layers):
@@ -71,6 +77,49 @@ def biLSTM_encoder(input, units, dropout, recurrent_dropout, num_layers):
 
     return encoder
 
+def biLSTM_encoder2(input, units, dropout = 0.0, recurrent_dropout = 0.0, num_layers = 3, input_dropout = 0.3, output_dropout = 0.3, concat_layers = True):
+    ''' Question and context encoder '''
+    outputs = [input]
+
+    for i in range(num_layers):
+        rnn_input = outputs[-1]
+
+        if input_dropout > 0:
+            rnn_input = Dropout(rate=input_dropout)(rnn_input)
+
+        rnn_output = Bidirectional(LSTM(units=units,
+                                activation='tanh',
+                                recurrent_activation='hard_sigmoid',
+                                use_bias=True,
+                                kernel_initializer='glorot_uniform',
+                                recurrent_initializer='orthogonal',
+                                bias_initializer='zeros',
+                                unit_forget_bias=True,
+                                kernel_regularizer=None,
+                                recurrent_regularizer=None,
+                                bias_regularizer=None,
+                                activity_regularizer=None,
+                                kernel_constraint=None,
+                                recurrent_constraint=None,
+                                bias_constraint=None,
+                                return_sequences=True,
+                                dropout=dropout,
+                                recurrent_dropout = recurrent_dropout,
+                                unroll=False)) (rnn_input)
+
+        outputs.append(rnn_output)
+
+    # Concat hidden layers
+    if concat_layers:
+        output = concatenate(outputs[1:])
+    else:
+        output = outputs[-1]
+
+    if output_dropout > 0:
+        output = Dropout(rate=input_dropout)(output)
+
+    return output
+
 
 def projection(encoding, W, dropout_rate):
     ''' Projection layear
@@ -95,6 +144,19 @@ def question_attn_vector(question_encoding, question_mask, context_encoding):
     question_attention_vector = Lambda(lambda q: K.sum(q, axis=1))(question_attention_vector)
     question_attention_vector = Lambda(lambda q: repeat_vector(q[0], q[1]))([question_attention_vector, context_encoding])
     return question_attention_vector
+
+
+def bilinear_attn(context_encoding, question_attention_vector, context_mask):
+    ''' DRQA variant of answer start and end pointer layer '''
+    n = tf.shape(context_encoding)[2]
+    Wy = TimeDistributed(Dense(n))(context_encoding)
+    xWy = multiply(Wy, question_attention_vector)
+
+    # apply masking
+    answer_start = Lambda(lambda q: masked_softmax(q[0], q[1]))([xWy, context_mask])
+    answer_start = Lambda(lambda q: flatten(q))(answer_start)
+
+    return K.in_train_phase(lambda: tf.log(answer_start), lambda: answer_start)
 
 
 def answer_start_pred(context_encoding, question_attention_vector, context_mask, W, dropout_rate):

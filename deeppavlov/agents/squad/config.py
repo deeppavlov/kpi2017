@@ -12,6 +12,8 @@ def add_cmdline_args(parser):
                        help='Load dict/features/weights/opts from this file prefix')
 
     # Model details
+    agent.add_argument('--model', type=str, default='drqa',
+                       help='What model to use')
 
     # Predictions
     agent.add_argument('--answ_maxlen', type=int, default=15,
@@ -56,6 +58,8 @@ def add_cmdline_args(parser):
                         help='Number of layers in question encoder')
     agent.add_argument('--context_enc_layers', type=int, default=3,
                         help='Number of layers in context encoder')
+    agent.add_argument('--concat', type='bool', default=True,
+                        help='Concatenate rnn layer outputs')
 
     # Projection
     agent.add_argument('--projection_dim', type=int, default=128,
@@ -70,7 +74,8 @@ def add_cmdline_args(parser):
     agent.add_argument('--linear_dropout', type=float, default=0.25)
     agent.add_argument('--rnn_dropout', type=float, default=0.25)
     agent.add_argument('--recurrent_dropout', type=float, default=0.25)
-
+    agent.add_argument('--input_dropout', type=float, default=0.3)
+    agent.add_argument('--output_dropout', type=float, default=0.3)
 
     # Basics
     agent.add_argument('--embedding_file', type=str, default=None,
