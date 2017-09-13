@@ -184,7 +184,7 @@ class BilinearProductLayer(Layer):
 
 def bilinear_attn(context_encoding, question_attention_vector, context_mask):
     ''' DRQA variant of answer start and end pointer layer '''
-    xWy = TimeDistributed(BilinearProductLayer)(question_attention_vector, context_encoding)
+    xWy = TimeDistributed(BilinearProductLayer)([question_attention_vector, context_encoding])
 
     # apply masking
     answer_start = Lambda(lambda q: masked_softmax(q[0], q[1]))([xWy, context_mask])
