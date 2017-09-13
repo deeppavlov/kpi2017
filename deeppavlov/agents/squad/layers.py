@@ -45,8 +45,8 @@ def masked_tensor(tensor, mask):
 
 def learnable_wiq(context, question, question_mask, layer_dim):
     ''' Aligned question embedding'''
-    question_enc = TimeDistributed(Dense(units=layer_dim, activation='relu'))(question)
-    context_enc = TimeDistributed(Dense(units=layer_dim, activation='relu'))(context)
+    question_enc = TimeDistributed(Dense(units=layer_dim, activation='relu', use_bias=False))(question)
+    context_enc = TimeDistributed(Dense(units=layer_dim, activation='relu', use_bias=False))(context)
     question_enc = Lambda(lambda q: tf.transpose(q, [0, 2, 1]))(question_enc)
     matrix = Lambda(lambda q: tf.matmul(q[0], q[1]))([context_enc, question_enc])
     coefs = Lambda(lambda q: masked_softmax(matrix, question_mask, axis=2, expand=1))([matrix, question_mask])
@@ -175,7 +175,7 @@ def answer_start_pred(context_encoding, question_attention_vector, context_mask,
 
     answer_start = TimeDistributed(Dense(W, activation='relu'))(answer_start)
     answer_start = Dropout(rate=dropout_rate)(answer_start)
-    answer_start = TimeDistributed(Dense(1))(answer_start)
+    answer_start = TimeDistributed(Dense(1, use_bias=False))(answer_start)
 
     # apply masking
     answer_start = Lambda(lambda q: masked_softmax(q[0], q[1]))([answer_start, context_mask])
