@@ -54,7 +54,6 @@ def learnable_wiq(context, question, question_mask, layer_dim):
     return(aligned_question_enc)
 
 
-
 def biLSTM_encoder(input, units, dropout, recurrent_dropout, num_layers):
     ''' Question and context encoder '''
     encoder = input

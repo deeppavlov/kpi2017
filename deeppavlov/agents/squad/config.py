@@ -20,25 +20,27 @@ def add_cmdline_args(parser):
                        help='Maximum answer length')
 
     # Optimizer
-    agent.add_argument('--optimizer', type=str, default='Adamax',
+    agent.add_argument('--optimizer', type=str, default='Adam',
                         help='Optimizer to use')
     agent.add_argument('--grad_norm_clip', type=float, default=10.0,
                         help='Gradient norm clipping')
     agent.add_argument('--exp_decay', type=float, default=0.0,
                        help='Decay in learning rate after each iteration')
-    agent.add_argument('--lr', type=float, default=0.0005,
+    agent.add_argument('--lr', type=float, default=0.001,
                        help='Initial learning rate')
-    agent.add_argument('--lr_drop', type=float, default=0.5,
+    agent.add_argument('--lr_drop', type=float, default=0.3,
                        help='Decrease learning rate if validation F1 score is not dropping')
     agent.add_argument('--lr_drop_patience', type=int, default=1,
                        help='How much epochs to wait before decreasing learning rate')
 
     # Word embeddings
+    agent.add_argument('--inner_embeddings', type=bool, default=False,
+                        help='Word embedding dimension')
     agent.add_argument('--word_embedding_dim', type=int, default=300,
                         help='Word embedding dimension')
 
     # Context and question embeddings
-    agent.add_argument('--context_embedding_dim', type=int, default=308,
+    agent.add_argument('--context_embedding_dim', type=int, default=303,
                         help='Shape of context token vector')
     agent.add_argument('--question_embedding_dim', type=int, default=300,
                         help='Shape of question token vector')
@@ -86,7 +88,7 @@ def add_cmdline_args(parser):
                         help='Whether to use in_question features')
     agent.add_argument('--use_tf', type='bool', default=True,
                         help='Whether to use tf features')
-    agent.add_argument('--use_time', type=int, default=5,
+    agent.add_argument('--use_time', type=int, default=0,
                         help='Time features marking how recent word was said')
 
 

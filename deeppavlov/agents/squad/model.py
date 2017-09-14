@@ -48,8 +48,10 @@ class SquadModel(object):
         self.train_f1 = AverageMeter()
         self.train_em = AverageMeter()
 
-        if self.type == 'fastqa':
+        if self.type == 'fastqa_default':
             self.model = self.fastqa_default()
+        if self.type == 'fastqa_hybrid':
+            self.model = self.fastqa_hybrid()
         elif self.type == 'drqa_clone':
             self.model = self.drqa_default()
         else:
@@ -220,6 +222,70 @@ class SquadModel(object):
 
 
     def fastqa_default(self):
+
+        '''Inputs'''
+        P = Input(shape=(None, self.word_embedding_dim), name='context_input')
+        Q = Input(shape=(None, self.word_embedding_dim), name='question_input')
+        P_f = Input(shape=(None, self.context_embedding_dim - self.word_embedding_dim), name='context_features')
+
+        '''Masking inputs'''
+        P_mask = Input(shape=(None,), name='context_mask')
+        Q_mask = Input(shape=(None,), name='question_mask')
+
+        '''Emdedding dropout (with similar mask for all timesteps)'''
+        P_drop = Dropout(
+            rate=self.embedding_dropout,
+            noise_shape=(tf.shape(P)[0], 1, self.word_embedding_dim))(P)
+
+        Q_drop = Dropout(
+            rate=self.embedding_dropout,
+            noise_shape=(tf.shape(Q)[0], 1, self.word_embedding_dim))(Q)
+
+        ''' Aligned question embedding '''
+        aligned_question = learnable_wiq(P_drop, Q_drop, Q_mask, layer_dim=self.aligned_question_dim)
+        passage_input = Lambda(lambda q: tf.concat(q, axis=2))([P_drop, P_f, aligned_question])
+
+        question_input = Q_drop
+
+        ''' Encoding '''
+        passage_encoding = passage_input
+        passage_encoding = Masking()(passage_encoding)
+        passage_encoding = biLSTM_encoder(
+            passage_encoding,
+            self.encoder_hidden_dim,
+            self.rnn_dropout,
+            self.recurrent_dropout,
+            self.question_enc_layers)
+        passage_encoding = projection(passage_encoding, self.projection_dim, self.linear_dropout)
+
+        question_encoding = question_input
+        question_encoding = Masking()(question_encoding)
+        question_encoding = biLSTM_encoder(
+            question_encoding,
+            self.encoder_hidden_dim,
+            self.rnn_dropout,
+            self.recurrent_dropout,
+            self.context_enc_layers)
+        question_encoding = projection(question_encoding, self.projection_dim, self.linear_dropout)
+
+        '''Attention over question'''
+        question_attention_vector = question_attn_vector(question_encoding, Q_mask, passage_encoding)
+
+        '''Answer span prediction'''
+        # Answer start prediction
+        answer_start = answer_start_pred(passage_encoding, question_attention_vector, P_mask, self.poiner_dim, self.linear_dropout)
+        # Answer end prediction
+        answer_end = answer_end_pred(passage_encoding, question_attention_vector, P_mask, answer_start, self.pointer_dim, self.linear_dropout)
+
+        input_placeholders = [P, P_f, Q, P_mask, Q_mask]
+        inputs = input_placeholders
+        outputs = [answer_start, answer_end]
+
+        model = Model(inputs=inputs, outputs=outputs)
+        return model
+
+
+    def fastqa_hybrid(self):
 
         '''Inputs'''
         P = Input(shape=(None, self.word_embedding_dim), name='context_input')

@@ -90,12 +90,24 @@ def embed_word(word, word_dict, embeddings):
         print('Unrecognized word!')
         return np.random.normal(0, 1, size=(embeddings[0].shape[0]))
 
+def embed_index(word, word_dict):
+    try:
+        return word_dict[word]
+    except:
+        return len(word_dict)
+
 
 def vectorize(opt, ex, word_dict, feature_dict, embeddings):
     """Turn tokenized text inputs into feature vectors."""
-    # Index words
-    document = np.array([embed_word(w, word_dict, embeddings) for w in ex['document']])
-    question = np.array([embed_word(w, word_dict, embeddings) for w in ex['question']])
+
+    # Old way is fo
+    if not opt['inner_embeddings']:
+        # Index words
+        document = np.array([embed_word(w, word_dict, embeddings) for w in ex['document']])
+        question = np.array([embed_word(w, word_dict, embeddings) for w in ex['question']])
+    elif opt['inner_embeddings']:
+        document = np.array([embed_index(w, word_dict) for w in ex['document']])
+        question = np.array([embed_index(w, word_dict) for w in ex['question']])
 
     # Create extra features vector
     features = np.zeros((len(ex['document']), len(feature_dict)))
@@ -117,6 +129,7 @@ def vectorize(opt, ex, word_dict, feature_dict, embeddings):
         for i, w in enumerate(ex['document']):
             features[i][feature_dict['tf']] = counter[w.lower()] * 1.0 / l
 
+    # f_{time}
     if opt['use_time'] > 0:
         # Counting from the end, each (full-stop terminated) sentence gets
         # its own time identitfier.
