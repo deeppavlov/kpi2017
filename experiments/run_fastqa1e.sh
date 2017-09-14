@@ -12,6 +12,7 @@ python3 utils/train_model.py -t squad \
                          --chosen-metric f1 \
                          --validation-patience 5 \
                          --lr-drop-patience 1 \
+                         --type 'fastqa_default' \
                          --lr 0.001 \
                          --lr_drop 0.3 \
                          --linear_dropout 0.0 \
