@@ -45,8 +45,8 @@ def masked_tensor(tensor, mask):
 
 def learnable_wiq(context, question, question_mask, layer_dim):
     ''' Aligned question embedding'''
-    question_enc = TimeDistributed(Dense(units=layer_dim, activation='relu', use_bias=False))(question)
-    context_enc = TimeDistributed(Dense(units=layer_dim, activation='relu', use_bias=False))(context)
+    question_enc = TimeDistributed(Dense(units=layer_dim, activation='relu'))(question)
+    context_enc = TimeDistributed(Dense(units=layer_dim, activation='relu'))(context)
     question_enc = Lambda(lambda q: tf.transpose(q, [0, 2, 1]))(question_enc)
     matrix = Lambda(lambda q: tf.matmul(q[0], q[1]))([context_enc, question_enc])
     coefs = Lambda(lambda q: masked_softmax(matrix, question_mask, axis=2, expand=1))([matrix, question_mask])
@@ -131,7 +131,6 @@ def projection(encoding, W, dropout_rate):
     into different spaces '''
     proj = TimeDistributed(
         Dense(W,
-              use_bias=False,
               trainable=True,
               weights=np.concatenate((np.eye(W), np.eye(W)), axis=1)))(encoding)
     proj = Dropout(rate=dropout_rate)(proj)
@@ -140,7 +139,7 @@ def projection(encoding, W, dropout_rate):
 
 def question_attn_vector(question_encoding, question_mask, context_encoding, repeat=True):
     ''' Attention over question '''
-    question_attention_vector = TimeDistributed(Dense(1, use_bias=False))(question_encoding)
+    question_attention_vector = TimeDistributed(Dense(1))(question_encoding)
     # apply masking
     question_attention_vector = Lambda(lambda q: masked_softmax(q[0], q[1]))([question_attention_vector, question_mask])
     # apply the attention
@@ -155,7 +154,7 @@ def bilinear_attn(context_encoding, question_attention_vector, context_mask):
     ''' DRQA variant of answer start and end pointer layer '''
 
     x = context_encoding
-    Wy = Lambda( lambda q: Dense(768, weights=[np.eye(768)], use_bias=False)(q[:,0,:]))(question_attention_vector)
+    Wy = Lambda( lambda q: Dense(768, weights=[np.eye(768)])(q[:,0,:]))(question_attention_vector)
     xWy = Lambda(lambda q: tf.reduce_sum(tf.multiply(q[0],tf.expand_dims(q[1], 1)), axis=2, keep_dims=True))([x, Wy])
 
     # apply masking
@@ -175,7 +174,7 @@ def answer_start_pred(context_encoding, question_attention_vector, context_mask,
 
     answer_start = TimeDistributed(Dense(W, activation='relu'))(answer_start)
     answer_start = Dropout(rate=dropout_rate)(answer_start)
-    answer_start = TimeDistributed(Dense(1, use_bias=False))(answer_start)
+    answer_start = TimeDistributed(Dense(1))(answer_start)
 
     # apply masking
     answer_start = Lambda(lambda q: masked_softmax(q[0], q[1]))([answer_start, context_mask])

@@ -276,9 +276,9 @@ class SquadModel(object):
 
         '''Answer span prediction'''
         # Answer start prediction
-        answer_start = answer_start_pred(passage_encoding, question_attention_vector, P_mask, 50, self.linear_dropout)
+        answer_start = answer_start_pred(passage_encoding, question_attention_vector, P_mask, self.pointer_dim, self.linear_dropout)
         # Answer end prediction
-        answer_end = answer_end_pred(passage_encoding, question_attention_vector, P_mask, answer_start, 50, self.linear_dropout)
+        answer_end = answer_end_pred(passage_encoding, question_attention_vector, P_mask, answer_start, self.pointer_dim, self.linear_dropout)
 
         input_placeholders = [P, P_f, Q, P_mask, Q_mask]
         inputs = input_placeholders
