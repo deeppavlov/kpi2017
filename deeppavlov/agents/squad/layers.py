@@ -28,7 +28,7 @@ def flatten(value):
 def masked_softmax(tensor, mask, expand=2, axis=1):
     '''Masked soft-max using Lambda and merge-multiplication'''
     mask = tf.expand_dims(mask, axis=expand)
-    exponentiate = Lambda(lambda x: K.exp(x))(tensor)
+    exponentiate = Lambda(lambda x: K.exp(x - K.max(x, axis=axis, keepdims=True)))(tensor)
     masked = tf.multiply(exponentiate, mask)
     div = tf.expand_dims(tf.reduce_sum(masked, axis=axis), axis=axis)
     predicted = tf.divide(masked, div)
