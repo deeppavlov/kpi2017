@@ -50,12 +50,12 @@ class SquadModel(object):
 
         if self.type == 'fastqa_default':
             self.model = self.fastqa_default()
-        if self.type == 'fastqa_hybrid':
+        elif self.type == 'fastqa_hybrid':
             self.model = self.fastqa_hybrid()
         elif self.type == 'drqa_clone':
             self.model = self.drqa_default()
         else:
-            raise NameError('There is no model with name: {}'.format(self.model))
+            raise NameError('There is no model with name: {}'.format(self.type))
 
         optimizer = getOptimizer(self.optimizer, self.exp_decay, self.grad_norm_clip, self.lr)
 
