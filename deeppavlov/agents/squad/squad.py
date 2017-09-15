@@ -2,6 +2,7 @@ import copy
 import os
 import pickle
 import numpy as np
+from numpy.random import seed
 from . import config
 from .model import SquadModel
 from parlai.core.agents import Agent
@@ -21,6 +22,8 @@ class SquadAgent(Agent):
         return SimpleDictionaryAgent
 
     def __init__(self, opt, shared=None):
+        seed(1)
+
         if opt['numthreads'] >1:
             raise RuntimeError("numthreads > 1 not supported for this model.")
 
