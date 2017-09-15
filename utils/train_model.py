@@ -30,7 +30,7 @@ from parlai.core.params import ParlaiParser
 from parlai.core.utils import Timer
 from parlai.core.worlds import create_task
 
-import build_dict
+from utils import build_dict
 
 
 def run_eval(agent, opt, datatype, max_exs=-1, write_log=False, valid_world=None):
@@ -203,11 +203,11 @@ def train_model(opt):
         agent = create_agent(opt)
 
         run_eval(agent, opt, 'valid', write_log=True)
-        metric, _ = run_eval(agent, opt, 'test', write_log=True)
+        metrics, _ = run_eval(agent, opt, 'test', write_log=True)
     else:
-        metric, _ = run_eval(agent, opt, opt['datatype'], write_log=True)
+        metrics, _ = run_eval(agent, opt, opt['datatype'], write_log=True)
     agent.shutdown()
-    return metric
+    return metrics
 
 
 def train_cross_valid(opt):
@@ -215,19 +215,19 @@ def train_cross_valid(opt):
         opt['model_files'] = [fname+'_'+str(i) for fname in opt['model_files']
                               for i in range(opt['cross_validation_splits_count'])]
         return train_model(opt)
-    metric = {'f1': 0, 'accuracy': 0}
+    metrics = None
     for i in range(opt['cross_validation_splits_count']):
         print("Training fold number %i" % (i+1))
         local_opt = copy.deepcopy(opt)
         local_opt['model_file'] = opt.get('model_file', '') + '_' + str(i)
         local_opt['cross_validation_model_index'] = i
         metric = train_model(local_opt)
-    return metric
+    return metrics
 
 
 def main(args=None):
     # Get command line arguments
-    parser = ParlaiParser(True, True)
+    parser = ParlaiParser(True, True, model_argv=args)
     train = parser.add_argument_group('Training Loop Arguments')
     train.add_argument('-et', '--evaltask',
                         help=('task to use for valid/test (defaults to the ' +
@@ -259,6 +259,7 @@ def main(args=None):
     train.add_argument('--chosen-metric', default='accuracy',
                        help='metric with which to measure improvement')
     opt = parser.parse_args(args=args)
+    print(opt)
     if opt.get('cross_validation_splits_count', 0) > 1 and opt.get('cross_validation_model_index') is None:
         return train_cross_valid(opt)
     else:
