@@ -13,7 +13,7 @@ python3 utils/train_model.py -t squad \
                          --validation-patience 5 \
                          --lr-drop-patience 1 \
                          --type 'fastqa_default' \
-                         --lr 0.0 \
+                         --lr 0.0001 \
                          --lr_drop 0.3 \
                          --linear_dropout 0.0 \
                          --embedding_dropout 0.5 \
@@ -29,4 +29,3 @@ python3 utils/train_model.py -t squad \
                          --model-file '../save/squad/squad_fastqa_e/squad1' \
                          --pretrained_model '../save/squad/squad_fastqa_e/squad1' \
                          --embedding_file '../embeddings/glove.840B.300d.txt' \
-                         --datatype 'test'
