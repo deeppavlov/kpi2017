@@ -13,7 +13,7 @@ python3 utils/train_model.py -t squad \
                          --validation-patience 5 \
                          --lr-drop-patience 1 \
                          --type 'fastqa_default' \
-                         --lr 0.001 \
+                         --lr 0.0 \
                          --lr_drop 0.3 \
                          --linear_dropout 0.0 \
                          --embedding_dropout 0.5 \
