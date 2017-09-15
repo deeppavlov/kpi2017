@@ -27,5 +27,6 @@ python3 utils/train_model.py -t squad \
                          --projection_dim 300 \
                          --pointer_dim 300 \
                          --model-file '../save/squad/squad_fastqa_e/squad1' \
+                         --pretrained_model '../save/squad_fastqa_e/squad1' \
                          --embedding_file '../embeddings/glove.840B.300d.txt' \
                          --datatype 'test'
