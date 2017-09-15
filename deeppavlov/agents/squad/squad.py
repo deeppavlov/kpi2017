@@ -109,7 +109,7 @@ class SquadAgent(Agent):
         )
 
         # Either train or predict
-        if 'labels' in self.observation and not self.opt.get('pretrained_model'):
+        if 'labels' in self.observation:
             self.n_examples += 1
             self.model.update(batch)
         else:
@@ -142,7 +142,7 @@ class SquadAgent(Agent):
         )
 
         # Either train or predict
-        if 'labels' in observations[0] and not self.opt.get('pretrained_model'):
+        if 'labels' in observations[0]:
             self.n_examples += len(examples)
             self.model.update(batch)
         else:
