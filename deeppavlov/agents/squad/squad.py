@@ -144,9 +144,11 @@ class SquadAgent(Agent):
 
         # Either train or predict
         if 'labels' in observations[0] and not self.opt.get('pretrained_model'):
+            print('t')
             self.n_examples += len(examples)
             self.model.update(batch)
         else:
+            print('p')
             predictions = self.model.predict(batch)
             for i in range(len(predictions)):
                 batch_reply[valid_inds[i]]['text'] = predictions[i]
