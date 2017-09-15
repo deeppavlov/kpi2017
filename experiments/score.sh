@@ -1,17 +1,6 @@
 #!/usr/bin/env bash
-python3 utils/train_model.py -t squad \
-                         -m deeppavlov.agents.squad.squad:SquadAgent \
+python3 deeppavlov/agents/squad/score_squad.py \
                          --batchsize 64 \
-                         --display-examples False \
-                         --max-train-time 1 \
-                         --num-epochs -1 \
-                         --log-every-n-secs 60 \
-                         --log-every-n-epochs -1 \
-                         --validation-every-n-secs 1800 \
-                         --validation-every-n-epochs -1 \
-                         --chosen-metric f1 \
-                         --validation-patience 5 \
-                         --lr-drop-patience 1 \
                          --type 'fastqa_default' \
                          --lr 0.001 \
                          --lr_drop 0.3 \
@@ -28,4 +17,5 @@ python3 utils/train_model.py -t squad \
                          --pointer_dim 300 \
                          --model-file '../save/squad_fastqa_e/squad1' \
                          --pretrained_model '../save/squad_fastqa_e/squad1' \
+                         --dict-file '../save/squad_fastqa_e/squad1' \
                          --embedding_file '../embeddings/glove.840B.300d.txt'

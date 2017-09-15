@@ -78,7 +78,7 @@ class SquadAgent(Agent):
         # TODO expand dict and embeddings for new data
         self.word_dict = saved_params['word_dict']
         self.feature_dict = saved_params['feature_dict']
-        #config.override_args(self.opt, saved_params['config'])
+        config.override_args(self.opt, saved_params['config'])
 
         self.model = SquadModel(self.opt, self.word_dict, self.feature_dict, fname)
 
@@ -118,6 +118,7 @@ class SquadAgent(Agent):
         return reply
 
     def batch_act(self, observations):
+
         """Update or predict on a batch of examples.
         More efficient than act().
         """
