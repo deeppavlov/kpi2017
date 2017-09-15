@@ -48,39 +48,31 @@ class SquadModel(object):
         self.train_f1 = AverageMeter()
         self.train_em = AverageMeter()
 
-        if opt['deep_load']:
-            with open(opt['pretrained_model']+'_deep' + '.pkl', 'rb') as f:
-                self.model = pickle.load(f)
 
+        if self.type == 'fastqa_default':
+            self.model = self.fastqa_default()
+        elif self.type == 'fastqa_hybrid':
+            self.model = self.fastqa_hybrid()
+        elif self.type == 'drqa_clone':
+            self.model = self.drqa_default()
         else:
+            raise NameError('There is no model with name: {}'.format(self.type))
 
-            if self.type == 'fastqa_default':
-                self.model = self.fastqa_default()
-            elif self.type == 'fastqa_hybrid':
-                self.model = self.fastqa_hybrid()
-            elif self.type == 'drqa_clone':
-                self.model = self.drqa_default()
+        if not weights_path==None:
+            print('[ Loading model %s ]' % weights_path)
+            if os.path.isfile(weights_path + '.h5'):
+                self.model.load_weights(weights_path + '.h5')
             else:
-                raise NameError('There is no model with name: {}'.format(self.type))
+                print('Error. There is no %s.h5 file provided.' % weights_path)
 
-            if not weights_path==None:
-                print('[ Loading model %s ]' % weights_path)
-                if os.path.isfile(weights_path + '.h5'):
-                    self.model.load_weights(weights_path + '.h5')
-                else:
-                    print('Error. There is no %s.h5 file provided.' % weights_path)
+        optimizer = getOptimizer(self.optimizer, self.exp_decay, self.grad_norm_clip, self.lr)
 
-            optimizer = getOptimizer(self.optimizer, self.exp_decay, self.grad_norm_clip, self.lr)
-
-            self.model.compile(loss='categorical_crossentropy',
-                               optimizer=optimizer,
-                               metrics=['accuracy'])
+        self.model.compile(loss='categorical_crossentropy',
+                           optimizer=optimizer,
+                           metrics=['accuracy'])
 
 
     def save(self, fname):
-
-        with open(fname+'_deep' + '.pkl', 'wb') as f:
-            pickle.dump(self.model, f)
 
         self.model.save_weights(fname+'.h5')
 
