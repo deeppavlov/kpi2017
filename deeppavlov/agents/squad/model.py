@@ -57,18 +57,18 @@ class SquadModel(object):
         else:
             raise NameError('There is no model with name: {}'.format(self.type))
 
-        optimizer = getOptimizer(self.optimizer, self.exp_decay, self.grad_norm_clip, self.lr)
-
-        self.model.compile(loss='categorical_crossentropy',
-                           optimizer=optimizer,
-                           metrics=['accuracy'])
-
         if not weights_path==None:
             print('[ Loading model %s ]' % weights_path)
             if os.path.isfile(weights_path + '.h5'):
                 self.model.load_weights(weights_path + '.h5')
             else:
                 print('Error. There is no %s.h5 file provided.' % weights_path)
+
+        optimizer = getOptimizer(self.optimizer, self.exp_decay, self.grad_norm_clip, self.lr)
+
+        self.model.compile(loss='categorical_crossentropy',
+                           optimizer=optimizer,
+                           metrics=['accuracy'])
 
 
     def save(self, fname):
