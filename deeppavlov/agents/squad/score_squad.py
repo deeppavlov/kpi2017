@@ -23,7 +23,7 @@ def setup_data(path):
                 id = qa['id']
                 answers = (a['text'] for a in qa['answers'])
                 context = paragraph['context']
-                yield {'text': context + '\n' + question, 'episode_done': True, 'id': id}
+                yield {'text': context + '\n' + question, 'id': id}
 
 
 
@@ -57,7 +57,7 @@ def main(args=None):
     def process_batch(batch, batch_size, dict):
         batch_reply = agent.batch_act(batch)
         for i in range(batch_size):
-            dict[batch[i]['id']] = batch_reply[i]
+            dict[batch[i]['id']] = batch_reply[i]['text']
 
     for i in generator:
         index+=1
