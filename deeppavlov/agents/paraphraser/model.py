@@ -94,6 +94,8 @@ class ParaphraserModel(object):
             self.model = self.att_match_model()
         if self.model_name == 'maxatt_match':
             self.model = self.maxatt_match_model()
+        if self.model_name == 'bilstm_woatt':
+            self.model = self.bilstm_woatt_model()
         optimizer = Adam(lr=self.learning_rate)
         self.model.compile(loss='binary_crossentropy',
                            optimizer=optimizer,
@@ -241,6 +243,26 @@ class ParaphraserModel(object):
         dropout_forw = Dropout(self.dropout_val)(bioutp[0])
         dropout_back = Dropout(self.dropout_val)(bioutp[1])
         model = Model(inputs=inp, outputs=[dropout_forw, dropout_back], name="biLSTM_enc_persp")
+        return model
+
+    def create_lstm_layer_last(self, input_dim):
+        inp = Input(shape=(input_dim,  self.embedding_dim,))
+        inp_drop = Dropout(self.ldrop_val)(inp)
+        ker_in = glorot_uniform(seed=self.seed)
+        rec_in = Orthogonal(seed=self.seed)
+        bioutp = Bidirectional(LSTM(self.hidden_dim,
+                                    input_shape=(input_dim, self.embedding_dim,),
+                                    kernel_regularizer=None,
+                                    recurrent_regularizer=None,
+                                    bias_regularizer=None,
+                                    activity_regularizer=None,
+                                    recurrent_dropout=self.recdrop_val,
+                                    dropout=self.inpdrop_val,
+                                    kernel_initializer=ker_in,
+                                    recurrent_initializer=rec_in,
+                                    return_sequences=False), merge_mode='concat')(inp_drop)
+        dropout = Dropout(self.dropout_val)(bioutp)
+        model = Model(inputs=inp, outputs=dropout, name="biLSTM_encoder_last")
         return model
 
     def create_attention_layer(self, input_dim_a, input_dim_b):
@@ -505,7 +527,6 @@ class ParaphraserModel(object):
     def cosine_dist_output_shape(self, shapes):
         shape1, shape2 = shapes
         return shape1[0], 2*shape1[1]
-
 
     def terminal_f(self, inp):
         val = np.concatenate((np.zeros((self.max_sequence_length-1,1)), np.ones((1,1))), axis=0)
@@ -785,4 +806,23 @@ class ParaphraserModel(object):
                       activity_regularizer=None)(dense)
 
         model = Model([input_a, input_b], dense)
+        return model
+
+    def bilstm_woatt_model(self):
+        input_a = Input(shape=(self.max_sequence_length, self.embedding_dim,))
+        input_b = Input(shape=(self.max_sequence_length, self.embedding_dim,))
+        lstm_layer = self.create_lstm_layer_last(self.max_sequence_length)
+        lstm_last_a = lstm_layer(input_a)
+        lstm_last_b = lstm_layer(input_b)
+
+        dist = Lambda(self.cosine_dist, output_shape=self.cosine_dist_output_shape,
+                      name="similarity_network")([lstm_last_a, lstm_last_b])
+
+        dense = Dense(1, activation='sigmoid', name='similarity_score',
+                      kernel_regularizer=None,
+                      bias_regularizer=None,
+                      activity_regularizer=None)(dist)
+
+        model = Model([input_a, input_b], dense)
+
         return model
