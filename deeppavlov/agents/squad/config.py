@@ -14,6 +14,8 @@ def add_cmdline_args(parser):
     # Model details
     agent.add_argument('--type', type=str, default='drqa_clone',
                        help='What model to use')
+    agent.add_argument('--deep_load', type=str, default=False,
+                       help='Restore model from pickle file')
 
     # Predictions
     agent.add_argument('--answ_maxlen', type=int, default=15,
