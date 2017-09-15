@@ -118,7 +118,7 @@ class SquadAgent(Agent):
         return reply
 
     def batch_act(self, observations):
-
+        print(observations[0]['text'][1:30])
         """Update or predict on a batch of examples.
         More efficient than act().
         """
