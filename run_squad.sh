@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 python3 utils/train_model.py -t squad \
                          -m deeppavlov.agents.squad.squad:SquadAgent \
-                         --batchsize 128 \
+                         --batchsize 64 \
                          --display-examples False \
                          --max-train-time -1 \
                          --num-epochs -1 \
@@ -12,8 +12,21 @@ python3 utils/train_model.py -t squad \
                          --chosen-metric f1 \
                          --validation-patience 5 \
                          --lr-drop-patience 1 \
-                         --lr 0.0003 \
+                         --type 'fastqa_default' \
+                         --lr 0.0001 \
                          --lr_drop 0.3 \
-                         --model-file '../save/squad/squad_6sept2017/fastqa_drqa' \
-                         --pretrained_model '../save/squad/squad_6sept2017/fastqa_drqa' \
-                         --embedding_file '../embeddings/wiki-news-300d-1M.vec'
+                         --linear_dropout 0.0 \
+                         --embedding_dropout 0.5 \
+                         --rnn_dropout 0.0 \
+                         --recurrent_dropout 0.0 \
+                         --input_dropout 0.0 \
+                         --output_dropout 0.0 \
+                         --context_enc_layers 1 \
+                         --question_enc_layers 1 \
+                         --encoder_hidden_dim 300 \
+                         --projection_dim 300 \
+                         --pointer_dim 300 \
+                         --model-file '../save/squad/squad_fastqa_e/squad1' \
+                         --pretrained_model '../save/squad/squad_fastqa_e/squad1' \
+                         --embedding_file '../embeddings/glove.840B.300d.txt' \
+                         --datatype 'test'
