@@ -30,7 +30,7 @@ def read_requirements():
     return reqs
 
 setup(name='deeppavlov',
-      version='0.0.1',
+      version='0.0.3',
       description='Open source NLP framework',
       url='https://github.com/deepmipt/deeppavlov',
       author='Neural Networks and Deep Learning lab, MIPT',
@@ -46,5 +46,6 @@ setup(name='deeppavlov',
                 'named entity recognition',
                 'coreference resolution',
                 'text comprehension',
-                'insult detection'],
+                'insult detection',
+                'AI'],
       )
