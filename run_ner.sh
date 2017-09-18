@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
+
+mkdir -p ./build/ner
+
+. ./env.sh
+
 python3 ./utils/train_model.py -t deeppavlov.tasks.ner.agents \
                          -m deeppavlov.agents.ner.ner:NERAgent \
-                         -mf /tmp/ner \
+                         -mf ./build/ner \
                          -dt train:ordered \
                          --learning_rate 0.01 \
                          --batchsize 2 \
-                         --raw-data-path /home/mikhail/Data/gareev \
+                         --raw-data-path ./build/gareev \
                          --display-examples False \
                          --max-train-time -1 \
                          --validation-every-n-epochs 5 \
