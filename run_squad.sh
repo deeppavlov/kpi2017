@@ -2,9 +2,7 @@
 
 mkdir -p ./build
 
-export EMBEDDINGS_URL='http://share.ipavlov.mipt.ru:8080/repository/embeddings/'
-export MODELS_URL='http://share.ipavlov.mipt.ru:8080/repository/models/'
-export DATASETS_URL='http://share.ipavlov.mipt.ru:8080/repository/datasets/'
+. ./env.sh
 
 python3 utils/train_model.py -t squad \
                          -m deeppavlov.agents.squad.squad:SquadAgent \
@@ -14,7 +12,7 @@ python3 utils/train_model.py -t squad \
                          --num-epochs -1 \
                          --log-every-n-secs 60 \
                          --log-every-n-epochs -1 \
-                         --validation-every-n-secs 180 \
+                         --validation-every-n-secs 1800 \
                          --validation-every-n-epochs -1 \
                          --chosen-metric f1 \
                          --validation-patience 5 \
