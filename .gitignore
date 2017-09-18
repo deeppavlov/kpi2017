@@ -108,3 +108,4 @@ ENV/
 *_local.sh
 
 src/
+build/
