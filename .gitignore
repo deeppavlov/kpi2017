@@ -104,4 +104,8 @@ ENV/
 # PyCharm
 .idea/
 
+# Local experiments
+*_local.sh
+
 src/
+build/
