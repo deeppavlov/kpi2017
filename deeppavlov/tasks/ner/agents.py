@@ -25,7 +25,7 @@ from .metric import CoNLLClassificationMetrics
 def _path(opt):
     # ensure data is built
     build(opt)
-    fname = 'heap.txt'
+    fname = 'ner/heap.txt'
     datafile = os.path.join(opt['datapath'], fname)
     return datafile
 
@@ -102,9 +102,8 @@ class DefaultTeacher(DialogTeacher):
                     tokens_long.append(token)
                     tags_long.append(tag)
                 else:
-                    for tokens, tags in zip(*self.split_sentences(tokens_long, tags_long)):
-                        questions.append(' '.join(tokens))
-                        y.append([' '.join(tags)])
+                    questions.append(' '.join(tokens_long))
+                    y.append([' '.join(tags_long)])
                     tokens_long = []
                     tags_long = []
 

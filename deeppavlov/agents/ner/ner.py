@@ -6,7 +6,10 @@ from parlai.core.agents import Agent
 from . import config
 from .dictionary import NERDictionaryAgent
 from .ner_tagger import NERTagger
-from .dictionary import char_dict
+from .dictionary import get_char_dict
+
+
+char_dict = get_char_dict()
 
 
 class NERAgent(Agent):
@@ -63,10 +66,6 @@ class NERAgent(Agent):
 
         batch_response = [{'id': self.id} for _ in observations]
 
-        # batch_response = [{
-        #     'id': self.id,
-        #     'text': self.word_dict.labels_dict.vec2txt(response) if response is not None else None
-        # } for response in responses]
         for i in range(len(responses)):
             if responses[i] is not None:
                 batch_response[i]['text'] = self.word_dict.labels_dict.vec2txt(responses[i])
@@ -118,6 +117,15 @@ class NERAgent(Agent):
             print("[ saving model: " + fname + " ]")
             try:
                 self.network.save(fname)
+            except BaseException:
+                print('[ WARN: Saving failed... continuing anyway. ]')
+
+    def load(self, fname=None):
+        fname = self.opt.get('model_file', None) if fname is None else fname
+        if fname:
+            print("[ saving model: " + fname + " ]")
+            try:
+                self.network.load(fname)
             except BaseException:
                 print('[ WARN: Saving failed... continuing anyway. ]')
 

@@ -7,12 +7,6 @@ import os
 import pickle
 
 
-# from torch.multiprocessing.pool import Pool
-from .dictionary import NERDictionaryAgent
-
-POS_Tagger_State = namedtuple('POS_Tagger_State', 'words char_embs input_index words_count prev_pos output terminated')
-
-
 class NERTagger:
     def __init__(self,
                  opt,
@@ -33,7 +27,6 @@ class NERTagger:
         vocab_size = len(word_dict)
         char_vocab_size = len(word_dict.char_dict)
         tag_vocab_size = len(word_dict.labels_dict)
-
         x_w = tf.placeholder(dtype=tf.int32, shape=[None, None], name='x_word')
         x_c = tf.placeholder(dtype=tf.int32, shape=[None, None, None], name='x_char')
         y_t = tf.placeholder(dtype=tf.int32, shape=[None, None], name='y_tag')
@@ -41,6 +34,8 @@ class NERTagger:
         # Load embeddings
         w_embeddings = np.random.randn(vocab_size, token_emb_dim).astype(np.float32) / np.sqrt(token_emb_dim)
         c_embeddings = np.random.randn(char_vocab_size, char_emb_dim).astype(np.float32) / np.sqrt(char_emb_dim)
+        w_embeddings = tf.Variable(w_embeddings, name='word_emb_var', trainable=True)
+        c_embeddings = tf.Variable(c_embeddings, name='char_emb_var', trainable=True)
 
         # Word embedding layer
         w_emb = tf.nn.embedding_lookup(w_embeddings, x_w, name='word_emb')
@@ -59,7 +54,7 @@ class NERTagger:
         wc_features = tf.concat([w_emb, char_emb], axis=-1)
 
         # Cutdown dimensionality of the network via projection
-        units = tf.layers.dense(wc_features, 60, kernel_initializer=xavier_initializer())
+        units = tf.layers.dense(wc_features, 50, kernel_initializer=xavier_initializer())
 
         units, auxilary_outputs = self.dense_network(units, n_layers_per_block, dilated_filter_width)
 
@@ -73,13 +68,12 @@ class NERTagger:
         self.loss = loss
         self.train_op = tf.train.AdamOptimizer(learning_rate).minimize(loss)
         self.sess = tf.Session()
-
+        self.word_dict = word_dict
         self.x = x_w
         self.xc = x_c
         self.y_ground_truth = y_t
         self.y_predicted = tf.argmax(logits, axis=2)
         if self.opt.get('pretrained_model'):
-            # self.sess.run(tf.global_variables_initializer())
             self.load(self.opt.get('pretrained_model'))
         else:
             self.sess.run(tf.global_variables_initializer())
@@ -122,23 +116,14 @@ class NERTagger:
         return y
 
     def save(self, file_path):
-        with open('da_save.pcl', 'wb') as f:
-            vars = tf.trainable_variables()
-            vars_vals = self.sess.run(vars)
-            pickle.dump(vars_vals, f)
         saver = tf.train.Saver()
         print('saving path ' + os.path.join(file_path, 'model.ckpt'))
-        # print('Some value from some weight matrix: ', self.sess.run(self.))
         saver.save(self.sess, os.path.join(file_path, 'model.ckpt'))
 
     def load(self, file_path):
         saver = tf.train.Saver()
         print('loading path ' + os.path.join(file_path, 'model.ckpt'))
         saver.restore(self.sess, os.path.join(file_path, 'model.ckpt'))
-        with open('da_load.pcl', 'wb') as f:
-            vars = tf.trainable_variables()
-            vars_vals = self.sess.run(vars)
-            pickle.dump(vars_vals, f)
 
     def shutdown(self):
         tf.reset_default_graph()
