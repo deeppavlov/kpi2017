@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+
+mkdir -p ./build
+
+export EMBEDDINGS_URL='http://share.ipavlov.mipt.ru:8080/repository/embeddings/'
+export MODELS_URL='http://share.ipavlov.mipt.ru:8080/repository/models/'
+export DATASETS_URL='http://share.ipavlov.mipt.ru:8080/repository/datasets/'
+
 python3 utils/train_model.py -t squad \
                          -m deeppavlov.agents.squad.squad:SquadAgent \
                          --batchsize 64 \
@@ -7,7 +14,7 @@ python3 utils/train_model.py -t squad \
                          --num-epochs -1 \
                          --log-every-n-secs 60 \
                          --log-every-n-epochs -1 \
-                         --validation-every-n-secs 1800 \
+                         --validation-every-n-secs 180 \
                          --validation-every-n-epochs -1 \
                          --chosen-metric f1 \
                          --validation-patience 5 \
@@ -26,7 +33,7 @@ python3 utils/train_model.py -t squad \
                          --encoder_hidden_dim 300 \
                          --projection_dim 300 \
                          --pointer_dim 300 \
-                         --model-file '../save/squad/squad_fastqa_e/squad1' \
-                         --pretrained_model '../save/squad/squad_fastqa_e/squad1' \
-                         --embedding_file '../embeddings/glove.840B.300d.txt' \
-                         --datatype 'test'
+                         --model-file './build/squad1' \
+                         --embedding_file './build/glove.840B.300d.txt' \
+                         # --pretrained_model './build/squad1' \
+                         # --datatype 'test'
