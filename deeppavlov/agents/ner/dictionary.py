@@ -7,10 +7,16 @@ from parlai.core.params import class2str
 
 
 def get_char_dict():
-    with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'dict.pcl'), 'rb') as f:
-        base_dict = pickle.load(f)
+    base_characters = u'\"#$%&\'()+,-./0123456789:;<>?ABCDEFGHI' \
+                      u'JKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstu' \
+                      u'vwxyz«\xad»×АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪ' \
+                      u'ЬЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюяё‑–' \
+                      u'—“”€№…’'
+    characters = ['<UNK>'] + ['<PAD>'] + list(base_characters)
     char_dict = defaultdict(int)
-    char_dict.update(base_dict)
+    for i, ch in enumerate(characters):
+        char_dict[ch] = i
+
     return char_dict
 
 

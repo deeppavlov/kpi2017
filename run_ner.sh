@@ -10,7 +10,6 @@ python3 ./utils/train_model.py -t deeppavlov.tasks.ner.agents \
                          -dt train:ordered \
                          --learning_rate 0.01 \
                          --batchsize 2 \
-                         --raw-data-path ./build/gareev \
                          --display-examples False \
                          --max-train-time -1 \
                          --validation-every-n-epochs 5 \
