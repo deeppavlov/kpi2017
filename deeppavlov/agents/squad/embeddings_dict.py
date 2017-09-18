@@ -2,6 +2,7 @@ import os
 import copy
 import numpy as np
 
+
 try:
     import spacy
 except ImportError:
@@ -14,6 +15,7 @@ from parlai.core.agents import Agent
 from parlai.core.dict import DictionaryAgent
 from . import config
 from .utils import build_feature_dict, vectorize, batchify, normalize_text
+import urllib
 
 
 NLP = spacy.load('en')
@@ -35,6 +37,18 @@ class SimpleDictionaryAgent(DictionaryAgent):
 
         # Index words in embedding file
         if self.opt['pretrained_words'] and self.opt.get('embedding_file'):
+            if not os.path.exists(self.opt.get('embedding_file')):
+                emb_url = os.environ.get('EMBEDDINGS_URL')
+                if not emb_url:
+                    raise RuntimeError('No glove embeddings provided')
+                fname = os.path.basename(self.opt.get('embedding_file'))
+                try:
+                    print('Trying to download a glove embeddings from the server')
+                    urllib.request.urlretrieve(urllib.parse.urljoin(emb_url, fname), self.opt.get('embedding_file'))
+                    print('Downloaded a glove embeddings')
+                except Exception as e:
+                    raise RuntimeError('Looks like the `EMBEDDINGS_URL` variable is set incorrectly', e)
+
             print('[ Indexing words with embeddings... ]')
             self.embedding_words = set()
             with open(self.opt['embedding_file']) as f:
