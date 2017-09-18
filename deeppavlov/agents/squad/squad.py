@@ -169,9 +169,9 @@ class SquadAgent(Agent):
     def report(self):
 
         output = (
-            '[train] updates = %d | exs = %d | loss = %.4f | acc = %.4f | f1 = %.4f | em = %.4f'%
+            '[train] updates = %d | exs = %d | loss = %.4f | acc = %.4f' %
             (self.model.updates, self.n_examples,
-             self.model.train_loss.avg, self.model.train_acc.avg, self.model.train_f1.avg, self.model.train_em.avg))
+             self.model.train_loss.avg, self.model.train_acc.avg))
 
         self.model.train_loss.reset()
         self.model.train_acc.reset()
