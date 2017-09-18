@@ -27,7 +27,7 @@ class CoNLLClassificationMetrics(object):
             report_file_path = os.path.join(self.model_files_path, self.report_filename)
             if not os.path.isdir(self.model_files_path):
                 os.mkdir(self.model_files_path)
-            with open(os.path.join(self.model_files_path, output_file_path), 'w') as f:
+            with open(output_file_path, 'w') as f:
                 for tags_pred, tags_gt in zip(self.y_pred, self.y_true):
                     for tag_predicted, tag_ground_truth in zip(tags_pred, tags_gt):
                         f.write(' '.join(['pur'] * 5 + [tag_ground_truth] + [tag_predicted]) + '\n')
