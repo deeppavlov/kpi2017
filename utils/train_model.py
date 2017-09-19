@@ -192,7 +192,7 @@ def train_model(opt):
                     if 0 < opt['validation_patience'] <= impatience:
                         print('[ ran out of patience! stopping training. ]')
                         break
-                    if 0 < opt['lr_drop_patience'] <= lr_drop_impatience:
+                    if 'lr_drop_patience' in opt and 0 < opt['lr_drop_patience'] <= lr_drop_impatience:
                         if hasattr(agent, 'drop_lr'):
                             print('[ validation metric is decreasing, dropping learning rate ]')
                             train_report = agent.drop_lr()
