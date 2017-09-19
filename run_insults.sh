@@ -46,15 +46,16 @@ python utils/train_model.py -t deeppavlov.tasks.insults.agents \
                             --learning_decay 0.1 \
                             --filters_cnn 256 \
                             --embedding_dim 100 \
-                            --kernel_sizes_cnn "3 3 3" \
+                            --kernel_sizes_cnn "1 2 3 2 1" \
                             --regul_coef_conv 0.001 \
                             --regul_coef_dense 0.001 \
-                            --pool_sizes_cnn "2 2 2"  \
+                            --pool_sizes_cnn "2 2 2 2 2"  \
                             --dropout_rate 0.5 \
                             --dense_dim 100 \
                             --fasttext_model ./build/reddit_fasttext_model.bin \
                             --fasttext_embeddings_dict ./build/emb_dict.emb \
-                            --cross-validation-splits-count 3
+                            --cross-validation-splits-count 3 \
+                            -ve 10
 
 
 python utils/train_model.py -t deeppavlov.tasks.insults.agents \
@@ -87,13 +88,10 @@ python3 ./utils/train_model.py -t deeppavlov.tasks.insults.agents:FullTeacher \
                                --model_files ./build/cnn_word_0 \
                                              ./build/cnn_word_1 \
                                              ./build/cnn_word_2 \
-                                             ./build/lstm_word_0 \
-                                             ./build/lstm_word_1 \
-                                             ./build/lstm_word_2 \
                                              ./build/log_reg \
                                              ./build/svc \
-                               --model_names cnn_word cnn_word cnn_word lstm_word lstm_word lstm_word log_reg svc \
-                               --model_coefs 0.05 0.05 0.05 0.05 0.05 0.05 0.2 0.5 \
+                               --model_names cnn_word cnn_word cnn_word log_reg svc \
+                               --model_coefs 0.1 0.1 0.1 0.2 0.5 \
                                --datatype test \
                                --batchsize 64 \
                                --display-examples False \
@@ -104,13 +102,11 @@ python3 ./utils/train_model.py -t deeppavlov.tasks.insults.agents:FullTeacher \
                                --learning_rate 0.01 \
                                --learning_decay 0.1 \
                                --filters_cnn 256 \
-                               --kernel_sizes_cnn "3 3 3" \
+                               --kernel_sizes_cnn "1 2 3 2 1" \
                                --regul_coef_conv 0.001 \
                                --regul_coef_dense 0.001 \
-                               --pool_sizes_cnn "2 2 2"  \
-                               --units_lstm 128 \
+                               --pool_sizes_cnn "2 2 2 2 2"  \
                                --embedding_dim 100 \
-                               --regul_coef_lstm 0.001 \
                                --dropout_rate 0.5 \
                                --dense_dim 100 \
                                --fasttext_model ./build/reddit_fasttext_model.bin
