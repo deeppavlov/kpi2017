@@ -14,13 +14,13 @@ class KPITests(unittest.TestCase):
     def test_paraphraser(self):
         metrics = train_model.main(['-t', 'deeppavlov.tasks.paraphrases.agents', \
                          '-m', 'deeppavlov.agents.paraphraser.paraphraser:EnsembleParaphraserAgent', \
-                         '-mf', './build/paraphraser', \
-                         '--model_files', './build/paraphraser', \
+                         '-mf', './build/paraphraser/paraphraser', \
+                         '--model_files', './build/paraphraser/paraphraser', \
                          '--datatype', 'test', \
                          '--batchsize', '256', \
                          '--display-examples', 'False', \
-                         '--fasttext_embeddings_dict', './build/paraphraser.emb', \
-                         '--fasttext_model', './build/ft_0.8.3_nltk_yalen_sg_300.bin', \
+                         '--fasttext_embeddings_dict', './build/paraphraser/paraphraser.emb', \
+                         '--fasttext_model', './build/paraphraser/ft_0.8.3_nltk_yalen_sg_300.bin', \
                          '--cross-validation-splits-count', '5', \
                          '--chosen-metric', 'f1'
 	])
@@ -47,26 +47,26 @@ class KPITests(unittest.TestCase):
     def test_insults(self):
         metrics = train_model.main(['-t', 'deeppavlov.tasks.paraphrases.agents', \
                          '-m', 'deeppavlov.agents.insults.insults_agents:EnsembleInsultsAgent', \
-                               '--model_file', './build/insults_ensemble' \
-#                               '--model_files', './build/cnn_word_0 \
-#                                             ./build/cnn_word_1 \
-#                                             ./build/cnn_word_2 \
-#                                             ./build/lstm_word_0 \
-#                                             ./build/lstm_word_1 \
-#                                             ./build/lstm_word_2 \
-#                                             ./build/log_reg \
-#                                             ./build/svc', \
-                               '--model_files', './build/cnn_word_0 \
-                                             ./build/cnn_word_1 \
-                                             ./build/cnn_word_2 \
-                                             ./build/log_reg \
-                                             ./build/svc', \
+                               '--model_file', './build/insults/insults_ensemble' \
+#                               '--model_files', './build/insults/cnn_word_0 \
+#                                             ./build/insults/cnn_word_1 \
+#                                             ./build/insults/cnn_word_2 \
+#                                             ./build/insults/lstm_word_0 \
+#                                             ./build/insults/lstm_word_1 \
+#                                             ./build/insults/lstm_word_2 \
+#                                             ./build/insults/log_reg \
+#                                             ./build/insults/svc', \
+                               '--model_files', './build/insults/cnn_word_0 \
+                                             ./build/insults/cnn_word_1 \
+                                             ./build/insults/cnn_word_2 \
+                                             ./build/insults/log_reg \
+                                             ./build/insults/svc', \
                                '--model_names', 'cnn_word cnn_word cnn_word lstm_word lstm_word lstm_word log_reg svc', \
                                '--model_coefs', '0.05 0.05 0.05 0.05 0.05 0.05 0.2 0.5', \
                                '--datatype', 'test', \
                                '--batchsize', '64', \
                                '--display-examples', 'False', \
-                               '--raw-dataset-path', './build/', \
+                               '--raw-dataset-path', './build/insults/', \
                                '--max-train-time', '-1', \
                                '--num-epochs', '1', \
                                '--max_sequence_length', '100', \
@@ -82,7 +82,7 @@ class KPITests(unittest.TestCase):
                                '--regul_coef_lstm', '0.001', \
                                '--dropout_rate', '0.5' \
                                '--dense_dim', '100', \
-                               '--fasttext_model', './build/reddit_fasttext_model.bin'
+                               '--fasttext_model', './build/insults/reddit_fasttext_model.bin'
 	])
         self.assertTrue(metrics['auc'] > 0.85, 'KPI for insults is not satisfied')	
 
@@ -115,9 +115,9 @@ class KPITests(unittest.TestCase):
                          '--encoder_hidden_dim', '300', \
                          '--projection_dim', '300', \
                          '--pointer_dim', '300', \
-                         '--model-file', './build/squad1', \
-                         '--embedding_file', './build/glove.840B.300d.txt', \
-                         '--pretrained_model', './build/squad1', \
+                         '--model-file', './build/squad/squad1', \
+                         '--embedding_file', './build/squad/glove.840B.300d.txt', \
+                         '--pretrained_model', './build/squad/squad1', \
                          '--datatype', 'test'
 	])
         self.assertTrue(metrics['f1'] > 0.7, 'KPI for SQuAD is not satisfied')
