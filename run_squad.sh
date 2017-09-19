@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-mkdir -p ./build
+mkdir -p ./build/squad/
 
 . ./env.sh
 
@@ -31,7 +31,7 @@ python3 utils/train_model.py -t squad \
                          --encoder_hidden_dim 300 \
                          --projection_dim 300 \
                          --pointer_dim 300 \
-                         --model-file './build/squad1' \
-                         --embedding_file './build/glove.840B.300d.txt' \
-                         # --pretrained_model './build/squad1' \
+                         --model-file './build/squad/squad1' \
+                         --embedding_file './build/squad/glove.840B.300d.txt' \
+                         # --pretrained_model './build/squad/squad1' \
                          # --datatype 'test'
