@@ -19,8 +19,6 @@ import copy
 import numpy as np
 import urllib.request
 import fasttext
-import nltk
-from nltk.tokenize import sent_tokenize, word_tokenize
 
 
 class EmbeddingsDict(object):
@@ -29,8 +27,6 @@ class EmbeddingsDict(object):
         self.embedding_dim = embedding_dim
         self.opt = copy.deepcopy(opt)
         self.load_items()
-
-        nltk.download('punkt')
 
         if not self.opt.get('fasttext_model'):
             raise RuntimeError('No pretrained fasttext model provided')
@@ -42,7 +38,8 @@ class EmbeddingsDict(object):
             fname = os.path.basename(self.fasttext_model_file)
             try:
                 print('Trying to download a pretrained fasttext model from the ftp server')
-                urllib.request.urlretrieve(ftppath + '/paraphraser_data/' + fname, self.fasttext_model_file)
+                url = os.path.join(os.path.join(ftppath, 'insults_data'), fname)
+                urllib.request.urlretrieve(url, self.fasttext_model_file)
                 print('Downloaded a fasttext model')
             except:
                 raise RuntimeError('Looks like the `IPAVLOV_FTP` variable is set incorrectly')
@@ -50,9 +47,7 @@ class EmbeddingsDict(object):
 
     def add_items(self, sentence_li):
         for sen in sentence_li:
-            sent_toks = sent_tokenize(sen)
-            word_toks = [word_tokenize(el) for el in sent_toks]
-            tokens = [val for sublist in word_toks for val in sublist]
+            tokens = sen.split(' ')
             tokens = [el for el in tokens if el != '']
             for tok in tokens:
                 if self.tok2emb.get(tok) is None:
