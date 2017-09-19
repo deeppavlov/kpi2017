@@ -48,12 +48,14 @@ def build_dict(opt):
     dictionary.save(opt['dict_file'], sort=True)
     # print('[ num words =  %d ]' % len(dictionary))
 
+
 def main():
     # Get command line arguments
     argparser = ParlaiParser()
     DictionaryAgent.add_cmdline_args(argparser)
     opt = argparser.parse_args()
     build_dict(opt)
+
 
 if __name__ == '__main__':
     main()
