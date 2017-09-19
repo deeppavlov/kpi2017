@@ -1,17 +1,18 @@
 import unittest
 from utils import train_model
-#from utils.train_paraphraser import train_paraphraser_model as tp
+
+class KPIException(Exception):
+    """Class for exceptions raised if some KPI is not satisfied"""
+    pass
 
 class KPITests(unittest.TestCase):
     """Class for tests of different KPIs"""
-    def test_paraphraser(self):
-        pass
-#        self.assertTrue(tp() > 0.8, 'KPI for paraphraser is not satisfied')
+
     def test_paraphraser(self):
         metrics = train_model.main(['-t', 'deeppavlov.tasks.paraphrases.agents', \
                          '-m', 'deeppavlov.agents.paraphraser.paraphraser:EnsembleParaphraserAgent', \
-                         '-mf', './build/maxpool_match', \
-                         '--model_files', './build/maxpool_match', \
+                         '-mf', './build/paraphraser', \
+                         '--model_files', './build/paraphraser', \
                          '--datatype', 'test', \
                          '--batchsize', '256', \
                          '--display-examples', 'False', \
