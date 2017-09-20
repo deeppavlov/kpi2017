@@ -142,77 +142,78 @@ def build(opt):
     # define version if any
     version = '1.0'
 
-    # check if data had been previously built
-    if not build_data.built(dpath, version_string=version):
-        print('[building data: ' + dpath + ']')
+    raw_path = os.path.abspath(opt['raw_dataset_path'] or ".")
+    train_file = os.path.join(raw_path, 'train.csv')
+    valid_file = os.path.join(raw_path, 'test_with_solutions.csv')
+    test_file = os.path.join(raw_path, 'impermium_verification_labels.csv')
+    if not os.path.isfile(train_file) or not os.path.isfile(valid_file) or not os.path.isfile(test_file):
 
-        if not opt.get('raw_dataset_path'):
-            ftppath = os.environ.get('IPAVLOV_FTP')
-            if not ftppath:
+        # check if data had been previously built
+        if not build_data.built(dpath, version_string=version):
+            print('[building data: ' + dpath + ']')
+
+            # make a clean directory if needed
+            if build_data.built(dpath):
+                # an older version exists, so remove these outdated files.
+                build_data.remove_dir(dpath)
+            build_data.make_dir(dpath)
+
+            ds_path = os.environ.get('DATASETS_URL')
+            file_name = 'insults.tar.gz'
+            if not ds_path:
                 raise RuntimeError('Please download dataset files from'
-                               ' https://www.kaggle.com/c/detecting-insults-in-social-commentary/data'
-                               ' and set path to their directory in raw-dataset-path parameter')
-            try:
-                print('Trying to download a insults dataset from the ftp server')
-                build_data.download(os.path.join(ftppath,'datasets'), dpath, 'insults.tar.gz')
-                build_data.untar(dpath, 'insults.tar.gz')
-                opt['raw_dataset_path'] = dpath
-                print('Downloaded a insults dataset')
-            except:
-                raise RuntimeError('Looks like the `IPAVLOV_FTP` variable is set incorrectly')
-        raw_path = os.path.abspath(opt['raw_dataset_path'])
-        train_file = os.path.join(raw_path, 'train.csv')
-        valid_file = os.path.join(raw_path, 'test_with_solutions.csv')
-        test_file = os.path.join(raw_path, 'impermium_verification_labels.csv')
-        if not os.path.isfile(train_file) or not os.path.isfile(valid_file) or not os.path.isfile(test_file):
-            raise RuntimeError('Please download dataset files from'
-                               ' https://www.kaggle.com/c/detecting-insults-in-social-commentary/data'
-                               ' and set path to their directory in raw-dataset-path parameter')
+                                   ' https://www.kaggle.com/c/detecting-insults-in-social-commentary/data'
+                                   ' and set path to their directory in raw-dataset-path parameter')
+            print('Trying to download a insults dataset from the repository')
+            url = urllib.parse.urljoin(ds_path, file_name)
+            print(repr(url))
+            build_data.download(url, dpath, file_name)
+            build_data.untar(dpath, file_name)
+            opt['raw_dataset_path'] = dpath
+            print('Downloaded a insults dataset')
 
+            raw_path = os.path.abspath(dpath)
+            train_file = os.path.join(raw_path, 'train.csv')
+            valid_file = os.path.join(raw_path, 'test_with_solutions.csv')
+            test_file = os.path.join(raw_path, 'impermium_verification_labels.csv')
 
-        # make a clean directory if needed
-        if build_data.built(dpath):
-            # an older version exists, so remove these outdated files.
-            build_data.remove_dir(dpath)
-        build_data.make_dir(dpath)
+            train_data = pd.read_csv(train_file)
+            train_data = train_data.drop('Date', axis=1)
 
-        train_data = pd.read_csv(train_file)
-        train_data = train_data.drop('Date', axis=1)
+            test_data = pd.read_csv(test_file)
+            test_data = test_data.drop('id', axis=1)
+            test_data = test_data.drop('Usage', axis=1)
+            test_data = test_data.drop('Date', axis=1)
 
-        test_data = pd.read_csv(test_file)
-        test_data = test_data.drop('id', axis=1)
-        test_data = test_data.drop('Usage', axis=1)
-        test_data = test_data.drop('Date', axis=1)
+            valid_data = pd.read_csv(valid_file)
+            valid_data = valid_data.drop('Date', axis=1)
+            valid_data = valid_data.drop('Usage', axis=1)
 
-        valid_data = pd.read_csv(valid_file)
-        valid_data = valid_data.drop('Date', axis=1)
-        valid_data = valid_data.drop('Usage', axis=1)
+            # merge train and valid due to use of cross validation
+            train_data = train_data.append(valid_data)
 
-        # merge train and valid due to use of cross validation
-        train_data = train_data.append(valid_data)
+            if opt.get('balance_train_dataset'):
+                if opt['balance_train_dataset'] == True:
+                    train_data['Comment'],train_data['Insult'] = balance_dataset(train_data['Comment'],
+                                                                                 train_data['Insult'],
+                                                                                 train_data['Comment'],
+                                                                                 train_data['Insult'], ratio=1)
 
-        if opt.get('balance_train_dataset'):
-            if opt['balance_train_dataset'] == True:
-                train_data['Comment'],train_data['Insult'] = balance_dataset(train_data['Comment'],
-                                                                             train_data['Insult'],
-                                                                             train_data['Comment'],
-                                                                             train_data['Insult'], ratio=1)
+            print('Preprocessing train')
+            train_data['Comment'] = data_preprocessing(train_data['Comment'])
+            print('Preprocessing test')
+            test_data['Comment'] = data_preprocessing(test_data['Comment'])
 
-        print('Preprocessing train')
-        train_data['Comment'] = data_preprocessing(train_data['Comment'])
-        print('Preprocessing test')
-        test_data['Comment'] = data_preprocessing(test_data['Comment'])
+            print('Writing input files for fasttext')
+            write_input_fasttext_cls(train_data, os.path.join(dpath, 'train'), 'train')
+            write_input_fasttext_cls(test_data, os.path.join(dpath, 'test'), 'test')
 
-        print('Writing input files for fasttext')
-        write_input_fasttext_cls(train_data, os.path.join(dpath, 'train'), 'train')
-        write_input_fasttext_cls(test_data, os.path.join(dpath, 'test'), 'test')
+            write_input_fasttext_emb(train_data, os.path.join(dpath, 'train'), 'train')
+            write_input_fasttext_emb(test_data, os.path.join(dpath, 'test'), 'test')
 
-        write_input_fasttext_emb(train_data, os.path.join(dpath, 'train'), 'train')
-        write_input_fasttext_emb(test_data, os.path.join(dpath, 'test'), 'test')
+            print('Writing input normalized input files')
+            train_data.to_csv(os.path.join(dpath, 'train.csv'), index=False)
+            test_data.to_csv(os.path.join(dpath, 'test.csv'), index=False)
 
-        print('Writing input normalized input files')
-        train_data.to_csv(os.path.join(dpath, 'train.csv'), index=False)
-        test_data.to_csv(os.path.join(dpath, 'test.csv'), index=False)
-
-        # mark the data as built
-        build_data.mark_done(dpath, version_string=version)
+            # mark the data as built
+            build_data.mark_done(dpath, version_string=version)
