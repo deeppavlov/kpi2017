@@ -16,10 +16,7 @@ limitations under the License.
 
 import parlai.core.build_data as build_data
 import os
-from glob import glob
-import ftplib
-import numpy as np
-import random
+import urllib
 
 
 def is_end_of_sentence(prev_token, current_token):
@@ -28,27 +25,15 @@ def is_end_of_sentence(prev_token, current_token):
     return is_capital and is_punctuation
 
 
-def ftp_gareev_loader(dpath, heap_filename='heap.txt'):
-    print('Downloading data from FTP server...')
-    server = 'share.ipavlov.mipt.ru'
-    username = 'anonymous'
-    password = ''
-    directory = '/datasets/gareev/'
-    filematch = '*.iob'
-    ftp = ftplib.FTP(server)
-    ftp.login(username, password)
-    ftp.cwd(directory)
-
-    prev_token = '\n'
+def create_heap_file(dpath, heap_filename='heap.txt'):
     if not os.path.exists(dpath):
         os.mkdir(dpath)
-    tmp_file_path = os.path.join(dpath, 'ner_tmp_file.txt')
+
+    prev_token = '\n'
     with open(os.path.join(dpath, heap_filename), 'w') as outfile:
-        for file_name in ftp.nlst(filematch):
-            with open(tmp_file_path, 'wb') as tmp_f:
-                ftp.retrbinary('RETR ' + file_name, tmp_f.write)
-            with open(tmp_file_path) as tmp_f:
-                lines_list = tmp_f.readlines()
+        for file_name in [os.path.join(dpath, iob_file) for iob_file in os.listdir(dpath) if iob_file.endswith(".iob")]:
+            with open(file_name) as f:
+                lines_list = f.readlines()
             for line in lines_list:
                 if len(line) > 2:
                     token, tag = line.split()
@@ -72,6 +57,17 @@ def build(opt):
             build_data.remove_dir(dpath)
         build_data.make_dir(dpath)
 
-        ftp_gareev_loader(dpath)
+        ds_path = os.environ.get('DATASETS_URL')
+        file_name = 'gareev.tar.gz'
+        if not ds_path:
+            raise RuntimeError("Looks like the `DATASETS_URL` variable is set incorrectly")
+        print('Trying to download a dataset %s from the repository' % file_name)
+        url = urllib.parse.urljoin(ds_path, file_name)
+        build_data.download(url, dpath, file_name)
+        build_data.untar(dpath, file_name)
+        print('Downloaded a %s dataset' % file_name)
+
+        create_heap_file(dpath)
+
         # mark the data as built
         build_data.mark_done(dpath, version_string=version)
