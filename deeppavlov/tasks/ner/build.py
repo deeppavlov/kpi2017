@@ -49,25 +49,29 @@ def build(opt):
     dpath = os.path.join(opt['datapath'], 'ner')
 
     # check if data had been previously built
-    if not build_data.built(dpath, version_string=version):
-        print('[target data path: ' + dpath + ']')
-        # make a clean directory if needed
-        if build_data.built(dpath):
-            # an older version exists, so remove these outdated files.
-            build_data.remove_dir(dpath)
-        build_data.make_dir(dpath)
+    raw_path = os.path.abspath(opt['raw_dataset_path'] or ".")
+    if len([f for f in os.listdir(raw_path) if f.endswith(".iob")]) == 0:
+        if not build_data.built(dpath, version_string=version):
+            print('[target data path: ' + dpath + ']')
+            # make a clean directory if needed
+            if build_data.built(dpath):
+                # an older version exists, so remove these outdated files.
+                build_data.remove_dir(dpath)
+            build_data.make_dir(dpath)
 
-        ds_path = os.environ.get('DATASETS_URL')
-        file_name = 'gareev.tar.gz'
-        if not ds_path:
-            raise RuntimeError("Looks like the `DATASETS_URL` variable is set incorrectly")
-        print('Trying to download a dataset %s from the repository' % file_name)
-        url = urllib.parse.urljoin(ds_path, file_name)
-        build_data.download(url, dpath, file_name)
-        build_data.untar(dpath, file_name)
-        print('Downloaded a %s dataset' % file_name)
+            ds_path = os.environ.get('DATASETS_URL')
+            file_name = 'gareev.tar.gz'
+            if not ds_path:
+                raise RuntimeError("Looks like the `DATASETS_URL` variable is set incorrectly")
+            print('Trying to download a dataset %s from the repository' % file_name)
+            url = urllib.parse.urljoin(ds_path, file_name)
+            build_data.download(url, dpath, file_name)
+            build_data.untar(dpath, file_name)
+            print('Downloaded a %s dataset' % file_name)
+            # mark the data as built
+            build_data.mark_done(dpath, version_string=version)
+        opt['raw_dataset_path']=dpath
+    print("Use dataset from path: %s" % repr(opt['raw_dataset_path']))
+    create_heap_file(opt['raw_dataset_path'])
 
-        create_heap_file(dpath)
 
-        # mark the data as built
-        build_data.mark_done(dpath, version_string=version)
