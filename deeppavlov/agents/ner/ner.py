@@ -1,5 +1,4 @@
 import copy
-
 import numpy as np
 from parlai.core.agents import Agent
 
