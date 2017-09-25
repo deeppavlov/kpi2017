@@ -80,13 +80,8 @@ class NERTagger:
 
     def dense_network(self, units, n_layers, filter_width):
         n_filters = units.get_shape().as_list()[-1]
-        outputs = [units]
         auxilary_outputs = []
         for n_layer in range(n_layers):
-            if len(outputs) > 1:
-                units = tf.concat(outputs, axis=-1)
-            else:
-                units = outputs[0]
             units = tf.layers.conv1d(units,
                                      n_filters,
                                      filter_width,
@@ -96,8 +91,6 @@ class NERTagger:
                                      kernel_initializer=xavier_initializer())
             auxilary_outputs.append(units)
             units = tf.nn.relu(units)
-            outputs.append(units)
-        units = tf.concat(outputs, axis=-1)
         return units, auxilary_outputs
 
     def character_embedding_network(self, x_char, n_filters, filter_width):
