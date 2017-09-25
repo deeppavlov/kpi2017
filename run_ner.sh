@@ -7,7 +7,7 @@ mkdir -p ./build/ner
 python3 ./utils/train_model.py -t deeppavlov.tasks.ner.agents \
                          -m deeppavlov.agents.ner.ner:NERAgent \
                          -mf ./build/ner \
-                         --raw-dataset-path ./build/ner/ner/ \
+                         --raw-dataset-path ./build/ner/ \
                          -dt train:ordered \
                          --learning_rate 0.01 \
                          --batchsize 2 \
