@@ -23,7 +23,7 @@ from .build import build
 
 COREF_RESULTS_REGEX = re.compile(r".*Coreference: Recall: \([0-9.]+ / [0-9.]+\) ([0-9.]+)%\tPrecision: \([0-9.]+ / [0-9.]+\) ([0-9.]+)%\tF1: ([0-9.]+)%.*", re.DOTALL)
 
-def conll2dict(t_id,conll, epoch_done=False):
+def conll2dict(t_id, conll, epoch_done=False):
     data = {'doc_id': [],
             'part_id': [],
             'word_number': [],
@@ -154,7 +154,7 @@ class BaseTeacher(Teacher):
 
     def __init__(self, opt, shared=None):
         
-        self.task = opt['task'] # 'coreference'
+        self.task = opt['cor'] # 'coreference'
         self.languange = opt['languange']
         self.id = 'coreference_teacher'
         self.mode = 'train' #or test
@@ -164,7 +164,7 @@ class BaseTeacher(Teacher):
         # store datatype
         build(opt)
         
-        
+        opt['scorer_path'] = os.path.join(opt['datapath'], self.task, self.language, 'scorer')
         opt['datafile_train'] = os.path.join(opt['datapath'], self.task, self.language, 'train')
         opt['datafile_test'] = os.path.join(opt['datapath'], self.task, self.language, 'test')
         self.train_doc_address = os.listdir(opt['datafile_train']) # list of files addresses
@@ -224,5 +224,5 @@ class BaseTeacher(Teacher):
         return None    
 
     def report(self, opt): # not done yet
-        metrics = evaluate_conll(scorer_path, gold_path, predicted_path, official_stdout=False)
+        metrics = evaluate_conll(opt['scorer_path'], opt['gold_path'], opt['predicted_path'], official_stdout=False)
         return metrics

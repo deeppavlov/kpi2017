@@ -17,7 +17,7 @@ mkdir -p ./build/coreference
 python3 ./utils/train_model.py -t deeppavlov.tasks.coreference.agents:BaseTeacher \
                          -m parlai.agents.repeat_label.repeat_label:RepeatLabelAgent \
                          -mf ./build/coreference \
-                         --task coreference \
+                         --cor coreference \
                          --datapath ./build \
 		         --language russian \
                          --split 0.2 \
@@ -29,5 +29,4 @@ python3 ./utils/train_model.py -t deeppavlov.tasks.coreference.agents:BaseTeache
                          --max-train-time -1 \
                          --validation-every-n-epochs 1 \
                          --log-every-n-epochs 1 \
-                         --log-every-n-secs -1  \
-                         --chosen-metric f1
+                         --log-every-n-secs -1  
