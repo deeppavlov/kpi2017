@@ -19,6 +19,8 @@ from parlai.core.utils import Timer
 import os
 import time
 from sklearn import cross_validation
+from collections import defaultdict
+from tqdm import tqdm
 import sys
 import json
 #reload(sys)
@@ -133,8 +135,8 @@ def RuCoref2CoNLL(path, out_path, language='russian'):
         tokens_file.close()  
     # Write conll structure in file
     conll = os.path.join(out_path, ".".join([language,'v4_conll']))
-    with codecs.open(conll, 'w', encoding='utf-8') as CoNLL:
-        for i in tqdm(xrange(len(data['doc_id']))):
+    with open(conll, 'w') as CoNLL:
+        for i in tqdm(range(len(data['doc_id']))):
             if i == 0:
                 CoNLL.write('#begin document ({}); part {}\n'.format(data['doc_id'][i], data["part_id"][i]))
                 CoNLL.write(u'{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(data['doc_id'][i],
@@ -210,13 +212,13 @@ def split_doc(inpath, outpath, language):
     k = 0
     print('Splitting conll document ...')
     for i in range(len(lines)):
-        if line[i] == '#end document\n':
+        if lines[i] == '#end document\n':
             set_ends.append([k,i])
             k = i+1
     for i in range(len(set_ends)):
         cpath = os.path.join(outpath, ".".join([str(i), language,'v4_conll']))
         with open(cpath,'w') as c:
-            for j in range(set_ends[i][0],set_ends[i][1]):
+            for j in range(set_ends[i][0],set_ends[i][1]+1):
                 c.write(lines[j])
             c.close()
     
@@ -235,14 +237,14 @@ def train_test_split(inpath,output,split,random_seed):
                                               random_state=random_seed)
     train_set = [z[i] for i in sorted(list(doc_split)[0][0])]
     test_set = [z[i] for i in sorted(list(doc_split)[0][1])]
-    
+
     train_path = os.path.join(output, 'train')
     test_path = os.path.join(output, 'test')
     
     for x in train_set:
-        build_data.move(x, os.path.join(train_path,x))
-    for x in test_set:
-        build_data.move(x, os.path.join(test_path,x))
+        build_data.move(os.path.join(inpath,x), os.path.join(train_path,x))
+    for x in os.listdir(inpath):
+        build_data.move(os.path.join(inpath,x), os.path.join(test_path,x))
     
     return None
 
@@ -309,26 +311,30 @@ def build(opt):
         build_data.make_dir(dpath)
 
         # download the russian datasets, pretrain embeddings.
-        url = 'http://rucoref.maimbava.net/files/'  # datasets URL
+        url = 'http://rucoref.maimbava.net/files/rucoref_29.10.2015.zip'  # datasets URL
         embed_url = 'https://drive.google.com/file/d/0B2Ow60cJSy7EWUpSdVoxV2JsTTA' # embeddings url
-        scorer_url = 'http://conll.cemantix.org/'
-        print('[Download the word embeddings]...')
-        
-        # download the conll-2012 scorer v 8.1
-        build_data.download(scorer_url, os.path.join(dpath,'scorer'), 'download reference-coreference-scorers.v8.01.tar.gz')
-        build_data.untar(os.path.join(dpath,'scorer'), 'download reference-coreference-scorers.v8.01.tar.gz')
-        os.remove(os.path.join(dpath,'scorer','download reference-coreference-scorers.v8.01.tar.gz'))
+        scorer_url = 'http://conll.cemantix.org/download/reference-coreference-scorers.v8.01.tar.gz'        
         
         # download embeddings
-        build_data.download_from_google_drive(embed_url, os.path.join(dpath,'pretrain_embeddings'))
+        print('[Download the word embeddings]...')
+        build_data.download_from_google_drive(embed_url, os.path.join(dpath,'pretrain_embeddings'))        
+        print('[End of download the word embeddings]...')
+        
+        # download the conll-2012 scorer v 8.1
+        print('[Download the conll-2012 scorer]...')
+        build_data.make_dir(os.path.join(dpath,'scorer'))
+        build_data.download(scorer_url, os.path.join(dpath,'scorer'), 'reference-coreference-scorers.v8.01.tar.gz')
+        build_data.untar(os.path.join(dpath,'scorer'), 'reference-coreference-scorers.v8.01.tar.gz')
+        print('[Scorer was dawnloads]...')      
+        
+        # download dataset
         fname = 'rucoref_29.10.2015.zip'
         start = time.time() # Need rewrite in utils.Timer format
         print('[Download the rucoref dataset]...')
-        build_data.download(url, dpath, fname)
+        build_data.make_dir(os.path.join(dpath,'rucoref_29.10.2015'))
+        build_data.download(url, os.path.join(dpath,'rucoref_29.10.2015'), fname)
         # uncompress it
-        build_data.untar(dpath, fname)
-        # remove zip file
-        os.remove(os.path.join(dpath, fname))
+        build_data.untar(os.path.join(dpath,'rucoref_29.10.2015'), 'rucoref_29.10.2015.zip')
         print('End of download: time - {}'.format(time.time()-start))
         
         # Get pure text from Tokens.txt for creating char dictionary
@@ -336,13 +342,15 @@ def build(opt):
         get_all_texts_from_tokens_file(os.path.join(dpath,'rucoref_29.10.2015','Tokens.txt'), os.path.join(dpath,'pure_text','Pure_text.txt'))
         
         # Get char dictionary from pure text
-        build_data.make_dir(os.path.join(dpath,'vocab'))
-        get_char_vocab(os.path.join(dpath,'pure_text','Pure_text.txt'), os.path.join(dpath,'vocab','char_vocab.{}.txt'.format(language)))
+        #build_data.make_dir(os.path.join(dpath,'vocab'))
+        #u = os.path.join(dpath,'pure_text', 'Pure_text.txt')
+        #b = os.path.join(dpath,'vocab', 'char_vocab.{}.txt'.format(language)) 
+        #get_char_vocab(u, b)
         
         # Convertation rucorpus files in conll files
         conllpath = os.path.join(dpath, 'ru_conll')
         build_data.make_dir(conllpath)
-        RuCoref2CoNLL_0(os.path.join(dpath,'rucoref_29.10.2015'), conllpath, language)
+        RuCoref2CoNLL(os.path.join(dpath,'rucoref_29.10.2015'), conllpath, language)
         # splits conll files
         start = time.time()
         conlls = os.path.join(dpath, 'ru_conlls')
@@ -350,11 +358,14 @@ def build(opt):
         split_doc(os.path.join(conllpath, language+'.v4_conll'), conlls, language)
         build_data.remove_dir(conllpath)
         # create train and test partitions
-        train_test_split(conlls,dpath,opt['split'],opt['random_seed'])
+        #train_test_split(conlls,dpath,opt['split'],opt['random-seed'])
+        build_data.make_dir(os.path.join(dpath,'train'))
+        build_data.make_dir(os.path.join(dpath,'test'))
+        train_test_split(conlls,dpath,0.2,None)
         build_data.remove_dir(conlls)
         build_data.make_dir(os.path.join(dpath,'report'))
         print('End of data splitting. Time - {}'.format(time.time()-start))
         # mark the data as built
         build_data.mark_done(dpath, version_string=version)
-        
+        print('[Datasets done.]')
         return None

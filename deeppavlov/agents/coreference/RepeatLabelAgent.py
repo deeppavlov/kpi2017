@@ -17,9 +17,6 @@ class RepeatLabelAgent(Agent):
     # return label from before if available
     # #
     def act(self):
-        reply = {'id': self.id}
-        if 'labels' in self.observation:
-            reply['text'] = ', '.join(self.observation['labels'])
-        else:
-            reply['text'] = "I don't know."
+        reply = self.observation
+        reply['id'] = self.id
         return reply
