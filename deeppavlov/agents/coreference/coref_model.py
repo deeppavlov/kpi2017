@@ -1,6 +1,5 @@
 import operator
 import random
-import math
 import json
 import threading
 import numpy as np
@@ -20,19 +19,19 @@ class CorefModel(object):
     self.char_dict = util.load_char_dict(config["char_vocab_path"])
     self.embedding_dicts = [util.load_embedding_dict(emb["path"], emb["size"], emb["format"]) for emb in config["embeddings"]]
     self.max_mention_width = config["max_mention_width"]
-    self.genres = { g:i for i,g in enumerate(config["genres"]) }
-    self.eval_data = None # Load eval data lazily.
+    self.genres = {g: i for i, g in enumerate(config["genres"]) }
+    self.eval_data = None  # Load eval data lazily.
 
     input_props = []
     input_props.append((tf.float32, [None, None, self.embedding_size])) # Text embeddings.
     input_props.append((tf.int32, [None, None, None])) # Character indices.
-    input_props.append((tf.int32, [None])) # Text lengths.
-    input_props.append((tf.int32, [None])) # Speaker IDs.
-    input_props.append((tf.int32, [])) # Genre.
-    input_props.append((tf.bool, [])) # Is training.
-    input_props.append((tf.int32, [None])) # Gold starts.
-    input_props.append((tf.int32, [None])) # Gold ends.
-    input_props.append((tf.int32, [None])) # Cluster ids.
+    input_props.append((tf.int32, [None]))  # Text lengths.
+    input_props.append((tf.int32, [None]))  # Speaker IDs.
+    input_props.append((tf.int32, []))  # Genre.
+    input_props.append((tf.bool, []))  # Is training.
+    input_props.append((tf.int32, [None]))  # Gold starts.
+    input_props.append((tf.int32, [None]))  # Gold ends.
+    input_props.append((tf.int32, [None]))  # Cluster ids.
 
     self.queue_input_tensors = [tf.placeholder(dtype, shape) for dtype, shape in input_props]
     dtypes, shapes = zip(*input_props)
@@ -324,7 +323,7 @@ class CorefModel(object):
     max_sentence_length = tf.shape(emb)[1]
 
     emb_rank = len(emb.get_shape())
-    if emb_rank  == 2:
+    if emb_rank == 2:
       flattened_emb = tf.reshape(emb, [num_sentences * max_sentence_length])
     elif emb_rank == 3:
       flattened_emb = tf.reshape(emb, [num_sentences * max_sentence_length, util.shape(emb, 2)])
@@ -371,7 +370,7 @@ class CorefModel(object):
                                      batch_dim=1)
 
     text_outputs = tf.concat([fw_outputs, bw_outputs], 2)
-    text_outputs = tf.transpose(text_outputs, [1, 0, 2]) # [num_sentences, max_sentence_length, emb]
+    text_outputs = tf.transpose(text_outputs, [1, 0, 2])  # [num_sentences, max_sentence_length, emb]
     return self.flatten_emb_by_sentence(text_outputs, text_len_mask)
 
   def evaluate_mentions(self, candidate_starts, candidate_ends, mention_starts, mention_ends, mention_scores, gold_starts, gold_ends, example, evaluators):
@@ -473,7 +472,7 @@ class CorefModel(object):
         return "threshold"
       else:
         return "{}%".format(k)
-    mention_evaluators = { k:util.RetrievalEvaluator() for k in [-3, -2, -1, 0, 10, 15, 20, 25, 30, 40, 50] }
+    mention_evaluators = {k: util.RetrievalEvaluator() for k in [-3, -2, -1, 0, 10, 15, 20, 25, 30, 40, 50] }
 
     coref_predictions = {}
     coref_evaluator = metrics.CorefEvaluator()
@@ -489,7 +488,7 @@ class CorefModel(object):
       coref_predictions[example["doc_key"]] = self.evaluate_coref(mention_starts, mention_ends, predicted_antecedents, example["clusters"], coref_evaluator)
 
       if example_num % 10 == 0:
-        print "Evaluated {}/{} examples.".format(example_num + 1, len(self.eval_data))
+        print("Evaluated {}/{} examples.".format(example_num + 1, len(self.eval_data)))
 
     summary_dict = {}
     for k, evaluator in sorted(mention_evaluators.items(), key=operator.itemgetter(0)):
@@ -498,20 +497,20 @@ class CorefModel(object):
       for t, v in zip(tags, evaluator.metrics()):
         results_to_print.append("{:<10}: {:.2f}".format(t, v))
         summary_dict[t] = v
-      print ", ".join(results_to_print)
+      print(", ".join(results_to_print))
 
     conll_results = conll.evaluate_conll(self.config["conll_eval_path"], coref_predictions, official_stdout)
     average_f1 = sum(results["f"] for results in conll_results.values()) / len(conll_results)
     summary_dict["Average F1 (conll)"] = average_f1
-    print "Average F1 (conll): {:.2f}%".format(average_f1)
+    print("Average F1 (conll): {:.2f}%".format(average_f1))
 
     p,r,f = coref_evaluator.get_prf()
     summary_dict["Average F1 (py)"] = f
-    print "Average F1 (py): {:.2f}%".format(f * 100)
+    print("Average F1 (py): {:.2f}%".format(f * 100))
     summary_dict["Average precision (py)"] = p
-    print "Average precision (py): {:.2f}%".format(p * 100)
+    print("Average precision (py): {:.2f}%".format(p * 100))
     summary_dict["Average recall (py)"] = r
-    print "Average recall (py): {:.2f}%".format(r * 100)
+    print("Average recall (py): {:.2f}%".format(r * 100))
 
     #return util.make_summary(summary_dict), average_f1
     return util.make_summary(summary_dict), average_f1

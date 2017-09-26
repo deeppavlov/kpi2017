@@ -1,11 +1,7 @@
 #!/usr/bin/env python
 
 import re
-import os
-import sys
 import json
-import tempfile
-import subprocess
 import collections
 from collections import Counter
 import util
@@ -132,7 +128,7 @@ def minimize_partition(name, language, extension):
   input_path = "./my_conll/new/{}.{}.{}".format(name, language, extension)
   output_path = "./data/new/{}.{}.jsonlines".format(name, language)
   count = 0
-  print "Minimizing {}".format(input_path)
+  print("Minimizing {}".format(input_path))
   with open(input_path, "r") as input_file:
     with open(output_path, "w") as output_file:
       document_state = DocumentState()
@@ -143,7 +139,7 @@ def minimize_partition(name, language, extension):
           output_file.write("\n")
           count += 1
           document_state = DocumentState()
-  print "Wrote {} documents to {}".format(count, output_path)
+  print("Wrote {} documents to {}".format(count, output_path))
 
 def minimize_language(language):
   minimize_partition("dev", language, "v4_conll")

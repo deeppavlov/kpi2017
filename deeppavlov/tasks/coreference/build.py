@@ -19,12 +19,8 @@ from parlai.core.utils import Timer
 import os
 import time
 from sklearn import cross_validation
-from collections import defaultdict
 from tqdm import tqdm
-import sys
 import json
-#reload(sys)
-#sys.setdefaultencoding('utf-8')
 
 def RuCoref2CoNLL(path, out_path, language='russian'):
     data = {"doc_id": [],
@@ -50,11 +46,9 @@ def RuCoref2CoNLL(path, out_path, language='russian'):
     groups_ext = "txt"
     tokens_fname = "Tokens"
     groups_fname = "Groups"
-    scope_trees = defaultdict(lambda: intervaltree.IntervalTree())
     
     tokens_path = os.path.join(path, ".".join([tokens_fname, tokens_ext]))
-    groups_path = os.path.join(path,".".join([groups_fname, groups_ext]))
-    doc_count = 1
+    groups_path = os.path.join(path, ".".join([groups_fname, groups_ext]))
     print('Convert rucoref corpus into conll format ...')
     start = time.time()
     coref_dict = {}
@@ -98,7 +92,6 @@ def RuCoref2CoNLL(path, out_path, language='russian'):
     
     # Write conll structure
     with open(tokens_path, "r") as tokens_file:
-        header = next(tokens_file)[:-1]
         k = 0
         for line in tokens_file:
             doc_id, shift, length, token, lemma, gram = line[:-1].split('\t')
@@ -134,7 +127,7 @@ def RuCoref2CoNLL(path, out_path, language='russian'):
             
         tokens_file.close()  
     # Write conll structure in file
-    conll = os.path.join(out_path, ".".join([language,'v4_conll']))
+    conll = os.path.join(out_path, ".".join([language, 'v4_conll']))
     with open(conll, 'w') as CoNLL:
         for i in tqdm(range(len(data['doc_id']))):
             if i == 0:
@@ -213,11 +206,11 @@ def split_doc(inpath, outpath, language):
     print('Splitting conll document ...')
     for i in range(len(lines)):
         if lines[i] == '#end document\n':
-            set_ends.append([k,i])
+            set_ends.append([k, i])
             k = i+1
     for i in range(len(set_ends)):
-        cpath = os.path.join(outpath, ".".join([str(i), language,'v4_conll']))
-        with open(cpath,'w') as c:
+        cpath = os.path.join(outpath, ".".join([str(i), language, 'v4_conll']))
+        with open(cpath, 'w') as c:
             for j in range(set_ends[i][0],set_ends[i][1]+1):
                 c.write(lines[j])
             c.close()
@@ -229,7 +222,7 @@ def split_doc(inpath, outpath, language):
     
     return None
 
-def train_test_split(inpath,output,split,random_seed):
+def train_test_split(inpath, output, split, random_seed):
     z = os.listdir(inpath)
     doc_split = cross_validation.ShuffleSplit(len(z),
                                               n_iter=1,
@@ -249,22 +242,17 @@ def train_test_split(inpath,output,split,random_seed):
     return None
 
 def get_all_texts_from_tokens_file(tokens_path, out_path):
-    text_count = 0
     lengths = {}
-    texts = {}
     # determine number of texts and their lengths
     with open(tokens_path, "r") as tokens_file:
-        header = tokens_file.readline()[:-1]
         for line in tokens_file:
             doc_id, shift, length, token, lemma, gram = line[:-1].split('\t')
             doc_id, shift, length = map(int, (doc_id, shift, length))
             lengths[doc_id] = shift + length
-    text_count = len(lengths)
     
     texts = {doc_id: [' ']*length for (doc_id, length) in lengths.items()}
     # read texts
     with open(tokens_path, "r") as tokens_file:
-        header = tokens_file.readline()[:-1]
         for line in tokens_file:
             doc_id, shift, length, token, lemma, gram = line[:-1].split('\t')
             doc_id, shift, length = map(int, (doc_id, shift, length))
@@ -331,15 +319,15 @@ def build(opt):
         fname = 'rucoref_29.10.2015.zip'
         start = time.time() # Need rewrite in utils.Timer format
         print('[Download the rucoref dataset]...')
-        build_data.make_dir(os.path.join(dpath,'rucoref_29.10.2015'))
-        build_data.download(url, os.path.join(dpath,'rucoref_29.10.2015'), fname)
+        build_data.make_dir(os.path.join(dpath, 'rucoref_29.10.2015'))
+        build_data.download(url, os.path.join(dpath, 'rucoref_29.10.2015'), fname)
         # uncompress it
-        build_data.untar(os.path.join(dpath,'rucoref_29.10.2015'), 'rucoref_29.10.2015.zip')
+        build_data.untar(os.path.join(dpath, 'rucoref_29.10.2015'), 'rucoref_29.10.2015.zip')
         print('End of download: time - {}'.format(time.time()-start))
         
         # Get pure text from Tokens.txt for creating char dictionary
-        build_data.make_dir(os.path.join(dpath,'pure_text'))
-        get_all_texts_from_tokens_file(os.path.join(dpath,'rucoref_29.10.2015','Tokens.txt'), os.path.join(dpath,'pure_text','Pure_text.txt'))
+        build_data.make_dir(os.path.join(dpath, 'pure_text'))
+        get_all_texts_from_tokens_file(os.path.join(dpath, 'rucoref_29.10.2015', 'Tokens.txt'), os.path.join(dpath, 'pure_text', 'Pure_text.txt'))
         
         # Get char dictionary from pure text
         #build_data.make_dir(os.path.join(dpath,'vocab'))
@@ -350,7 +338,7 @@ def build(opt):
         # Convertation rucorpus files in conll files
         conllpath = os.path.join(dpath, 'ru_conll')
         build_data.make_dir(conllpath)
-        RuCoref2CoNLL(os.path.join(dpath,'rucoref_29.10.2015'), conllpath, language)
+        RuCoref2CoNLL(os.path.join(dpath, 'rucoref_29.10.2015'), conllpath, language)
         # splits conll files
         start = time.time()
         conlls = os.path.join(dpath, 'ru_conlls')
@@ -359,11 +347,11 @@ def build(opt):
         build_data.remove_dir(conllpath)
         # create train and test partitions
         #train_test_split(conlls,dpath,opt['split'],opt['random-seed'])
-        build_data.make_dir(os.path.join(dpath,'train'))
-        build_data.make_dir(os.path.join(dpath,'test'))
-        train_test_split(conlls,dpath,0.2,None)
+        build_data.make_dir(os.path.join(dpath, 'train'))
+        build_data.make_dir(os.path.join(dpath, 'test'))
+        train_test_split(conlls, dpath, 0.2, None)
         build_data.remove_dir(conlls)
-        build_data.make_dir(os.path.join(dpath,'report'))
+        build_data.make_dir(os.path.join(dpath, 'report'))
         print('End of data splitting. Time - {}'.format(time.time()-start))
         # mark the data as built
         build_data.mark_done(dpath, version_string=version)

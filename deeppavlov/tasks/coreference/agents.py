@@ -40,7 +40,7 @@ def conll2dict(iter_id, conll, agent, epoch_done=False):
             'id': agent,
             'epoch_done': epoch_done}
 
-    with open(conll,'r') as f:
+    with open(conll, 'r') as f:
         for line in f:
             row = line.split('\t')
             if row[0].startswith('#') or row[0] == '\n':
@@ -64,7 +64,7 @@ def conll2dict(iter_id, conll, agent, epoch_done=False):
 
 def dict2conll(data, predict):
     #
-    with open(predict,'w') as CoNLL:
+    with open(predict, 'w') as CoNLL:
         for i in range(len(data['doc_id'])):
             if i == 0:
                 CoNLL.write('#begin document ({}); part {}\n'.format(data['doc_id'][i], data["part_id"][i]))
@@ -147,10 +147,10 @@ def official_conll_eval(scorer_path, gold_path, predicted_path, metric, official
     recall = float(coref_results_match.group(1))
     precision = float(coref_results_match.group(2))
     f1 = float(coref_results_match.group(3))
-    return { "r": recall, "p": precision, "f": f1 }
+    return {"r": recall, "p": precision, "f": f1}
 
 def evaluate_conll(scorer_path, gold_path, predicted_path, official_stdout=False):
-    return { m: official_conll_eval(scorer_path,gold_path,predicted_path,m,official_stdout) for m in ("muc", "bcub", "ceafe")}
+    return {m: official_conll_eval(scorer_path, gold_path, predicted_path, m, official_stdout) for m in ("muc", "bcub", "ceafe")}
 
 class BaseTeacher(Teacher):
     
@@ -165,7 +165,7 @@ class BaseTeacher(Teacher):
     
     def __init__(self, opt, shared=None):
         
-        self.task = opt['cor'] # 'coreference'
+        self.task = opt['cor']  # 'coreference'
         self.language = opt['language']
         self.id = 'coreference_teacher'
 
@@ -246,7 +246,7 @@ class BaseTeacher(Teacher):
             predict = os.path.join(self.reports_datapath, self.train_doc_address[int(self.observation['iter_id'])])
             dict2conll(self.observation, predict) # predict it is file name
         elif self.dt == 'test':
-            if self.observation['epoch_done'] == True:
+            if self.observation['epoch_done']:
                 self.test_doc_id = 0
 #                 self.report()
             else:
@@ -254,7 +254,7 @@ class BaseTeacher(Teacher):
             predict = os.path.join(self.reports_datapath, self.test_doc_address[int(self.observation['iter_id'])])
             dict2conll(self.observation, predict) # predict it is file name
         elif self.dt == 'valid':
-            if self.observation['epoch_done'] == True:
+            if self.observation['epoch_done']:
                 self.test_doc_id = 0
 #                 self.report()
             else:
@@ -266,7 +266,7 @@ class BaseTeacher(Teacher):
         return None    
 
     def report(self): # not done yet
-        #metrics = evaluate_conll(self.scorer_path, self.train_datapath, self.reports_datapath, official_stdout=False)
+        # metrics = evaluate_conll(self.scorer_path, self.train_datapath, self.reports_datapath, official_stdout=False)
         print('End epoch ...')
         d = {'accuracy': 1}
         return d
