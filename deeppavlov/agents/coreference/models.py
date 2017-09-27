@@ -1,11 +1,25 @@
-import operator
+"""
+Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
 import random
 import os
 import copy
 import numpy as np
 import tensorflow as tf
 from . import utils
-import collections
 
 coref_op_library = tf.load_op_library("./coref_kernels.so")
 spans = coref_op_library.spans
@@ -17,59 +31,12 @@ tf.NotDifferentiable("ExtractMentions")
 distance_bins = coref_op_library.distance_bins
 tf.NotDifferentiable("DistanceBins")
 
-def output_conll(input_file, predictions):
-    prediction_map = {}
-    output_file = copy.deepcopy(input_file)
-
-    for doc_key, clusters in predictions.items():
-        start_map = collections.defaultdict(list)
-        end_map = collections.defaultdict(list)
-        word_map = collections.defaultdict(list)
-        for cluster_id, mentions in enumerate(clusters):
-            for start, end in mentions:
-                if start == end:
-                    word_map[start].append(cluster_id)
-                else:
-                    start_map[start].append((cluster_id, end))
-                    end_map[end].append((cluster_id, start))
-        for k, v in start_map.items():
-            start_map[k] = [cluster_id for cluster_id, end in sorted(v, key=operator.itemgetter(1), reverse=True)]
-        for k, v in end_map.items():
-            end_map[k] = [cluster_id for cluster_id, start in sorted(v, key=operator.itemgetter(1), reverse=True)]
-        prediction_map[doc_key] = (start_map, end_map, word_map)
-
-    word_index = 0
-    for i in range(len(input_file['doc_id'])):
-        doc_key = '{}_{}'.format(input_file['doc_id'], input_file['part_id'])
-        start_map, end_map, word_map = prediction_map[doc_key]
-        coref_list = []
-        if word_index in end_map:
-            for cluster_id in end_map[word_index]:
-                coref_list.append("{})".format(cluster_id))
-        if word_index in word_map:
-            for cluster_id in word_map[word_index]:
-                coref_list.append("({})".format(cluster_id))
-        if word_index in start_map:
-            for cluster_id in start_map[word_index]:
-                coref_list.append("({}".format(cluster_id))
-
-        if len(coref_list) == 0:
-            output_file['coreference'][i] = "-"
-        else:
-            output_file['coreference'][i] = "|".join(coref_list)
-
-        word_index += 1
-    return output_file
-
 class CorefModel(object):
     def __init__(self, opt):
         self.opt = copy.deepcopy(opt)
-
-        if self.opt.get('pretrained_model'):
-            self.init_from_saved()
-        else:
-            print('[ Initializing model from scratch ]')
-
+        self.config = tf.ConfigProto()
+        self.config.gpu_options.per_process_gpu_memory_fraction = 0.8
+        self.config.gpu_options.visible_device_list = '0'
 
         self.embedding_info = [(self.opt["embeddings_size"], self.opt["emb_lowercase"])]
         self.embedding_size = self.opt['embeddings_size']
@@ -78,11 +45,6 @@ class CorefModel(object):
         self.embedding_dicts = utils.load_embedding_dict(self.opt["embedding_path"], self.embedding_size, self.opt["emb_format"])
         self.max_mention_width = self.opt["max_mention_width"]
         self.genres = {g: i for i, g in enumerate(self.opt["genres"])}
-        self.eval_data = None  # Load eval data lazily.
-
-        self.config = tf.ConfigProto()
-        self.config.gpu_options.per_process_gpu_memory_fraction = 0.8
-        self.config.gpu_options.visible_device_list = '0'
 
         input_props = []
         input_props.append((tf.float32, [None, None, self.embedding_size]))  # Text embeddings.
@@ -95,11 +57,7 @@ class CorefModel(object):
         input_props.append((tf.int32, [None]))  # Gold ends.
         input_props.append((tf.int32, [None]))  # Cluster ids.
 
-        self.queue_input_tensors = [tf.placeholder(dtype, shape) for dtype, shape in input_props]
-        dtypes, shapes = zip(*input_props)
-        queue = tf.PaddingFIFOQueue(capacity=10, dtypes=dtypes, shapes=shapes)
-        self.enqueue_op = queue.enqueue(self.queue_input_tensors)
-        self.input_tensors = queue.dequeue()
+        self.input_tensors = [tf.placeholder(dtype, shape) for dtype, shape in input_props]
 
         self.predictions, self.loss = self.get_predictions_and_loss(*self.input_tensors)
         self.global_step = tf.Variable(0, name="global_step", trainable=False)
@@ -498,108 +456,6 @@ class CorefModel(object):
 
         return predicted_clusters, mention_to_predicted
 
-    # def evaluate_mentions(self, candidate_starts, candidate_ends, mention_starts, mention_ends, mention_scores,
-    #                       gold_starts, gold_ends, example, evaluators):
-    #     text_length = sum(len(s) for s in example["sentences"])
-    #     gold_spans = set(zip(gold_starts, gold_ends))
-    #
-    #     if len(candidate_starts) > 0:
-    #         sorted_starts, sorted_ends, _ = zip(
-    #             *sorted(zip(candidate_starts, candidate_ends, mention_scores), key=operator.itemgetter(2),
-    #                     reverse=True))
-    #     else:
-    #         sorted_starts = []
-    #         sorted_ends = []
-    #
-    #     for k, evaluator in evaluators.items():
-    #         if k == -3:
-    #             predicted_spans = set(zip(candidate_starts, candidate_ends)) & gold_spans
-    #         else:
-    #             if k == -2:
-    #                 predicted_starts = mention_starts
-    #                 predicted_ends = mention_ends
-    #             elif k == 0:
-    #                 is_predicted = mention_scores > 0
-    #                 predicted_starts = candidate_starts[is_predicted]
-    #                 predicted_ends = candidate_ends[is_predicted]
-    #             else:
-    #                 if k == -1:
-    #                     num_predictions = len(gold_spans)
-    #                 else:
-    #                     num_predictions = (k * text_length) / 100
-    #                 predicted_starts = sorted_starts[:num_predictions]
-    #                 predicted_ends = sorted_ends[:num_predictions]
-    #             predicted_spans = set(zip(predicted_starts, predicted_ends))
-    #         evaluator.update(gold_set=gold_spans, predicted_set=predicted_spans)
-
-    # def evaluate_coref(self, mention_starts, mention_ends, predicted_antecedents, gold_clusters, evaluator):
-    #     gold_clusters = [tuple(tuple(m) for m in gc) for gc in gold_clusters]
-    #     mention_to_gold = {}
-    #     for gc in gold_clusters:
-    #         for mention in gc:
-    #             mention_to_gold[mention] = gc
-    #
-    #     predicted_clusters, mention_to_predicted = self.get_predicted_clusters(mention_starts, mention_ends,
-    #                                                                            predicted_antecedents)
-    #     evaluator.update(predicted_clusters, gold_clusters, mention_to_predicted, mention_to_gold)
-    #     return predicted_clusters
-    #
-    # def evaluate(self, official_stdout=False):
-    #
-    #     def _k_to_tag(k):
-    #         if k == -3:
-    #             return "oracle"
-    #         elif k == -2:
-    #             return "actual"
-    #         elif k == -1:
-    #             return "exact"
-    #
-    #     mention_evaluators = {k: utils.RetrievalEvaluator() for k in [-3, -2, -1]}
-    #
-    #     coref_predictions = {}
-    #     coref_evaluator = utils.CorefEvaluator()
-    #
-    #     for example_num, (tensorized_example, example) in enumerate(self.eval_data):
-    #         _, _, _, _, _, _, gold_starts, gold_ends, _ = tensorized_example
-    #         feed_dict = {i: t for i, t in zip(self.input_tensors, tensorized_example)}
-    #         candidate_starts, candidate_ends, mention_scores, mention_starts, mention_ends, antecedents, antecedent_scores = self.sess.run(
-    #             self.predictions, feed_dict=feed_dict)
-    #
-    #         self.evaluate_mentions(candidate_starts, candidate_ends, mention_starts, mention_ends, mention_scores,
-    #                                gold_starts, gold_ends, example, mention_evaluators)
-    #         predicted_antecedents = self.get_predicted_antecedents(antecedents, antecedent_scores)
-    #
-    #         coref_predictions[example["doc_key"]] = self.evaluate_coref(mention_starts, mention_ends,
-    #                                                                     predicted_antecedents, example["clusters"],
-    #                                                                     coref_evaluator)
-    #
-    #         if example_num % 10 == 0:
-    #             print("Evaluated {}/{} examples.".format(example_num + 1, len(self.eval_data)))
-    #
-    #     summary_dict = {}
-    #     for k, evaluator in sorted(mention_evaluators.items(), key=operator.itemgetter(0)):
-    #         tags = ["{} @ {}".format(t, _k_to_tag(k)) for t in ("R", "P", "F")]
-    #         results_to_print = []
-    #         for t, v in zip(tags, evaluator.metrics()):
-    #             results_to_print.append("{:<10}: {:.2f}".format(t, v))
-    #             summary_dict[t] = v
-    #         print(", ".join(results_to_print))
-    #
-    #     conll_results = conll.evaluate_conll(self.config["conll_eval_path"], coref_predictions, official_stdout)
-    #     average_f1 = sum(results["f"] for results in conll_results.values()) / len(conll_results)
-    #     summary_dict["Average F1 (conll)"] = average_f1
-    #     print("Average F1 (conll): {:.2f}%".format(average_f1))
-    #
-    #     p, r, f = coref_evaluator.get_prf()
-    #     summary_dict["Average F1 (py)"] = f
-    #     print("Average F1 (py): {:.2f}%".format(f * 100))
-    #     summary_dict["Average precision (py)"] = p
-    #     print("Average precision (py): {:.2f}%".format(p * 100))
-    #     summary_dict["Average recall (py)"] = r
-    #     print("Average recall (py): {:.2f}%".format(r * 100))
-    #
-    #     return utils.make_summary(summary_dict), average_f1
-
     def init_from_saved(self):
         saver = tf.train.Saver()
         log_dir = os.path.join(self.opt["log_root"], self.opt['name'])
@@ -618,11 +474,49 @@ class CorefModel(object):
         saver.save(self.sess, os.path.join(log_dir, 'model.max.ckpt'))
 
     def train_op(self, batch):
-        self.tensorize_example(batch, True)
+        _, _, _, _, _, _, _, _, _ = tensorized_example = self.tensorize_example(batch, True)
+        feed_dict = {i: t for i, t in zip(self.input_tensors, tensorized_example)}
+        tf_loss = self.sess.run(self.loss, feed_dict=feed_dict)
+        self.sess.run(self.train_op)
+        return tf_loss
 
-        tf_loss, tf_global_step, _ = self.sess.run([self.loss, self.global_step, self.train_op])
+    def eval(self, batch):
+        _, _, _, _, _, _, _, _, _ = tensorized_example = self.tensorize_example(batch, True)
+        feed_dict = {i: t for i, t in zip(self.input_tensors, tensorized_example)}
+        tf_loss = self.sess.run(self.loss, feed_dict=feed_dict)
+        return tf_loss
 
-        report = {}
-        report['step'] = observations['iter_id']
-        report['Loss'] = tf_loss
-        return report
+    def predict(self, batch):
+
+        # tensorized_example = self.tensorize_example(batch, True)
+        _, _, _, _, _, _, gold_starts, gold_ends, _ = tensorized_example = self.tensorize_example(batch, True)
+        feed_dict = {i: t for i, t in zip(self.input_tensors, tensorized_example)}
+        candidate_starts, candidate_ends, mention_scores, mention_starts, mention_ends, antecedents, antecedent_scores = self.sess.run(
+            self.predictions, feed_dict=feed_dict)
+
+        # if len(candidate_starts) > 0:
+        #     sorted_starts, sorted_ends, _ = zip(
+        #         *sorted(zip(candidate_starts, candidate_ends, mention_scores), key=operator.itemgetter(2),
+        #                 reverse=True))
+        # else:
+        #     sorted_starts = []
+        #     sorted_ends = []
+
+        # predicted_starts = mention_starts
+        # predicted_ends = mention_ends
+        # predicted_spans = set(zip(predicted_starts, predicted_ends))
+
+        predicted_antecedents = self.get_predicted_antecedents(antecedents, antecedent_scores)
+
+        gold_clusters = [tuple(tuple(m) for m in gc) for gc in batch["clusters"]]
+        mention_to_gold = {}
+        for gc in gold_clusters:
+            for mention in gc:
+                mention_to_gold[mention] = gc
+
+        predicted_clusters, mention_to_predicted = self.get_predicted_clusters(mention_starts, mention_ends,
+                                                                               predicted_antecedents)
+
+        outconll = utils.output_conll(batch, predicted_clusters)
+
+        return outconll
