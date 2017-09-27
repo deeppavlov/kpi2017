@@ -21,9 +21,8 @@ import subprocess
 from parlai.core.agents import Teacher
 from .build import build
 
-COREF_RESULTS_REGEX = re.compile(r".*Coreference: Recall: \([0-9.]+ / [0-9.]+\) ([0-9.]+)%\tPrecision: \([0-9.]+ / [0-9.]+\) ([0-9.]+)%\tF1: ([0-9.]+)%.*", re.DOTALL)
 
-def conll2dict(iter_id, conll, agent, epoch_done=False):
+def conll2dict(iter_id, conll, agent, mode, epoch_done=False):
     data = {'doc_id': [],
             'part_id': [],
             'word_number': [],
@@ -38,7 +37,8 @@ def conll2dict(iter_id, conll, agent, epoch_done=False):
             'coreference': [],
             'iter_id': iter_id,
             'id': agent,
-            'epoch_done': epoch_done}
+            'epoch_done': epoch_done,
+            'mode': mode}
 
     with open(conll, 'r') as f:
         for line in f:
@@ -176,8 +176,8 @@ class BaseTeacher(Teacher):
         self.scorer_path = os.path.join(opt['datapath'], self.task, self.language, 'scorer')
         self.train_datapath = os.path.join(opt['datapath'], self.task, self.language, 'train')
         self.test_datapath = os.path.join(opt['datapath'], self.task, self.language, 'test')
-        self.train_doc_address = os.listdir(self.train_datapath) # list of files addresses
-        self.test_doc_address = os.listdir(self.test_datapath) # list of files addresses
+        self.train_doc_address = os.listdir(self.train_datapath)  # list of files addresses
+        self.test_doc_address = os.listdir(self.test_datapath)  # list of files addresses
         self.train_len = len(self.train_doc_address)
         self.test_len = len(self.test_doc_address)
         self.train_doc_id = 0
@@ -209,25 +209,25 @@ class BaseTeacher(Teacher):
         if self.dt == 'train':
             if self.train_doc_id == self.train_len - 1:
                 datafile = os.path.join(self.train_datapath, self.train_doc_address[self.train_doc_id])
-                act_dict = conll2dict(self.iter, datafile, self.id, epoch_done=True)
+                act_dict = conll2dict(self.iter, datafile, self.id, self.dt, epoch_done=True)
             else:
                 datafile = os.path.join(self.train_datapath, self.train_doc_address[self.train_doc_id])
-                act_dict = conll2dict(self.iter, datafile, self.id)
+                act_dict = conll2dict(self.iter, datafile, self.id, self.dt)
             return act_dict
         elif self.dt == 'test':
             if self.test_doc_id == self.test_len - 1:
                 datafile = os.path.join(self.test_datapath, self.test_doc_address[self.test_doc_id])
-                act_dict = conll2dict(self.iter, datafile, self.id, epoch_done=True)
+                act_dict = conll2dict(self.iter, datafile, self.id, self.dt, epoch_done=True)
             else:
                 datafile = os.path.join(self.test_datapath, self.test_doc_address[self.test_doc_id])
-                act_dict = conll2dict(self.iter, datafile, self.id)
+                act_dict = conll2dict(self.iter, datafile, self.id, self.dt)
         elif self.dt == 'valid': # not yet
             if self.test_doc_id == self.test_len - 1:
                 datafile = os.path.join(self.test_datapath, self.test_doc_address[self.test_doc_id])
-                act_dict = conll2dict(self.iter, datafile, self.id, epoch_done=True)
+                act_dict = conll2dict(self.iter, datafile, self.id, self.dt, epoch_done=True)
             else:
                 datafile = os.path.join(self.test_datapath, self.test_doc_address[self.test_doc_id])
-                act_dict = conll2dict(self.iter, datafile, self.id)
+                act_dict = conll2dict(self.iter, datafile, self.id, self.dt)
         else:
             raise TypeError('Unknown mode: {}. Available modes: train, test, valid.'.format(self.dt))
         return act_dict
@@ -244,7 +244,7 @@ class BaseTeacher(Teacher):
                 self.iter += 1
                 
             predict = os.path.join(self.reports_datapath, self.train_doc_address[int(self.observation['iter_id'])])
-            dict2conll(self.observation, predict) # predict it is file name
+            dict2conll(self.observation, predict)  # predict it is file name
         elif self.dt == 'test':
             if self.observation['epoch_done']:
                 self.test_doc_id = 0
@@ -252,7 +252,7 @@ class BaseTeacher(Teacher):
             else:
                 self.test_doc_id = int(self.observation['iter_id']) + 1
             predict = os.path.join(self.reports_datapath, self.test_doc_address[int(self.observation['iter_id'])])
-            dict2conll(self.observation, predict) # predict it is file name
+            dict2conll(self.observation, predict)  # predict it is file name
         elif self.dt == 'valid':
             if self.observation['epoch_done']:
                 self.test_doc_id = 0
@@ -260,13 +260,12 @@ class BaseTeacher(Teacher):
             else:
                 self.test_doc_id = int(self.observation['iter_id']) + 1
             predict = os.path.join(self.reports_datapath, self.test_doc_address[int(self.observation['iter_id'])])
-            dict2conll(self.observation, predict) # predict it is file name
+            dict2conll(self.observation, predict)  # predict it is file name
         else:
             raise TypeError('Unknown mode: {}. Available modes: train, test.'.format(self.dt))
         return None    
 
-    def report(self): # not done yet
-        # metrics = evaluate_conll(self.scorer_path, self.train_datapath, self.reports_datapath, official_stdout=False)
+    def report(self):  # not done yet
         print('End epoch ...')
         d = {'accuracy': 1}
         return d

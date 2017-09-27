@@ -3,14 +3,13 @@
 import os
 import re
 import sys
-sys.path.append(os.getcwd())
 import time
 import random
-
 import numpy as np
 import tensorflow as tf
 import coref_model as cm
 import util
+sys.path.append(os.getcwd())
 
 if __name__ == "__main__":
   if "GPU" in os.environ:

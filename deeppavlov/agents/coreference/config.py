@@ -49,8 +49,10 @@ def add_cmdline_args(parser):
 
     # Other.
     agent.add_argument('--pretrained_model', type='bool', default=False)
-    agent.add_argument('--embeddings-size', type=int, default=100)
-    agent.add_argument('--emb-format', type=str, default='vec')
-    agent.add_argument('--embedding-path', type=str, default='./src/parlai/data/coreference/russian/embeddings/embeddings_lenta.vec')
+    agent.add_argument('--embedding_size', type=int, default=100)
+    agent.add_argument('--emb_format', type=str, default='vec')
+    agent.add_argument('--embedding_path', type=str, default='./src/parlai/data/coreference/russian/embeddings/embeddings_lenta.vec')
     agent.add_argument('--genres', type=list, default=['bc'])
     agent.add_argument('--emb_lowercase', type='bool', default=False)
+    agent.add_argument('--name', type=str, default='main')
+    agent.add_argument('--log_root', type=str, default='./src/parlai/data/coreference/russian/logs')

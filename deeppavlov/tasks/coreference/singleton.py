@@ -2,15 +2,14 @@
 
 import os
 import sys
-sys.path.append(os.getcwd())
 import json
 import time
 import random
-
 import numpy as np
 import tensorflow as tf
 import coref_model as cm
 import util
+sys.path.append(os.getcwd())
 
 if __name__ == "__main__":
   if len(sys.argv) > 1:
@@ -56,7 +55,7 @@ if __name__ == "__main__":
         steps_per_second = tf_global_step / total_time
 
         average_loss = accumulated_loss / report_frequency
-        print "[{}] loss={:.2f}, steps/s={:.2f}".format(tf_global_step, tf_loss, steps_per_second)
+        print("[{}] loss={:.2f}, steps/s={:.2f}".format(tf_global_step, tf_loss, steps_per_second))
         accumulated_loss = 0.0
 
   # Ask for all the services to stop.

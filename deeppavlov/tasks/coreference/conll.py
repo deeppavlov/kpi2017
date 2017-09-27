@@ -78,21 +78,22 @@ def official_conll_eval(gold_path, predicted_path, metric, official_stdout=False
   process.wait()
 
   if stderr is not None:
-    print stderr
+    print(stderr)
 
   if official_stdout:
-    print "Official result for {}".format(metric)
-    print stdout
+    print("Official result for {}".format(metric))
+    print(stdout)
 
   coref_results_match = re.match(COREF_RESULTS_REGEX, stdout)
   recall = float(coref_results_match.group(1))
   precision = float(coref_results_match.group(2))
   f1 = float(coref_results_match.group(3))
-  return { "r": recall, "p": precision, "f": f1 }
+
+  return {"r": recall, "p": precision, "f": f1}
 
 def evaluate_conll(gold_path, predictions, official_stdout=False):
   with tempfile.NamedTemporaryFile(delete=False) as prediction_file: #delete=false
     with open(gold_path, "r") as gold_file:
       output_conll(gold_file, prediction_file, predictions)
     print("Predicted conll file: {}".format(prediction_file.name))
-  return { m: official_conll_eval(gold_file.name, prediction_file.name, m, official_stdout) for m in ("muc", "bcub", "ceafe") }
+  return {m: official_conll_eval(gold_file.name, prediction_file.name, m, official_stdout) for m in ("muc", "bcub", "ceafe")}
