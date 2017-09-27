@@ -13,11 +13,11 @@ import copy
 from keras.layers import Dense, Activation, Input, concatenate
 from keras.models import Model
 
-from keras.layers.pooling import MaxPooling1D, GlobalMaxPooling1D
+from keras.layers.pooling import GlobalMaxPooling1D
 from keras.layers.convolutional import Conv1D
 from keras.layers.recurrent import LSTM
 from keras.layers.wrappers import Bidirectional
-from keras.layers.core import Dropout, Reshape
+from keras.layers.core import Dropout
 from keras.layers.normalization import BatchNormalization
 
 from keras.regularizers import l2
@@ -31,6 +31,10 @@ import pickle
 from .utils import vectorize_select_from_data
 
 from .embeddings_dict import EmbeddingsDict
+
+SEED = 23
+np.random.seed(SEED)
+tf.set_random_seed(SEED)
 
 class InsultsModel(object):
 
@@ -261,13 +265,10 @@ class InsultsModel(object):
                               kernel_regularizer=l2(self.opt['regul_coef_conv']), padding='same')(embed_input)
             output_i = BatchNormalization()(output_i)
             output_i = Activation('relu')(output_i)
-            output_i = GlobalMaxPooling1D(pool_size=self.pool_sizes[i], strides=1, padding='same')(output_i)
+            output_i = GlobalMaxPooling1D()(output_i)
             outputs.append(output_i)
 
         output = concatenate(outputs, axis=1)
-        output = Reshape(((self.opt['max_sequence_length']
-                           * len(self.kernel_sizes))
-                          * self.opt['filters_cnn'],))(output)
         output = Dropout(rate=self.opt['dropout_rate'])(output)
         output = Dense(self.opt['dense_dim'], activation=None,
                        kernel_regularizer=l2(self.opt['regul_coef_dense']))(output)
@@ -284,12 +285,9 @@ class InsultsModel(object):
     def lstm_word_model(self):
         embed_input = Input(shape=(self.opt['max_sequence_length'], self.opt['embedding_dim'],))
 
-        output_0 = Bidirectional(LSTM(self.opt['units_lstm'], activation=None,
+        output = Bidirectional(LSTM(self.opt['units_lstm'], activation='tanh',
                                       kernel_regularizer=l2(self.opt['regul_coef_lstm']),
                                       dropout=self.opt['dropout_rate']))(embed_input)
-        output = BatchNormalization()(output)
-        output = Activation('relu')(output)
-        output = concatenate([output_0, output_1, output_2], axis=1)
 
         output = Dropout(rate=self.opt['dropout_rate'])(output)
         output = Dense(self.opt['dense_dim'], activation=None,

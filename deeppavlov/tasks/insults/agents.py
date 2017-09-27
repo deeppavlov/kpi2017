@@ -116,7 +116,6 @@ class DefaultTeacher(DialogTeacher):
             self.metrics.update(observation, self.lastY)
             if 'text' in observation.keys():
                 self.labels += self._text2predictions(self.lastY)
-                #self.observations += self._text2predictions([observation['text']])
                 self.observations += [observation['score']]
             self.lastY = None
         return observation
