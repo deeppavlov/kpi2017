@@ -114,6 +114,7 @@ class CorefModel(object):
                         current_word = word
                     if oov_counts is not None and current_word not in d:
                         oov_counts[k] += 1
+#                    print(type(d), current_word, type(current_word))
                     word_emb[i, j, current_dim:current_dim + s] = utils.normalize(d[current_word])
                     current_dim += s
                 char_index[i, j, :len(word)] = [self.char_dict[c] for c in word]
@@ -473,15 +474,15 @@ class CorefModel(object):
         print('saving path ' + os.path.join(log_dir, 'model.max.ckpt'))
         saver.save(self.sess, os.path.join(log_dir, 'model.max.ckpt'))
 
-    def train_op(self, batch):
-        _, _, _, _, _, _, _, _, _ = tensorized_example = self.tensorize_example(batch, True)
+    def train(self, batch):
+        tensorized_example = self.tensorize_example(batch, True)
         feed_dict = {i: t for i, t in zip(self.input_tensors, tensorized_example)}
         tf_loss = self.sess.run(self.loss, feed_dict=feed_dict)
         self.sess.run(self.train_op)
         return tf_loss
 
     def eval(self, batch):
-        _, _, _, _, _, _, _, _, _ = tensorized_example = self.tensorize_example(batch, True)
+        tensorized_example = self.tensorize_example(batch, True)
         feed_dict = {i: t for i, t in zip(self.input_tensors, tensorized_example)}
         tf_loss = self.sess.run(self.loss, feed_dict=feed_dict)
         return tf_loss
