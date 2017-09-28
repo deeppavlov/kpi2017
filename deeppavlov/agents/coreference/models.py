@@ -34,11 +34,8 @@ tf.NotDifferentiable("DistanceBins")
 class CorefModel(object):
     def __init__(self, opt):
         self.opt = copy.deepcopy(opt)
-        self.config = tf.ConfigProto()
-        self.config.gpu_options.per_process_gpu_memory_fraction = 0.8
-        self.config.gpu_options.visible_device_list = '0'
 
-        self.embedding_info = [(self.opt["embedding_size"], self.opt["emb_lowercase"])]
+        self.embedding_info = (self.opt["embedding_size"], self.opt["emb_lowercase"])
         self.embedding_size = self.opt['embedding_size']
         self.char_embedding_size = self.opt["char_embedding_size"]
         self.char_dict = utils.load_char_dict(self.opt["char_vocab_path"])
@@ -57,8 +54,13 @@ class CorefModel(object):
         input_props.append((tf.int32, [None]))  # Gold ends.
         input_props.append((tf.int32, [None]))  # Cluster ids.
 
-        self.input_tensors = [tf.placeholder(dtype, shape) for dtype, shape in input_props]
-
+        self.queue_input_tensors = [tf.placeholder(dtype, shape) for dtype, shape in input_props]
+        dtypes, shapes = zip(*input_props)
+        queue = tf.PaddingFIFOQueue(capacity=1, dtypes=dtypes, shapes=shapes) 
+        self.enqueue_op = queue.enqueue(self.queue_input_tensors)
+        self.input_tensors = queue.dequeue()
+        
+        
         self.predictions, self.loss = self.get_predictions_and_loss(*self.input_tensors)
         self.global_step = tf.Variable(0, name="global_step", trainable=False)
         self.reset_global_step = tf.assign(self.global_step, 0)
@@ -74,7 +76,7 @@ class CorefModel(object):
         }
         optimizer = optimizers[self.opt["optimizer"]](learning_rate)
         self.train_op = optimizer.apply_gradients(zip(gradients, trainable_params), global_step=self.global_step)
-        self.sess = tf.Session(config=self.config)
+        self.sess = tf.Session()
         self.sess.run(tf.global_variables_initializer())
 
     def tensorize_mentions(self, mentions):
@@ -107,15 +109,22 @@ class CorefModel(object):
         for i, sentence in enumerate(sentences):
             for j, word in enumerate(sentence):
                 current_dim = 0
-                for k, (d, (s, l)) in enumerate(zip(self.embedding_dicts, self.embedding_info)):
-                    if l:
-                        current_word = word.lower()
-                    else:
-                        current_word = word
-                    if oov_counts is not None and current_word not in d:
-                        oov_counts[k] += 1
-                    word_emb[i, j, current_dim:current_dim + s] = utils.normalize(d[current_word])
-                    current_dim += s
+                d = self.embedding_dicts
+                (s,l) = self.embedding_info
+                if l:
+                    cerrent_word = word.lower()
+                else:
+                    current_word = word
+#                for (d, (s, l)) in zip(self.embedding_dicts, self.embedding_info):
+#                    if l:
+#                        current_word = word.lower()
+#                    else:
+#                        current_word = word
+#                    if oov_counts is not None and current_word not in d:
+#                        oov_counts[0] += 1
+#                    print(type(d), current_word, type(current_word))
+                word_emb[i, j, current_dim:current_dim + s] = utils.normalize(d[current_word])
+                current_dim += s
                 char_index[i, j, :len(word)] = [self.char_dict[c] for c in word]
 
         speaker_dict = {s: i for i, s in enumerate(set(speakers))}
@@ -473,26 +482,29 @@ class CorefModel(object):
         print('saving path ' + os.path.join(log_dir, 'model.max.ckpt'))
         saver.save(self.sess, os.path.join(log_dir, 'model.max.ckpt'))
 
-    def train_op(self, batch):
-        _, _, _, _, _, _, _, _, _ = tensorized_example = self.tensorize_example(batch, True)
-        feed_dict = {i: t for i, t in zip(self.input_tensors, tensorized_example)}
-        tf_loss = self.sess.run(self.loss, feed_dict=feed_dict)
+    def train(self, batch):
+        tensorized_example = self.tensorize_example(batch, True)
+        feed_dict = dict(zip(self.queue_input_tensors, tensorized_example))
+        self.sess.run(self.enqueue_op, feed_dict=feed_dict)
+        tf_loss = self.sess.run(self.loss)
         self.sess.run(self.train_op)
         return tf_loss
 
     def eval(self, batch):
-        _, _, _, _, _, _, _, _, _ = tensorized_example = self.tensorize_example(batch, True)
-        feed_dict = {i: t for i, t in zip(self.input_tensors, tensorized_example)}
-        tf_loss = self.sess.run(self.loss, feed_dict=feed_dict)
+        tensorized_example = self.tensorize_example(batch, True)
+        feed_dict = dict(zip(self.queue_input_tensors, tensorized_example))
+        self.sess.run(self.enqueue_op, feed_dict=feed_dict)
+        tf_loss = self.sess.run(self.loss)
         return tf_loss
 
     def predict(self, batch):
 
         # tensorized_example = self.tensorize_example(batch, True)
         _, _, _, _, _, _, gold_starts, gold_ends, _ = tensorized_example = self.tensorize_example(batch, True)
-        feed_dict = {i: t for i, t in zip(self.input_tensors, tensorized_example)}
-        candidate_starts, candidate_ends, mention_scores, mention_starts, mention_ends, antecedents, antecedent_scores = self.sess.run(
-            self.predictions, feed_dict=feed_dict)
+        feed_dict = dict(zip(self.queue_input_tensors, tensorized_example))
+        self.sess.run(self.enqueue_op, feed_dict=feed_dict)
+        
+        candidate_starts, candidate_ends, mention_scores, mention_starts, mention_ends, antecedents, antecedent_scores = self.sess.run(self.predictions)
 
         # if len(candidate_starts) > 0:
         #     sorted_starts, sorted_ends, _ = zip(

@@ -54,19 +54,20 @@ class CoreferenceAgent(Agent):
             raise RuntimeError("Parallel act is not supported.")
         if self.observation['mode'] == 'train':
             if self.observation['iter_id'] % 10 == 0:
-                tf_loss = self.model.train_op(self.obs_dict)
+                self.tf_loss = self.model.train(self.obs_dict)
                 conll = self.model.predict(self.obs_dict)
                 conll['conll'] = True
-                conll['loss'] = tf_loss
+                conll['loss'] = self.tf_loss
                 conll['iter_id'] = self.observation['iter_id']
                 return conll
             else:
-                tf_loss = self.model.train_op(self.obs_dict)
+                self.tf_loss = self.model.train(self.obs_dict)
                 act_dict = {'iter_id': self.observation['iter_id'], 'Loss': tf_loss}
                 act_dict['id'] = self.id
                 act_dict['epoch_done'] = self.observation['epoch_done']
                 act_dict['mode'] = self.observation['mode']
                 act_dict['conll'] = False
+                act_dict['loss'] = self.tf_loss
                 return act_dict
         elif self.observation['mode'] == 'valid':
             # tf_loss = self.model.train_op(observation)
@@ -101,4 +102,4 @@ class CoreferenceAgent(Agent):
             self.model = None
 
     def report(self):
-        return
+        return {'loss': self.tf_loss}
