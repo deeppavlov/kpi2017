@@ -56,7 +56,7 @@ class CorefModel(object):
 
         self.queue_input_tensors = [tf.placeholder(dtype, shape) for dtype, shape in input_props]
         dtypes, shapes = zip(*input_props)
-        queue = tf.PaddingFIFOQueue(capacity=9, dtypes=dtypes, shapes=shapes) # capacity=9 ?
+        queue = tf.PaddingFIFOQueue(capacity=1, dtypes=dtypes, shapes=shapes) 
         self.enqueue_op = queue.enqueue(self.queue_input_tensors)
         self.input_tensors = queue.dequeue()
         
