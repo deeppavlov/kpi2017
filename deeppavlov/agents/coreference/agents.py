@@ -51,14 +51,36 @@ class CoreferenceAgent(Agent):
     def act(self):
         return self.batch_act([self.obs_dict])
 
-    def batch_act(self, observations):
+    def batch_act(self, observation):
         if self.is_shared:
             raise RuntimeError("Parallel act is not supported.")
-
-        tf_loss = self.model.train_op(observations)
-
-        report = {'step': self.observation['iter_id'], 'Loss': tf_loss}
-        return report
+        if self.observation['mode'] == 'train':
+            if self.observation['iter_id'] % 10 == 0:
+                tf_loss = self.model.train_op(observation)
+                conll = self.model.predict(observation)
+                conll['conll'] = True
+                conll['loss'] = tf_loss
+                conll['iter_id'] = self.observation['iter_id']
+                return conll
+            else:
+                tf_loss = self.model.train_op(observation)
+                act_dict = {'iter_id': self.observation['iter_id'], 'Loss': tf_loss}
+                act_dict['id'] = self.id
+                act_dict['epoch_done'] = self.observation['epoch_done']
+                act_dict['mode'] = self.observation['mode']
+                act_dict['conll'] = False
+                return act_dict
+        elif self.observation['mode'] == 'valid':
+            # tf_loss = self.model.train_op(observation)
+            conll = self.model.predict(observation)
+            conll['conll'] = True
+            conll['iter_id'] = self.observation['iter_id']
+            return conll
+        elif self.observation['mode'] == 'test':
+            conll = self.model.predict(observation)
+            conll['conll'] = True
+            conll['iter_id'] = self.observation['iter_id']
+            return conll
 
     def eval(self):
         loss = self.model.eval(self.obs_dict)
@@ -79,3 +101,6 @@ class CoreferenceAgent(Agent):
             if self.model is not None:
                 self.model.shutdown()
             self.model = None
+
+    def report(self):
+        return
