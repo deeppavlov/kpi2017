@@ -233,6 +233,20 @@ def dict2conll(data, predict):
                                                     data["coreference"][i]))
                 CoNLL.write('\n')
                 CoNLL.write('#end document\n')
+            elif data['part_of_speech'][i] == 'SEN':
+                CoNLL.write(u'{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(data['doc_id'][i],
+                                                    data["part_id"][i],
+                                                    data["word_number"][i],
+                                                    data["word"][i],
+                                                    data["part_of_speech"][i],
+                                                    data["parse_bit"][i],
+                                                    data["lemma"][i],
+                                                    data["sense"][i],
+                                                    data["speaker"][i],
+                                                    data["entiti"][i],
+                                                    data["predict"][i],
+                                                    data["coreference"][i]))
+                CoNLL.write('\n')
             else:
                 if data['doc_id'][i] == data['doc_id'][i+1]:
                     CoNLL.write(u'{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(data['doc_id'][i],

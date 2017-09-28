@@ -117,7 +117,7 @@ class BaseTeacher(Teacher):
                 self.train_doc_id = int(self.observation['iter_id']) + 1
                 self.iter += 1
             if self.observation['conll']:
-                predict = os.path.join(self.reports_datapath, 'files', self.train_doc_address[int(self.observation['iter_id'])])
+                predict = os.path.join(self.reports_datapath, 'response_files', self.train_doc_address[int(self.observation['iter_id'])])
                 utils.dict2conll(self.observation, predict)  # predict it is file name
 
         elif self.dt == 'test':
@@ -126,7 +126,7 @@ class BaseTeacher(Teacher):
                 self.epochDone = True
             else:
                 self.test_doc_id = int(self.observation['iter_id']) + 1
-            predict = os.path.join(self.reports_datapath, 'files', self.test_doc_address[int(self.observation['iter_id'])])
+            predict = os.path.join(self.reports_datapath, 'response_files', self.test_doc_address[int(self.observation['iter_id'])])
             utils.dict2conll(self.observation, predict)  # predict it is file name
 
         elif self.dt == 'valid':
@@ -134,7 +134,7 @@ class BaseTeacher(Teacher):
                 self.valid_doc_id = 0
             else:
                 self.valid_doc_id = int(self.observation['iter_id']) + 1
-            predict = os.path.join(self.reports_datapath, self.valid_doc_address[int(self.observation['iter_id'])])
+            predict = os.path.join(self.reports_datapath, 'response_files', self.valid_doc_address[int(self.observation['iter_id'])])
             utils.dict2conll(self.observation, predict)  # predict it is file name
         else:
             raise ValueError('Unknown mode: {}. Available modes: train, test.'.format(self.dt))
@@ -168,7 +168,7 @@ class BaseTeacher(Teacher):
             recall = []
             precision = []
             for key_file in os.listdir(report):
-                with open(key_file, 'r') as score_file:
+                with open(os.path.join(report,key_file), 'r') as score_file:
                     lines = score_file.readlines()
                     if lines[-1].strip() != '--------------------------------------------------------------------------':
                         continue

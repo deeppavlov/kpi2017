@@ -245,16 +245,22 @@ def get_all_texts_from_tokens_file(tokens_path, out_path):
     with open(tokens_path, "r") as tokens_file:
         for line in tokens_file:
             doc_id, shift, length, token, lemma, gram = line[:-1].split('\t')
-            doc_id, shift, length = map(int, (doc_id, shift, length))
-            lengths[doc_id] = shift + length
+            try:
+                doc_id, shift, length = map(int, (doc_id, shift, length))
+                lengths[doc_id] = shift + length
+            except ValueError:
+                pass
     
     texts = {doc_id: [' ']*length for (doc_id, length) in lengths.items()}
     # read texts
     with open(tokens_path, "r") as tokens_file:
         for line in tokens_file:
             doc_id, shift, length, token, lemma, gram = line[:-1].split('\t')
-            doc_id, shift, length = map(int, (doc_id, shift, length))
-            texts[doc_id][shift:shift + length] = token
+            try:
+                doc_id, shift, length = map(int, (doc_id, shift, length))
+                texts[doc_id][shift:shift + length] = token
+            except ValueError:
+                pass
     for doc_id in texts:
         texts[doc_id] = "".join(texts[doc_id])
     
@@ -269,9 +275,9 @@ def get_char_vocab(input_filename, output_filename):
     data = open(input_filename, "r").read()
     vocab = sorted(list(set(data)))
 
-    with open(output_filename) as f:
+    with open(output_filename, 'w') as f:
         for c in vocab:
-            f.write(u"{}\n".format(c).encode("utf8"))
+            f.write(u"{}\n".format(c))
     print("[Wrote {} characters to {}] ...".format(len(vocab), output_filename))
 
 
@@ -346,7 +352,7 @@ def build(opt):
         build_data.make_dir(os.path.join(dpath, 'valid'))
 
         train_test_split(conlls, os.path.join(dpath, 'test'), 0.2, None)
-        train_test_split(conlls, os.path.join(dpath, 'train'), 0.2, None)
+        train_test_split(os.path.join(dpath, 'test'), os.path.join(dpath, 'train'), 0.3, None)
         z = os.listdir(conlls)
         for x in z:
             build_data.move(os.path.join(conlls, x), os.path.join(dpath, 'valid', x))

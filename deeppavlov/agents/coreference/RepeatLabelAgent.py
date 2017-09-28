@@ -19,4 +19,6 @@ class RepeatLabelAgent(Agent):
     def act(self):
         reply = self.observation
         reply['id'] = self.id
+        reply['conll'] = True
+        reply['loss'] = 0.0
         return reply

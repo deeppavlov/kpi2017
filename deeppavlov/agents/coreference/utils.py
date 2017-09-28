@@ -412,7 +412,7 @@ def conll2modeldata(data):
         document_state.text.append(word)
         document_state.text_speakers.append(speaker)
 
-        if data['part_of_speech'][i] == 'SENT':
+        if (data['part_of_speech'][i] == 'SEN'):
             document_state.sentences.append(tuple(document_state.text))
             del document_state.text[:]
             document_state.speakers.append(tuple(document_state.text_speakers))
