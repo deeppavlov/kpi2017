@@ -142,72 +142,25 @@ class BaseTeacher(Teacher):
 
     def report(self):  # not done yet
         print('End epoch ...')
-
-        output_file_path = os.path.join(self.reports_datapath, 'response_files')
-        report = os.path.join(self.reports_datapath, 'results')
-
-        for file in os.listdir(output_file_path):
-            if self.dt == 'train':
-                key_file_path = os.path.join(self.train_datapath, file)
-            elif self.dt == 'valid':
-                key_file_path = os.path.join(self.valid_datapath, file)
-            elif self.dt == 'test':
-                key_file_path = os.path.join(self.test_datapath, file)
-            else:
-                raise ValueError('Unknown mode: {}. Available modes: train, test.'.format(self.dt))
-            report_file_path = '{0}.{1}'.format(os.path.join(report, basename(key_file_path)), 'scor')
-            cmd = '{0} {1} {2} {3} none > {4}'.format(self.scorer_path, 'all', key_file_path, output_file_path, report_file_path)
-            os.system(cmd)
-
-        print('score: aggregating results...')
-        k = 0
-        results = dict()
-
-        f1 = []
-        for metric in ['muc', 'bcub', 'ceafm', 'ceafe']:
-            recall = []
-            precision = []
-            for key_file in os.listdir(report):
-                with open(os.path.join(report,key_file), 'r') as score_file:
-                    lines = score_file.readlines()
-                    if lines[-1].strip() != '--------------------------------------------------------------------------':
-                        continue
-
-                    coreference_scores_line = lines[-2]
-                    tokens = coreference_scores_line.replace('\t', ' ').split()
-                    r1 = float(tokens[2].strip('()'))
-                    r2 = float(tokens[4].strip('()'))
-                    p1 = float(tokens[7].strip('()'))
-                    p2 = float(tokens[9].strip('()'))
-                    if r2 == 0 or p2 == 0:
-                        continue
-                    recall.append((r1, r2))
-                    precision.append((p1, p2))
-                    k += 1
-
-            r1 = sum(map(lambda x: x[0], recall))
-            r2 = sum(map(lambda x: x[1], recall))
-            p1 = sum(map(lambda x: x[0], precision))
-            p2 = sum(map(lambda x: x[1], precision))
-            r, p = r1 / r2, p1 / p2
-            f = (2 * p * r) / (p + r)
-            f1.append(f)
-            print(
-                '{0} precision: ({1:.3f}/{2}) {3:.3f}\t recall: ({4:.3f}/{5}) {6:.3f}\t F-1: {7:.5f}'.format(metric, p1,
-                                                                                                             p2, p, r1,
-                                                                                                             r2, r, f))
-            results[metric] = {'p': p, 'r': r, 'f-1': f}
-
-        key_files = os.listdir(report)
-        print('avg: {0:.5f}'.format(np.mean(f1)))
-        # muc bcub ceafe
-        conllf1 = np.mean(f1[:2] + f1[-1:])
-        print('conll F-1: {0:.5f}'.format(conllf1))
-        print('using {}/{}'.format(k, 4 * len(key_files)))
-        results['avg F-1'] = np.mean(f1)
-        results['conll F-1'] = conllf1
-
-        os.removedirs(output_file_path)
-        os.removedirs(report)
+        scorer = self.scorer_path
+        predicts_path = os.path.join(self.reports_datapath, 'response_files')
+        if self.dt == 'train':
+            keys_path = self.train_datapath
+            results = utils.score(scorer, keys_path, predicts_path)
+        elif self.dt == 'valid':
+            keys_path = self.valid_datapath
+            results = utils.score(scorer, keys_path, predicts_path)
+        elif self.dt == 'test':
+            keys_path = self.test_datapath
+            results = utils.score(scorer, keys_path, predicts_path)
+        else:
+            raise ValueError('Unknown mode: {}. Available modes: train, test.'.format(self.dt))
+        
+        resp_list = os.listdir(predicts_path)
+        resu_list = os.listdir(os.path.join(self.reports_datapath, 'results'))
+        for x in resp_list:
+            os.remove(os.path.join(predicts_path, x))
+        for x in resu_list:
+            os.remove(os.path.join(self.reports_datapath, 'results', x))
 
         return results

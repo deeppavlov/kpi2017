@@ -17,6 +17,12 @@ limitations under the License.
 import numpy as np
 from collections import Counter
 from sklearn.utils.linear_assignment_ import linear_assignment
+import sys
+import time
+import os
+from os.path import join, isdir, basename
+from tqdm import tqdm
+import json
 
 
 def f1(p_num, p_den, r_num, r_den, beta=1):
@@ -281,3 +287,71 @@ def dict2conll(data, predict):
                     CoNLL.write('#begin document ({}); part {}\n'.format(data['doc_id'][i+1], data["part_id"][i+1]))
         CoNLL.close()
     return None
+
+def score(scorer, keys_path, predicts_path):
+	key_files = []
+
+	for dirpath, dirnames, filenames in os.walk(keys_path):
+		# f.endswith("auto_conll") or f.endswith("gold_conll") or f.endswith('gold_parse_conll')
+		for filename in [f for f in filenames if (f.endswith('v4_conll'))]:
+			key_files.append(os.path.join(dirpath, filename))
+	key_files = list(sorted(key_files))
+
+	print('score: Files to process: {}'.format(len(key_files)))
+	for key_file in tqdm(key_files):
+		pred_files = join(predicts_path, basename(key_file))
+		for metric in ['muc', 'bcub', 'ceafm', 'ceafe']:
+			out_pred_score = '{0}.{1}'.format(join(predicts_path, basename(key_file)), metric)
+			cmd = '{0} {1} {2} {3} none > {4}'.format(scorer, metric, key_file, pred_files, out_pred_score)
+			#print(cmd)
+			os.system(cmd)
+
+	# make sure that all files processed
+	time.sleep(1)
+
+	print('score: aggregating results...')
+	k = 0
+	results = dict()
+
+	f1=[]
+	for metric in ['muc', 'bcub', 'ceafm', 'ceafe']:
+		recall = []
+		precision = []	
+		for key_file in key_files:
+			out_pred_score = '{0}.{1}'.format(join(predicts_path, basename(key_file)), metric)
+			with open(out_pred_score, 'r', encoding='utf8') as score_file:
+				lines = score_file.readlines()
+				if lines[-1].strip() != '--------------------------------------------------------------------------':
+					continue
+
+				coreference_scores_line = lines[-2]
+				tokens = coreference_scores_line.replace('\t', ' ').split()
+				r1 = float(tokens[2].strip('()'))
+				r2 = float(tokens[4].strip('()'))
+				p1 = float(tokens[7].strip('()'))
+				p2 = float(tokens[9].strip('()'))
+				if r2 == 0 or p2 == 0:
+					continue
+				recall.append((r1, r2))
+				precision.append((p1, p2))
+				k += 1
+
+		r1 = sum(map(lambda x: x[0], recall))
+		r2 = sum(map(lambda x: x[1], recall))
+		p1 = sum(map(lambda x: x[0], precision))
+		p2 = sum(map(lambda x: x[1], precision))
+		r, p = r1 / r2, p1 / p2
+		f = (2 * p * r) / (p + r)
+		f1.append(f)
+		print('{0} precision: ({1:.3f}/{2}) {3:.3f}\t recall: ({4:.3f}/{5}) {6:.3f}\t F-1: {7:.5f}'.format(metric, p1, p2, p, r1, r2, r, f))
+		results[metric] = {'p': p, 'r': r, 'f-1': f}
+
+	print('avg: {0:.5f}'.format(np.mean(f1)))
+	# muc bcub ceafe
+	conllf1 = np.mean(f1[:2] + f1[-1:])
+	print('conll F-1: {0:.5f}'.format(conllf1))
+	print('using {}/{}'.format(k, 4 * len(key_files)))
+	results['avg F-1'] = np.mean(f1)
+	results['conll F-1'] = conllf1
+	json.dump(results, open(join(predicts_path, 'results.json'), 'w'))
+	return results
