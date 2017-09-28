@@ -6,7 +6,7 @@ python3 ./utils/train_model.py -t deeppavlov.tasks.coreference.agents:BaseTeache
                          -mf ./build/coreference \
                          --cor coreference \
                          --data-path ./build \
-		         --language russian \
+		                 --language russian \
                          --split 0.2 \
                          --random-seed None \
                          -dt train:ordered \

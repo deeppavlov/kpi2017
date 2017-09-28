@@ -47,7 +47,7 @@ class CoreferenceAgent(Agent):
     def observe(self, observation):
         self.observation = copy.deepcopy(observation)
         self.obs_dict = utils.conll2modeldata(self.observation)
-#        return self.obs_dict
+        return self.obs_dict
 
     def act(self):
         if self.is_shared:
