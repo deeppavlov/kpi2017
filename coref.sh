@@ -2,7 +2,7 @@
 
 #parlai.agents.repeat_label.repeat_label
 python3 ./utils/train_model.py -t deeppavlov.tasks.coreference.agents:BaseTeacher \
-                         -m deeppavlov.agents.coreference.RepeatLabelAgent:RepeatLabelAgent \
+                         -m deeppavlov.agents.coreference.agents:CoreferenceAgent \
                          -mf ./build/coreference \
                          --cor coreference \
                          --data-path ./build \
@@ -16,5 +16,5 @@ python3 ./utils/train_model.py -t deeppavlov.tasks.coreference.agents:BaseTeache
                          --validation-every-n-epochs 1 \
                          --log-every-n-epochs 1 \
                          --log-every-n-secs -1 \
-                         --chosen-metric f1
-  
+                         --chosen-metric f1 \
+

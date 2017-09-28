@@ -305,7 +305,8 @@ def build(opt):
         
         # download embeddings
         print('[Download the word embeddings]...')
-        build_data.download_from_google_drive(embed_url, os.path.join(dpath, 'pretrain_embeddings'))
+        build_data.make_dir(os.path.join(dpath, 'embeddings'))
+        #build_data.download(embed_url, os.path.join(dpath, 'embeddings'), 'embeddings_lenta.vec')
         print('[End of download the word embeddings]...')
         
         # download the conll-2012 scorer v 8.1
@@ -364,5 +365,20 @@ def build(opt):
 
         # mark the data as built
         build_data.mark_done(dpath, version_string=version)
+        
+        
+        cmd = """# Build custom kernels.
+TF_INC=$(python -c 'import tensorflow as tf; print(tf.sysconfig.get_include())')
+
+# Linux (pip)
+#g++ -std=c++11 -shared coref_kernels.cc -o coref_kernels.so -I $TF_INC -fPIC -D_GLIBCXX_USE_CXX11_ABI=0
+
+# Linux (build from source)
+g++ -std=c++11 -shared coref_kernels.cc -o coref_kernels.so -I $TF_INC -fPIC
+
+# Mac
+#g++ -std=c++11 -shared coref_kernels.cc -o coref_kernels.so -I $TF_INC -fPIC -D_GLIBCXX_USE_CXX11_ABI=0  -undefined dynamic_lookup"""
+        os.system(cmd)
+        
         print('[Datasets done.]')
         return None

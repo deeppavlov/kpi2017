@@ -38,8 +38,8 @@ class CorefModel(object):
         self.config.gpu_options.per_process_gpu_memory_fraction = 0.8
         self.config.gpu_options.visible_device_list = '0'
 
-        self.embedding_info = [(self.opt["embeddings_size"], self.opt["emb_lowercase"])]
-        self.embedding_size = self.opt['embeddings_size']
+        self.embedding_info = [(self.opt["embedding_size"], self.opt["emb_lowercase"])]
+        self.embedding_size = self.opt['embedding_size']
         self.char_embedding_size = self.opt["char_embedding_size"]
         self.char_dict = utils.load_char_dict(self.opt["char_vocab_path"])
         self.embedding_dicts = utils.load_embedding_dict(self.opt["embedding_path"], self.embedding_size, self.opt["emb_format"])
