@@ -37,6 +37,7 @@ class CoreferenceAgent(Agent):
 
         # Set up params/logging/dicts
         self.is_shared = False
+        self.obs_dict = None
         self.model = CorefModel(opt)
         if self.opt.get('pretrained_model'):
             self.model.init_from_saved()
@@ -46,24 +47,21 @@ class CoreferenceAgent(Agent):
     def observe(self, observation):
         self.observation = copy.deepcopy(observation)
         self.obs_dict = utils.conll2modeldata(self.observation)
-        return self.obs_dict
+#        return self.obs_dict
 
     def act(self):
-        return self.batch_act([self.obs_dict])
-
-    def batch_act(self, observation):
         if self.is_shared:
             raise RuntimeError("Parallel act is not supported.")
         if self.observation['mode'] == 'train':
             if self.observation['iter_id'] % 10 == 0:
-                tf_loss = self.model.train_op(observation)
-                conll = self.model.predict(observation)
+                tf_loss = self.model.train_op(self.obs_dict)
+                conll = self.model.predict(self.obs_dict)
                 conll['conll'] = True
                 conll['loss'] = tf_loss
                 conll['iter_id'] = self.observation['iter_id']
                 return conll
             else:
-                tf_loss = self.model.train_op(observation)
+                tf_loss = self.model.train_op(self.obs_dict)
                 act_dict = {'iter_id': self.observation['iter_id'], 'Loss': tf_loss}
                 act_dict['id'] = self.id
                 act_dict['epoch_done'] = self.observation['epoch_done']
@@ -72,12 +70,12 @@ class CoreferenceAgent(Agent):
                 return act_dict
         elif self.observation['mode'] == 'valid':
             # tf_loss = self.model.train_op(observation)
-            conll = self.model.predict(observation)
+            conll = self.model.predict(self.obs_dict)
             conll['conll'] = True
             conll['iter_id'] = self.observation['iter_id']
             return conll
         elif self.observation['mode'] == 'test':
-            conll = self.model.predict(observation)
+            conll = self.model.predict(self.obs_dict)
             conll['conll'] = True
             conll['iter_id'] = self.observation['iter_id']
             return conll
