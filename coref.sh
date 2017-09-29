@@ -7,6 +7,8 @@ export CUDA_VISIBLE_DEVICES=0; python3 ./utils/train_model.py -t deeppavlov.task
                          --cor coreference \
                          --data-path ./build \
 		         --language russian \
+			 --name fasttext \
+			 --pretrained_model True \
                          --split 0.2 \
                          --random-seed None \
                          -dt train:ordered \

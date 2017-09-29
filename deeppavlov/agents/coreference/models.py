@@ -21,6 +21,7 @@ import copy
 import numpy as np
 import tensorflow as tf
 from . import utils
+from os.path import isdir
 
 coref_op_library = tf.load_op_library("./coref_kernels.so")
 spans = coref_op_library.spans
@@ -476,22 +477,42 @@ class CorefModel(object):
 
         return predicted_clusters, mention_to_predicted
 
-    def init_from_saved(self):
-        saver = tf.train.Saver()
+    def init_from_saved(self):               
         log_dir = os.path.join(self.opt["log_root"], self.opt['name'])
-
-        with self.sess as session:
-            checkpoint_path = os.path.join(log_dir, "model.max.ckpt")
-            saver.restore(session, checkpoint_path)
+        if isdir(log_dir):
+            saver = tf.train.Saver()
+            with self.sess as session:
+                checkpoint_path = os.path.join(log_dir, "model.max.ckpt")
+                saver.restore(session, checkpoint_path)
+        else:
+            print('{0} not found'.format(log_dir))
 
     def shutdown(self):
         tf.reset_default_graph()
 
     def save(self):
-        log_dir = os.path.join(self.opt["log_root"], self.opt['name'])
-        saver = tf.train.Saver()
-        print('saving path ' + os.path.join(log_dir, 'model.max.ckpt'))
-        saver.save(self.sess, os.path.join(log_dir, 'model.max.ckpt'))
+        log_dir = os.path.join(self.opt["log_root"])
+        if isdir(log_dir):
+            if isdir(os.path.join(log_dir, self.opt['name'])):  
+                saver = tf.train.Saver()
+                print('saving path ' + os.path.join(log_dir, self.opt['name'], 'model.max.ckpt'))
+                saver.save(self.sess, os.path.join(log_dir, self.opt['name'], 'model.max.ckpt'))
+            else:
+                os.mkdir(self.opt['name'])
+                saver = tf.train.Saver()
+                print('saving path ' + os.path.join(log_dir, self.opt['name'], 'model.max.ckpt'))
+                saver.save(self.sess, os.path.join(log_dir, self.opt['name'], 'model.max.ckpt'))
+        else:
+            os.mkdir(self.opt["log_root"])
+            if isdir(os.path.join(log_dir, self.opt['name'])):  
+                saver = tf.train.Saver()
+                print('saving path ' + os.path.join(log_dir, self.opt['name'], 'model.max.ckpt'))
+                saver.save(self.sess, os.path.join(log_dir, self.opt['name'], 'model.max.ckpt'))
+            else:
+                os.mkdir(self.opt['name'])
+                saver = tf.train.Saver()
+                print('saving path ' + os.path.join(log_dir, self.opt['name'], 'model.max.ckpt'))
+                saver.save(self.sess, os.path.join(log_dir, self.opt['name'], 'model.max.ckpt'))
 
     def train(self, batch):
 #        print(batch)

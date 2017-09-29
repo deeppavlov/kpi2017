@@ -39,7 +39,8 @@ class CoreferenceAgent(Agent):
         self.is_shared = False
         self.obs_dict = None
         self.model = CorefModel(opt)
-        if self.opt.get('pretrained_model'):
+        if self.opt['pretrained_model']:
+            print('[ Initializing model from checkpoint ]')
             self.model.init_from_saved()
         else:
             print('[ Initializing model from scratch ]')
@@ -72,12 +73,12 @@ class CoreferenceAgent(Agent):
                 return act_dict
         elif self.observation['mode'] == 'valid':
             # tf_loss = self.model.train_op(observation)
-            conll = self.model.predict(self.obs_dict)
+            conll = self.model.predict(self.obs_dict, self.observation)
             conll['conll'] = True
             conll['iter_id'] = self.observation['iter_id']
             return conll
         elif self.observation['mode'] == 'test':
-            conll = self.model.predict(self.obs_dict)
+            conll = self.model.predict(self.obs_dict, self.observation)
             conll['conll'] = True
             conll['iter_id'] = self.observation['iter_id']
             return conll
