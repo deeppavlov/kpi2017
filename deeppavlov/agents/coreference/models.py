@@ -481,9 +481,8 @@ class CorefModel(object):
         log_dir = os.path.join(self.opt["log_root"], self.opt['name'])
         if isdir(log_dir):
             saver = tf.train.Saver()
-            with self.sess as session:
-                checkpoint_path = os.path.join(log_dir, "model.max.ckpt")
-                saver.restore(session, checkpoint_path)
+            checkpoint_path = os.path.join(log_dir, "model.max.ckpt")
+            saver.restore(self.sess, checkpoint_path)
         else:
             print('{0} not found'.format(log_dir))
 

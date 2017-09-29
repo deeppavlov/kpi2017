@@ -55,22 +55,14 @@ class CoreferenceAgent(Agent):
         if self.is_shared:
             raise RuntimeError("Parallel act is not supported.")
         if self.observation['mode'] == 'train':
-            if self.observation['iter_id'] % 10 == 0:
-#                self.tf_loss = self.model.train(self.obs_dict)
-                conll = self.model.predict(self.obs_dict, self.observation)
-                conll['conll'] = True
-#                conll['loss'] = self.tf_loss
-                conll['iter_id'] = self.observation['iter_id']
-                return conll
-            else:
-                self.tf_loss = self.model.train(self.obs_dict)
-                act_dict = {'iter_id': self.observation['iter_id'], 'Loss': self.tf_loss}
-                act_dict['id'] = self.id
-                act_dict['epoch_done'] = self.observation['epoch_done']
-                act_dict['mode'] = self.observation['mode']
-                act_dict['conll'] = False
-                act_dict['loss'] = self.tf_loss
-                return act_dict
+            self.tf_loss = self.model.train(self.obs_dict)
+            act_dict = {'iter_id': self.observation['iter_id'], 'Loss': self.tf_loss}
+            act_dict['id'] = self.id
+            act_dict['epoch_done'] = self.observation['epoch_done']
+            act_dict['mode'] = self.observation['mode']
+            act_dict['conll'] = False
+            act_dict['loss'] = self.tf_loss
+            return act_dict
         elif self.observation['mode'] == 'valid':
             # tf_loss = self.model.train_op(observation)
             conll = self.model.predict(self.obs_dict, self.observation)
