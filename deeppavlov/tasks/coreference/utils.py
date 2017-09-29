@@ -166,7 +166,7 @@ def lea(clusters, mention_to_gold):
     return num, dem
 
 #
-def conll2dict(iter_id, conll, agent, mode, epoch_done=False):
+def conll2dict(iter_id, conll, agent, mode, doc, epoch_done=False):
     data = {'doc_id': [],
             'part_id': [],
             'word_number': [],
@@ -182,7 +182,8 @@ def conll2dict(iter_id, conll, agent, mode, epoch_done=False):
             'iter_id': iter_id,
             'id': agent,
             'epoch_done': epoch_done,
-            'mode': mode}
+            'mode': mode,
+            'doc_name': doc}
 
     with open(conll, 'r') as f:
         for line in f:

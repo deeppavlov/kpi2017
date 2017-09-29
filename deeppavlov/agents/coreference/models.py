@@ -16,6 +16,7 @@ limitations under the License.
 
 import random
 import os
+import threading
 import copy
 import numpy as np
 import tensorflow as tf
@@ -78,6 +79,16 @@ class CorefModel(object):
         self.train_op = optimizer.apply_gradients(zip(gradients, trainable_params), global_step=self.global_step)
         self.sess = tf.Session()
         self.sess.run(tf.global_variables_initializer())
+        
+    def start_enqueue_thread(self, train_example, is_training):
+        def _enqueue_loop():
+            while True:
+                tensorized_example = self.tensorize_example(train_example, is_training=is_training)
+                feed_dict = dict(zip(self.queue_input_tensors, tensorized_example))
+                self.sess.run(self.enqueue_op, feed_dict=feed_dict)
+        enqueue_thread = threading.Thread(target=_enqueue_loop)
+        enqueue_thread.daemon = True
+        enqueue_thread.start()
 
     def tensorize_mentions(self, mentions):
         if len(mentions) > 0:
@@ -483,52 +494,28 @@ class CorefModel(object):
         saver.save(self.sess, os.path.join(log_dir, 'model.max.ckpt'))
 
     def train(self, batch):
-        tensorized_example = self.tensorize_example(batch, True)
-        feed_dict = dict(zip(self.queue_input_tensors, tensorized_example))
-        self.sess.run(self.enqueue_op, feed_dict=feed_dict)
-        tf_loss = self.sess.run(self.loss)
-        self.sess.run(self.train_op)
-        return tf_loss
+#        print(batch)
+        self.start_enqueue_thread(batch, True)
+        self.tf_loss, tf_global_step, _ = self.sess.run([self.loss, self.global_step, self.train_op])
+        return self.tf_loss
 
-    def eval(self, batch):
-        tensorized_example = self.tensorize_example(batch, True)
-        feed_dict = dict(zip(self.queue_input_tensors, tensorized_example))
-        self.sess.run(self.enqueue_op, feed_dict=feed_dict)
-        tf_loss = self.sess.run(self.loss)
-        return tf_loss
+#    def eval(self, batch):
+#        tensorized_example = self.tensorize_example(batch, True)
+#        feed_dict = dict(zip(self.queue_input_tensors, tensorized_example))
+#        self.sess.run(self.enqueue_op, feed_dict=feed_dict)
+#        tf_loss = self.sess.run(self.loss)
+#        return tf_loss
 
-    def predict(self, batch):
-
-        # tensorized_example = self.tensorize_example(batch, True)
-        _, _, _, _, _, _, gold_starts, gold_ends, _ = tensorized_example = self.tensorize_example(batch, True)
-        feed_dict = dict(zip(self.queue_input_tensors, tensorized_example))
-        self.sess.run(self.enqueue_op, feed_dict=feed_dict)
-        
+    def predict(self, batch, out_file):
+        self.start_enqueue_thread(batch, False)        
         candidate_starts, candidate_ends, mention_scores, mention_starts, mention_ends, antecedents, antecedent_scores = self.sess.run(self.predictions)
-
-        # if len(candidate_starts) > 0:
-        #     sorted_starts, sorted_ends, _ = zip(
-        #         *sorted(zip(candidate_starts, candidate_ends, mention_scores), key=operator.itemgetter(2),
-        #                 reverse=True))
-        # else:
-        #     sorted_starts = []
-        #     sorted_ends = []
-
-        # predicted_starts = mention_starts
-        # predicted_ends = mention_ends
-        # predicted_spans = set(zip(predicted_starts, predicted_ends))
 
         predicted_antecedents = self.get_predicted_antecedents(antecedents, antecedent_scores)
 
-        gold_clusters = [tuple(tuple(m) for m in gc) for gc in batch["clusters"]]
-        mention_to_gold = {}
-        for gc in gold_clusters:
-            for mention in gc:
-                mention_to_gold[mention] = gc
-
         predicted_clusters, mention_to_predicted = self.get_predicted_clusters(mention_starts, mention_ends,
                                                                                predicted_antecedents)
-
-        outconll = utils.output_conll(batch, predicted_clusters)
+        new_cluters = {}
+        new_cluters[batch['doc_key']] = predicted_clusters
+        outconll = utils.output_conll(out_file, batch, new_cluters)
 
         return outconll

@@ -46,7 +46,8 @@ class CoreferenceAgent(Agent):
 
     def observe(self, observation):
         self.observation = copy.deepcopy(observation)
-        self.obs_dict = utils.conll2modeldata(self.observation)
+        print(observation['doc_name'], observation['iter_id'])
+        self.obs_dict = utils.conll2modeldata(observation)
 #        return self.obs_dict
 
     def act(self):
@@ -54,15 +55,15 @@ class CoreferenceAgent(Agent):
             raise RuntimeError("Parallel act is not supported.")
         if self.observation['mode'] == 'train':
             if self.observation['iter_id'] % 10 == 0:
-                self.tf_loss = self.model.train(self.obs_dict)
-                conll = self.model.predict(self.obs_dict)
+#                self.tf_loss = self.model.train(self.obs_dict)
+                conll = self.model.predict(self.obs_dict, self.observation)
                 conll['conll'] = True
-                conll['loss'] = self.tf_loss
+#                conll['loss'] = self.tf_loss
                 conll['iter_id'] = self.observation['iter_id']
                 return conll
             else:
                 self.tf_loss = self.model.train(self.obs_dict)
-                act_dict = {'iter_id': self.observation['iter_id'], 'Loss': tf_loss}
+                act_dict = {'iter_id': self.observation['iter_id'], 'Loss': self.tf_loss}
                 act_dict['id'] = self.id
                 act_dict['epoch_done'] = self.observation['epoch_done']
                 act_dict['mode'] = self.observation['mode']

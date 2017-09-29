@@ -83,25 +83,25 @@ class BaseTeacher(Teacher):
         if self.dt == 'train':
             if self.train_doc_id == self.train_len - 1:
                 datafile = os.path.join(self.train_datapath, self.train_doc_address[self.train_doc_id])
-                act_dict = utils.conll2dict(self.iter, datafile, self.id, self.dt, epoch_done=True)
+                act_dict = utils.conll2dict(self.iter, datafile, self.id, self.dt, self.train_doc_address[self.train_doc_id], epoch_done=True)
             else:
                 datafile = os.path.join(self.train_datapath, self.train_doc_address[self.train_doc_id])
-                act_dict = utils.conll2dict(self.iter, datafile, self.id, self.dt)
+                act_dict = utils.conll2dict(self.iter, datafile, self.id, self.dt, self.train_doc_address[self.train_doc_id])
             return act_dict
         elif self.dt == 'test':
             if self.test_doc_id == self.test_len - 1:
                 datafile = os.path.join(self.test_datapath, self.test_doc_address[self.test_doc_id])
-                act_dict = utils.conll2dict(self.iter, datafile, self.id, self.dt, epoch_done=True)
+                act_dict = utils.conll2dict(self.iter, datafile, self.id, self.dt, self.train_doc_address[self.test_doc_id], epoch_done=True)
             else:
                 datafile = os.path.join(self.test_datapath, self.test_doc_address[self.test_doc_id])
-                act_dict = utils.conll2dict(self.iter, datafile, self.id, self.dt)
+                act_dict = utils.conll2dict(self.iter, datafile, self.id, self.dt, self.train_doc_address[self.test_doc_id])
         elif self.dt == 'valid':
             if self.valid_doc_id == self.valid_len - 1:
                 datafile = os.path.join(self.valid_datapath, self.valid_doc_address[self.valid_doc_id])
-                act_dict = utils.conll2dict(self.iter, datafile, self.id, self.dt, epoch_done=True)
+                act_dict = utils.conll2dict(self.iter, datafile, self.id, self.dt, self.train_doc_address[self.valid_doc_id], epoch_done=True)
             else:
                 datafile = os.path.join(self.valid_datapath, self.valid_doc_address[self.valid_doc_id])
-                act_dict = utils.conll2dict(self.iter, datafile, self.id, self.dt)
+                act_dict = utils.conll2dict(self.iter, datafile, self.id, self.dt, self.train_doc_address[self.valid_doc_id])
         else:
             raise ValueError('Unknown mode: {}. Available modes: train, test, valid.'.format(self.dt))
         return act_dict
