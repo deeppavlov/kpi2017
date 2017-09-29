@@ -416,7 +416,7 @@ def conll2modeldata(data):
             for segment in coref.split("|"):
                 if segment[0] == "(":
                     if segment[-1] == ")":
-                        cluster_id = int(segment[1:-1])
+                        cluster_id = int(segment[1:-1]) # Need Int
                         document_state.clusters[cluster_id].append((word_index, word_index))
                     else:
                         cluster_id = int(segment[1:])
@@ -426,7 +426,7 @@ def conll2modeldata(data):
                     start = document_state.stacks[cluster_id].pop()
                     document_state.clusters[cluster_id].append((start, word_index))
         else:                 
-            if (data['part_of_speech'][i] == 'SEN'):
+            if (data['part_of_speech'][i] == 'End_of_sentence'):
                 document_state.sentences.append(tuple(document_state.text))
                 del document_state.text[:]
                 document_state.speakers.append(tuple(document_state.text_speakers))

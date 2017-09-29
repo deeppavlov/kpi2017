@@ -188,8 +188,21 @@ def conll2dict(iter_id, conll, agent, mode, doc, epoch_done=False):
     with open(conll, 'r') as f:
         for line in f:
             row = line.split('\t')
-            if row[0].startswith('#') or row[0] == '\n':
-                pass
+            if row[0].startswith('#'):
+                continue
+            elif row[0] == '\n':
+                data['doc_id'].append('bc')
+                data['part_id'].append('0')
+                data['word_number'].append('0')
+                data['word'].append('SeNt')
+                data['part_of_speech'].append('End_of_sentence')
+                data['parse_bit'].append('-')
+                data['lemma'].append('-')
+                data['sense'].append('-')
+                data['speaker'].append('-')
+                data['entiti'].append('-')
+                data['predict'].append('-')
+                data['coreference'].append('-')
             else:
                 assert len(row) >= 12
                 data['doc_id'].append(row[0])
@@ -225,35 +238,10 @@ def dict2conll(data, predict):
                                                     data["entiti"][i],
                                                     data["predict"][i],
                                                     data["coreference"][i]))
-            elif i == len(data['doc_id'])-1:
-                CoNLL.write(u'{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(data['doc_id'][i],
-                                                    data["part_id"][i],
-                                                    data["word_number"][i],
-                                                    data["word"][i],
-                                                    data["part_of_speech"][i],
-                                                    data["parse_bit"][i],
-                                                    data["lemma"][i],
-                                                    data["sense"][i],
-                                                    data["speaker"][i],
-                                                    data["entiti"][i],
-                                                    data["predict"][i],
-                                                    data["coreference"][i]))
-                CoNLL.write('\n')
+            elif i == len(data['doc_id'])-1 and data['part_of_speech'][i] == 'End_of_sentence':
                 CoNLL.write('#end document\n')
-            elif data['part_of_speech'][i] == 'SEN':
-                CoNLL.write(u'{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(data['doc_id'][i],
-                                                    data["part_id"][i],
-                                                    data["word_number"][i],
-                                                    data["word"][i],
-                                                    data["part_of_speech"][i],
-                                                    data["parse_bit"][i],
-                                                    data["lemma"][i],
-                                                    data["sense"][i],
-                                                    data["speaker"][i],
-                                                    data["entiti"][i],
-                                                    data["predict"][i],
-                                                    data["coreference"][i]))
-                CoNLL.write('\n')
+            elif data['part_of_speech'][i] == 'End_of_sentence':
+                continue
             else:
                 if data['doc_id'][i] == data['doc_id'][i+1]:
                     CoNLL.write(u'{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(data['doc_id'][i],
@@ -268,24 +256,22 @@ def dict2conll(data, predict):
                                                         data["entiti"][i],
                                                         data["predict"][i],
                                                         data["coreference"][i]))
-                    if data["word_number"][i+1] == 0:
-                        CoNLL.write('\n')
+                elif data['part_of_speech'][i] == 'End_of_sentence':
+                    continue
                 else:
                     CoNLL.write(u'{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(data['doc_id'][i],
-                                                        data["part_id"][i],
-                                                        data["word_number"][i],
-                                                        data["word"][i],
-                                                        data["part_of_speech"][i],
-                                                        data["parse_bit"][i],
-                                                        data["lemma"][i],
-                                                        data["sense"][i],
-                                                        data["speaker"][i],
-                                                        data["entiti"][i],
-                                                        data["predict"][i],
-                                                        data["coreference"][i]))
+                                                    data["part_id"][i],
+                                                    data["word_number"][i],
+                                                    data["word"][i],
+                                                    data["part_of_speech"][i],
+                                                    data["parse_bit"][i],
+                                                    data["lemma"][i],
+                                                    data["sense"][i],
+                                                    data["speaker"][i],
+                                                    data["entiti"][i],
+                                                    data["predict"][i],
+                                                    data["coreference"][i]))
                     CoNLL.write('\n')
-                    CoNLL.write('#end document\n')
-                    CoNLL.write('#begin document ({}); part {}\n'.format(data['doc_id'][i+1], data["part_id"][i+1]))
         CoNLL.close()
     return None
 
