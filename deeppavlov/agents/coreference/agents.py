@@ -47,7 +47,6 @@ class CoreferenceAgent(Agent):
 
     def observe(self, observation):
         self.observation = copy.deepcopy(observation)
-        print(observation['doc_name'], observation['iter_id'])
         self.obs_dict = utils.conll2modeldata(observation)
 #        return self.obs_dict
 
@@ -80,7 +79,7 @@ class CoreferenceAgent(Agent):
         return loss
 
     def predict(self):
-        y = self.model.predict(self.obs_dict)
+        y = self.model.predict(self.obs_dict, self.observation)
         return y
 
     def save(self):

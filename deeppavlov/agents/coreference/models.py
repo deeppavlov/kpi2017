@@ -23,7 +23,8 @@ import tensorflow as tf
 from . import utils
 from os.path import isdir
 
-coref_op_library = tf.load_op_library("./coref_kernels.so")
+# coref_op_library = tf.load_op_library("./coref_kernels.so")
+coref_op_library = tf.load_op_library('/home/petrov/coreference_kpi/coreference/coref_kernels.so') # Need path as variable in opt 
 spans = coref_op_library.spans
 tf.NotDifferentiable("Spans")
 get_antecedents = coref_op_library.antecedents
