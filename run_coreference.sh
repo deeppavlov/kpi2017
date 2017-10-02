@@ -5,18 +5,18 @@ export CUDA_VISIBLE_DEVICES=0; python3 ./utils/train_model.py -t deeppavlov.task
                          -m deeppavlov.agents.coreference.agents:CoreferenceAgent \
                          -mf ./build/coreference \
                          --cor coreference \
-                         --data-path ./build \
+                         --data-path ./built \
 		         --language russian \
 			 --name main \
-			 --pretrained_model False \
+			 --pretrained_model True \
                          --split 0.2 \
                          --random-seed None \
                          -dt train:ordered \
                          --batchsize 1 \
                          --display-examples True \
                          --max-train-time -1 \
-                         --validation-every-n-epochs 10 \
-                         --log-every-n-epochs 5 \
+                         --validation-every-n-epochs 300 \
+                         --log-every-n-epochs 10 \
                          --log-every-n-secs -1 \
                          --chosen-metric conll-F-1 \
 
