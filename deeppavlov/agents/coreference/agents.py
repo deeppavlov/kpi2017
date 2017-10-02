@@ -38,6 +38,8 @@ class CoreferenceAgent(Agent):
         # Set up params/logging/dicts
         self.is_shared = False
         self.obs_dict = None
+        self.iterations = 0
+        self.rep_iter = opt['rep_iter']
         self.model = CorefModel(opt)
         if self.opt['pretrained_model']:
             print('[ Initializing model from checkpoint ]')
@@ -55,6 +57,9 @@ class CoreferenceAgent(Agent):
             raise RuntimeError("Parallel act is not supported.")
         if self.observation['mode'] == 'train':
             self.tf_loss = self.model.train(self.obs_dict)
+            if self.observation['iter_id'] % self.rep_iter == 0:
+                self.iterations += self.rep_iter
+                print('iter: {} | Loss: {}'.format(self.iterations, self.tf_loss))
             act_dict = {'iter_id': self.observation['iter_id'], 'Loss': self.tf_loss}
             act_dict['id'] = self.id
             act_dict['epoch_done'] = self.observation['epoch_done']

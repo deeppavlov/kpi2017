@@ -520,21 +520,33 @@ class CorefModel(object):
         self.tf_loss, tf_global_step, _ = self.sess.run([self.loss, self.global_step, self.train_op])
         return self.tf_loss
 
-#    def eval(self, batch):
-#        tensorized_example = self.tensorize_example(batch, True)
-#        feed_dict = dict(zip(self.queue_input_tensors, tensorized_example))
-#        self.sess.run(self.enqueue_op, feed_dict=feed_dict)
-#        tf_loss = self.sess.run(self.loss)
-#        return tf_loss
-
     def predict(self, batch, out_file):
         self.start_enqueue_thread(batch, False)        
         candidate_starts, candidate_ends, mention_scores, mention_starts, mention_ends, antecedents, antecedent_scores = self.sess.run(self.predictions)
+        
+        
+        
+        _, _, _, _, _, _, gold_starts, gold_ends, _ = lambda batch: self.tensorize_example(batch, is_training=False)
+        text_length = sum(len(s) for s in batch["sentences"])
+        gold_spans = set(zip(gold_starts, gold_ends))
+
+        if len(candidate_starts) > 0:
+          sorted_starts, sorted_ends, _ = zip(*sorted(zip(candidate_starts, candidate_ends, mention_scores), key=operator.itemgetter(2), reverse=True))
+        else:
+          sorted_starts = []
+          sorted_ends = []
+
+        num_predictions = len(gold_spans)
+        predicted_starts = sorted_starts[:num_predictions]
+        predicted_ends = sorted_ends[:num_predictions]
+        predicted_spans = set(zip(predicted_starts, predicted_ends))
+        
+        
 
         predicted_antecedents = self.get_predicted_antecedents(antecedents, antecedent_scores)
 
-        predicted_clusters, mention_to_predicted = self.get_predicted_clusters(mention_starts, mention_ends,
-                                                                               predicted_antecedents)
+#        predicted_clusters, mention_to_predicted = self.get_predicted_clusters(mention_starts, mention_ends,                                                                               predicted_antecedents)
+        predicted_clusters, mention_to_predicted = self.get_predicted_clusters(predicted_starts, predicted_ends,                predicted_antecedents)
         new_cluters = {}
         new_cluters[batch['doc_key']] = predicted_clusters
         outconll = utils.output_conll(out_file, batch, new_cluters)

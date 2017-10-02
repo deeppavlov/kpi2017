@@ -367,7 +367,7 @@ class DocumentState(object):
                 if existing is not None:
                     break
             if existing is not None:
-                print("Merging clusters (shouldn't happen very often.)")
+#                print("Merging clusters (shouldn't happen very often.)")
                 existing.update(c1)
             else:
                 merged_clusters.append(set(c1))
