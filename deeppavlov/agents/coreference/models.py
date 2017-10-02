@@ -56,7 +56,7 @@ class CorefModel(object):
 
         self.queue_input_tensors = [tf.placeholder(dtype, shape) for dtype, shape in input_props]
         dtypes, shapes = zip(*input_props)
-        queue = tf.PaddingFIFOQueue(capacity=1, dtypes=dtypes, shapes=shapes) 
+        queue = tf.PaddingFIFOQueue(capacity=1, dtypes=dtypes, shapes=shapes)
         self.enqueue_op = queue.enqueue(self.queue_input_tensors)
         self.input_tensors = queue.dequeue()
         
@@ -110,7 +110,7 @@ class CorefModel(object):
             for j, word in enumerate(sentence):
                 current_dim = 0
                 d = self.embedding_dicts
-                (s,l) = self.embedding_info
+                (s, l) = self.embedding_info
                 if l:
                     cerrent_word = word.lower()
                 else:
