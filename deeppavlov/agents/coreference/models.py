@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import operator
 import random
 import os
 import threading
@@ -525,8 +526,8 @@ class CorefModel(object):
         candidate_starts, candidate_ends, mention_scores, mention_starts, mention_ends, antecedents, antecedent_scores = self.sess.run(self.predictions)
         
         
-        
-        _, _, _, _, _, _, gold_starts, gold_ends, _ = lambda batch: self.tensorize_example(batch, is_training=False)
+        tensorise = lambda example: self.tensorize_example(example, is_training=False)
+        _, _, _, _, _, _, gold_starts, gold_ends, _ = tensorise(batch)
         text_length = sum(len(s) for s in batch["sentences"])
         gold_spans = set(zip(gold_starts, gold_ends))
 
@@ -546,7 +547,7 @@ class CorefModel(object):
         predicted_antecedents = self.get_predicted_antecedents(antecedents, antecedent_scores)
 
 #        predicted_clusters, mention_to_predicted = self.get_predicted_clusters(mention_starts, mention_ends,                                                                               predicted_antecedents)
-        predicted_clusters, mention_to_predicted = self.get_predicted_clusters(predicted_starts, predicted_ends,                predicted_antecedents)
+        predicted_clusters, mention_to_predicted = self.get_predicted_clusters(mention_starts, mention_ends,                predicted_antecedents)
         new_cluters = {}
         new_cluters[batch['doc_key']] = predicted_clusters
         outconll = utils.output_conll(out_file, batch, new_cluters)
