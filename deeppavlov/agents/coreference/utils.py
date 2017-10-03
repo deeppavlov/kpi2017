@@ -5,11 +5,6 @@ from collections import Counter
 from sklearn.utils.linear_assignment_ import linear_assignment
 import operator
 import copy
-#  evalution metrics
-"""
-Mostly borrowed from https://github.com/clarkkev/deep-coref/blob/master/evaluation.py
-"""
-
 
 def normalize(v):
     norm = np.linalg.norm(v)

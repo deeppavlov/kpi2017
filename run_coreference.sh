@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
 #parlai.agents.repeat_label.repeat_label
-export CUDA_VISIBLE_DEVICES=0; python3 ./utils/train_model.py -t deeppavlov.tasks.coreference.agents:BaseTeacher \
+export CUDA_VISIBLE_DEVICES=1; python3 ./utils/train_model.py -t deeppavlov.tasks.coreference.agents:BaseTeacher \
                          -m deeppavlov.agents.coreference.agents:CoreferenceAgent \
-                         -mf ./build/coreference \
+                         -mf ./build/ \
                          --cor coreference \
-                         --data-path ./built \
+                         --datapath ./built/coreference \
 		         --language russian \
 			 --name main \
 			 --pretrained_model True \
