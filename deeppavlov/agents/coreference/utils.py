@@ -367,7 +367,7 @@ class DocumentState(object):
                 if existing is not None:
                     break
             if existing is not None:
-                print("Merging clusters (shouldn't happen very often.)")
+#                print("Merging clusters (shouldn't happen very often.)")
                 existing.update(c1)
             else:
                 merged_clusters.append(set(c1))
@@ -403,7 +403,7 @@ def normalize_word(word):
 def conll2modeldata(data):
     document_state = DocumentState()
     document_state.assert_empty()
-    document_state.doc_key = "{}_{}".format(data['doc_id'][0], int(data['part_id'][0]))
+    document_state.doc_key = "{}_{}".format(data['doc_id'][0], data['part_id'][0])
     for i in range(len(data['doc_id'])):
         word = normalize_word(data['word'][i])
         coref = data['coreference'][i]
@@ -412,35 +412,35 @@ def conll2modeldata(data):
         document_state.text.append(word)
         document_state.text_speakers.append(speaker)
 
-        if (data['part_of_speech'][i] == 'SEN'):
-            document_state.sentences.append(tuple(document_state.text))
-            del document_state.text[:]
-            document_state.speakers.append(tuple(document_state.text_speakers))
-            del document_state.text_speakers[:]
-            pass
-        else:
-            if coref == "-":
-                pass
-            else:
-                for segment in coref.split("|"):
-                    if segment[0] == "(":
-                        if segment[-1] == ")":
-                            cluster_id = int(segment[1:-1])
-                            document_state.clusters[cluster_id].append((word_index, word_index))
-                        else:
-                            cluster_id = int(segment[1:])
-                            document_state.stacks[cluster_id].append(word_index)
+        if coref != "-":
+            for segment in coref.split("|"):
+                if segment[0] == "(":
+                    if segment[-1] == ")":
+                        cluster_id = int(segment[1:-1]) # Need Int
+                        document_state.clusters[cluster_id].append((word_index, word_index))
                     else:
-                        cluster_id = int(segment[:-1])
-                        start = document_state.stacks[cluster_id].pop()
-                        document_state.clusters[cluster_id].append((start, word_index))
-
+                        cluster_id = int(segment[1:])
+                        document_state.stacks[cluster_id].append(word_index)
+                else:
+                    cluster_id = int(segment[:-1])
+                    start = document_state.stacks[cluster_id].pop()
+                    document_state.clusters[cluster_id].append((start, word_index))
+        else:                 
+            if (data['part_of_speech'][i] == 'End_of_sentence'):
+                document_state.sentences.append(tuple(document_state.text))
+                del document_state.text[:]
+                document_state.speakers.append(tuple(document_state.text_speakers))
+                del document_state.text_speakers[:]
+                continue
+            else:
+                continue
+    
     document_state.assert_finalizable()
     return document_state.finalize()
 
-def output_conll(input_file, predictions):
+def output_conll(out_file, input_file, predictions):
     prediction_map = {}
-    output_file = copy.deepcopy(input_file)
+    output_file = copy.deepcopy(out_file)
 
     for doc_key, clusters in predictions.items():
         start_map = collections.defaultdict(list)
@@ -460,8 +460,8 @@ def output_conll(input_file, predictions):
         prediction_map[doc_key] = (start_map, end_map, word_map)
 
     word_index = 0
-    for i in range(len(input_file['doc_id'])):
-        doc_key = '{}_{}'.format(input_file['doc_id'], input_file['part_id'])
+    for i in range(len(output_file['doc_id'])):
+        doc_key = '{}_{}'.format(output_file['doc_id'][0], output_file['part_id'][0])
         start_map, end_map, word_map = prediction_map[doc_key]
         coref_list = []
         if word_index in end_map:

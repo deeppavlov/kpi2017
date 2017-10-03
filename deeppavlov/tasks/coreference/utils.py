@@ -166,7 +166,7 @@ def lea(clusters, mention_to_gold):
     return num, dem
 
 #
-def conll2dict(iter_id, conll, agent, mode, epoch_done=False):
+def conll2dict(iter_id, conll, agent, mode, doc, epoch_done=False):
     data = {'doc_id': [],
             'part_id': [],
             'word_number': [],
@@ -182,13 +182,27 @@ def conll2dict(iter_id, conll, agent, mode, epoch_done=False):
             'iter_id': iter_id,
             'id': agent,
             'epoch_done': epoch_done,
-            'mode': mode}
+            'mode': mode,
+            'doc_name': doc}
 
     with open(conll, 'r') as f:
         for line in f:
             row = line.split('\t')
-            if row[0].startswith('#') or row[0] == '\n':
-                pass
+            if row[0].startswith('#'):
+                continue
+            elif row[0] == '\n':
+                data['doc_id'].append('bc')
+                data['part_id'].append('0')
+                data['word_number'].append('0')
+                data['word'].append('SeNt')
+                data['part_of_speech'].append('End_of_sentence')
+                data['parse_bit'].append('-')
+                data['lemma'].append('-')
+                data['sense'].append('-')
+                data['speaker'].append('-')
+                data['entiti'].append('-')
+                data['predict'].append('-')
+                data['coreference'].append('-')
             else:
                 assert len(row) >= 12
                 data['doc_id'].append(row[0])
@@ -224,35 +238,10 @@ def dict2conll(data, predict):
                                                     data["entiti"][i],
                                                     data["predict"][i],
                                                     data["coreference"][i]))
-            elif i == len(data['doc_id'])-1:
-                CoNLL.write(u'{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(data['doc_id'][i],
-                                                    data["part_id"][i],
-                                                    data["word_number"][i],
-                                                    data["word"][i],
-                                                    data["part_of_speech"][i],
-                                                    data["parse_bit"][i],
-                                                    data["lemma"][i],
-                                                    data["sense"][i],
-                                                    data["speaker"][i],
-                                                    data["entiti"][i],
-                                                    data["predict"][i],
-                                                    data["coreference"][i]))
-                CoNLL.write('\n')
+            elif i == len(data['doc_id'])-1 and data['part_of_speech'][i] == 'End_of_sentence':
                 CoNLL.write('#end document\n')
-            elif data['part_of_speech'][i] == 'SEN':
-                CoNLL.write(u'{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(data['doc_id'][i],
-                                                    data["part_id"][i],
-                                                    data["word_number"][i],
-                                                    data["word"][i],
-                                                    data["part_of_speech"][i],
-                                                    data["parse_bit"][i],
-                                                    data["lemma"][i],
-                                                    data["sense"][i],
-                                                    data["speaker"][i],
-                                                    data["entiti"][i],
-                                                    data["predict"][i],
-                                                    data["coreference"][i]))
-                CoNLL.write('\n')
+            elif data['part_of_speech'][i] == 'End_of_sentence':
+                continue
             else:
                 if data['doc_id'][i] == data['doc_id'][i+1]:
                     CoNLL.write(u'{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(data['doc_id'][i],
@@ -267,91 +256,101 @@ def dict2conll(data, predict):
                                                         data["entiti"][i],
                                                         data["predict"][i],
                                                         data["coreference"][i]))
-                    if data["word_number"][i+1] == 0:
-                        CoNLL.write('\n')
+                elif data['part_of_speech'][i] == 'End_of_sentence':
+                    continue
                 else:
                     CoNLL.write(u'{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(data['doc_id'][i],
-                                                        data["part_id"][i],
-                                                        data["word_number"][i],
-                                                        data["word"][i],
-                                                        data["part_of_speech"][i],
-                                                        data["parse_bit"][i],
-                                                        data["lemma"][i],
-                                                        data["sense"][i],
-                                                        data["speaker"][i],
-                                                        data["entiti"][i],
-                                                        data["predict"][i],
-                                                        data["coreference"][i]))
+                                                    data["part_id"][i],
+                                                    data["word_number"][i],
+                                                    data["word"][i],
+                                                    data["part_of_speech"][i],
+                                                    data["parse_bit"][i],
+                                                    data["lemma"][i],
+                                                    data["sense"][i],
+                                                    data["speaker"][i],
+                                                    data["entiti"][i],
+                                                    data["predict"][i],
+                                                    data["coreference"][i]))
                     CoNLL.write('\n')
-                    CoNLL.write('#end document\n')
-                    CoNLL.write('#begin document ({}); part {}\n'.format(data['doc_id'][i+1], data["part_id"][i+1]))
         CoNLL.close()
     return None
 
 def score(scorer, keys_path, predicts_path):
-	key_files = []
+    key_files = []
+    pred_files = []
+    
+    for dirpath, dirnames, filenames in os.walk(keys_path):
+        # f.endswith("auto_conll") or f.endswith("gold_conll") or f.endswith('gold_parse_conll')
+        for filename in [f for f in filenames if (f.endswith('v4_conll'))]:
+            key_files.append(os.path.join(dirpath, filename))
+    key_files = list(sorted(key_files))
+    
+    for dirpath, dirnames, filenames in os.walk(predicts_path):
+        # f.endswith("auto_conll") or f.endswith("gold_conll") or f.endswith('gold_parse_conll')
+        for filename in [f for f in filenames if (f.endswith('v4_conll'))]:
+            pred_files.append(os.path.join(dirpath, filename))
+    pred_files = list(sorted(pred_files))    
 
-	for dirpath, dirnames, filenames in os.walk(keys_path):
-		# f.endswith("auto_conll") or f.endswith("gold_conll") or f.endswith('gold_parse_conll')
-		for filename in [f for f in filenames if (f.endswith('v4_conll'))]:
-			key_files.append(os.path.join(dirpath, filename))
-	key_files = list(sorted(key_files))
+    print('score: Files to process: {}'.format(len(pred_files)))
+    for key_file in tqdm(pred_files):
+        pred_files = join(predicts_path, basename(key_file))
+        for metric in ['muc', 'bcub', 'ceafm', 'ceafe']:
+            out_pred_score = '{0}.{1}'.format(join(predicts_path, basename(key_file)), metric)
+            cmd = '{0} {1} {2} {3} none > {4}'.format(scorer, metric, key_file, pred_files, out_pred_score)
+            #print(cmd)
+            os.system(cmd)
 
-	print('score: Files to process: {}'.format(len(key_files)))
-	for key_file in tqdm(key_files):
-		pred_files = join(predicts_path, basename(key_file))
-		for metric in ['muc', 'bcub', 'ceafm', 'ceafe']:
-			out_pred_score = '{0}.{1}'.format(join(predicts_path, basename(key_file)), metric)
-			cmd = '{0} {1} {2} {3} none > {4}'.format(scorer, metric, key_file, pred_files, out_pred_score)
-			#print(cmd)
-			os.system(cmd)
+    # make sure that all files processed
+    time.sleep(1)
 
-	# make sure that all files processed
-	time.sleep(1)
+    print('score: aggregating results...')
+    k = 0
+    results = dict()
 
-	print('score: aggregating results...')
-	k = 0
-	results = dict()
+    f1=[]
+    for metric in ['muc', 'bcub', 'ceafm', 'ceafe']:
+        recall = []
+        precision = []	
+        for key_file in pred_files:
+            out_pred_score = '{0}.{1}'.format(join(predicts_path, basename(pred_files)), metric)
+            with open(out_pred_score, 'r', encoding='utf8') as score_file:
+                lines = score_file.readlines()
+                if lines[-1].strip() != '--------------------------------------------------------------------------':
+                    continue
 
-	f1=[]
-	for metric in ['muc', 'bcub', 'ceafm', 'ceafe']:
-		recall = []
-		precision = []	
-		for key_file in key_files:
-			out_pred_score = '{0}.{1}'.format(join(predicts_path, basename(key_file)), metric)
-			with open(out_pred_score, 'r', encoding='utf8') as score_file:
-				lines = score_file.readlines()
-				if lines[-1].strip() != '--------------------------------------------------------------------------':
-					continue
+                coreference_scores_line = lines[-2]
+                tokens = coreference_scores_line.replace('\t', ' ').split()
+                r1 = float(tokens[2].strip('()'))
+                r2 = float(tokens[4].strip('()'))
+                p1 = float(tokens[7].strip('()'))
+                p2 = float(tokens[9].strip('()'))
+                if r2 == 0 or p2 == 0:
+                    continue
+                recall.append((r1, r2))
+                precision.append((p1, p2))
+                k += 1
 
-				coreference_scores_line = lines[-2]
-				tokens = coreference_scores_line.replace('\t', ' ').split()
-				r1 = float(tokens[2].strip('()'))
-				r2 = float(tokens[4].strip('()'))
-				p1 = float(tokens[7].strip('()'))
-				p2 = float(tokens[9].strip('()'))
-				if r2 == 0 or p2 == 0:
-					continue
-				recall.append((r1, r2))
-				precision.append((p1, p2))
-				k += 1
+        r1 = sum(map(lambda x: x[0], recall))
+        r2 = sum(map(lambda x: x[1], recall))
+        p1 = sum(map(lambda x: x[0], precision))
+        p2 = sum(map(lambda x: x[1], precision))
+        
+        
+        r = 0 if r2 == 0 else r1 / float(r2)
+        p = 0 if p2 ==0 else p1 / float(p2)
+        f = 0 if (p+r) == 0 else (2 * p * r) / (p + r)
+        
+        
+        f1.append(f)
+        print('{0} precision: ({1:.3f}/{2}) {3:.3f}\t recall: ({4:.3f}/{5}) {6:.3f}\t F-1: {7:.5f}'.format(metric, p1, p2, p, r1, r2, r, f))
+        results[metric] = {'p': p, 'r': r, 'f-1': f}
 
-		r1 = sum(map(lambda x: x[0], recall))
-		r2 = sum(map(lambda x: x[1], recall))
-		p1 = sum(map(lambda x: x[0], precision))
-		p2 = sum(map(lambda x: x[1], precision))
-		r, p = r1 / r2, p1 / p2
-		f = (2 * p * r) / (p + r)
-		f1.append(f)
-		print('{0} precision: ({1:.3f}/{2}) {3:.3f}\t recall: ({4:.3f}/{5}) {6:.3f}\t F-1: {7:.5f}'.format(metric, p1, p2, p, r1, r2, r, f))
-		results[metric] = {'p': p, 'r': r, 'f-1': f}
-
-	print('avg: {0:.5f}'.format(np.mean(f1)))
-	# muc bcub ceafe
-	conllf1 = np.mean(f1[:2] + f1[-1:])
-	print('conll F-1: {0:.5f}'.format(conllf1))
-	print('using {}/{}'.format(k, 4 * len(key_files)))
-	results['avg F-1'] = np.mean(f1)
-	results['conll F-1'] = conllf1
-	json.dump(results, open(join(predicts_path, 'results.json'), 'w'))
-	return results
+    print('avg: {0:.5f}'.format(np.mean(f1)))
+    # muc bcub ceafe
+    conllf1 = np.mean(f1[:2] + f1[-1:])
+    print('conll F-1: {0:.5f}'.format(conllf1))
+    print('using {}/{}'.format(k, 4 * len(key_files)))
+    results['avg F-1'] = np.mean(f1)
+    results['conll-F-1'] = conllf1
+    json.dump(results, open(join(predicts_path, 'results.json'), 'w'))
+    return results

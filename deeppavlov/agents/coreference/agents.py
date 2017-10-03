@@ -38,45 +38,48 @@ class CoreferenceAgent(Agent):
         # Set up params/logging/dicts
         self.is_shared = False
         self.obs_dict = None
+        self.iterations = 0
+        self.rep_iter = opt['rep_iter']
         self.model = CorefModel(opt)
-        if self.opt.get('pretrained_model'):
+        if self.opt['pretrained_model']:
+            print('[ Initializing model from checkpoint ]')
             self.model.init_from_saved()
         else:
             print('[ Initializing model from scratch ]')
 
     def observe(self, observation):
         self.observation = copy.deepcopy(observation)
+<<<<<<< HEAD
         self.obs_dict = utils.conll2modeldata(self.observation)
         return self.obs_dict
+=======
+        self.obs_dict = utils.conll2modeldata(observation)
+#        return self.obs_dict
+>>>>>>> 7f6eb564c90900aa9994ae9969039c5965183c97
 
     def act(self):
         if self.is_shared:
             raise RuntimeError("Parallel act is not supported.")
         if self.observation['mode'] == 'train':
-            if self.observation['iter_id'] % 10 == 0:
-                self.tf_loss = self.model.train(self.obs_dict)
-                conll = self.model.predict(self.obs_dict)
-                conll['conll'] = True
-                conll['loss'] = self.tf_loss
-                conll['iter_id'] = self.observation['iter_id']
-                return conll
-            else:
-                self.tf_loss = self.model.train(self.obs_dict)
-                act_dict = {'iter_id': self.observation['iter_id'], 'Loss': tf_loss}
-                act_dict['id'] = self.id
-                act_dict['epoch_done'] = self.observation['epoch_done']
-                act_dict['mode'] = self.observation['mode']
-                act_dict['conll'] = False
-                act_dict['loss'] = self.tf_loss
-                return act_dict
+            self.tf_loss = self.model.train(self.obs_dict)
+            if self.observation['iter_id'] % self.rep_iter == 0:
+                self.iterations += self.rep_iter
+                print('iter: {} | Loss: {}'.format(self.iterations, self.tf_loss))
+            act_dict = {'iter_id': self.observation['iter_id'], 'Loss': self.tf_loss}
+            act_dict['id'] = self.id
+            act_dict['epoch_done'] = self.observation['epoch_done']
+            act_dict['mode'] = self.observation['mode']
+            act_dict['conll'] = False
+            act_dict['loss'] = self.tf_loss
+            return act_dict
         elif self.observation['mode'] == 'valid':
             # tf_loss = self.model.train_op(observation)
-            conll = self.model.predict(self.obs_dict)
+            conll = self.model.predict(self.obs_dict, self.observation)
             conll['conll'] = True
             conll['iter_id'] = self.observation['iter_id']
             return conll
         elif self.observation['mode'] == 'test':
-            conll = self.model.predict(self.obs_dict)
+            conll = self.model.predict(self.obs_dict, self.observation)
             conll['conll'] = True
             conll['iter_id'] = self.observation['iter_id']
             return conll
@@ -86,7 +89,7 @@ class CoreferenceAgent(Agent):
         return loss
 
     def predict(self):
-        y = self.model.predict(self.obs_dict)
+        y = self.model.predict(self.obs_dict, self.observation)
         return y
 
     def save(self):

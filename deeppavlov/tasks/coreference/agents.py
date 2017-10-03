@@ -15,7 +15,7 @@ limitations under the License.
 """
 
 import os
-from os.path import basename
+from os.path import basename, join
 import numpy as np
 import copy
 from parlai.core.agents import Teacher
@@ -44,31 +44,29 @@ class BaseTeacher(Teacher):
         build(opt)
         
         self.scorer_path = os.path.join(opt['datapath'], self.task, self.language, 'scorer/reference-coreference-scorers/v8.01/scorer.pl')
-        self.train_datapath = os.path.join(opt['datapath'], self.task, self.language, 'train')
-        self.test_datapath = os.path.join(opt['datapath'], self.task, self.language, 'test')
-        self.valid_datapath = os.path.join(opt['datapath'], self.task, self.language, 'valid')
-        self.train_doc_address = os.listdir(self.train_datapath)  # list of files addresses
-        self.test_doc_address = os.listdir(self.test_datapath)
-        self.valid_doc_address = os.listdir(self.valid_datapath)
-        self.train_len = len(self.train_doc_address)
-        self.test_len = len(self.test_doc_address)
-        self.valid_len = len(self.valid_doc_address)
-        self.train_doc_id = 0
-        self.test_doc_id = 0
-        self.valid_doc_id = 0
+        
+        self.path = join(opt['datapath'], self.task, self.language)
+        if self.dt == 'train':
+            self.datapath = join(self.path, 'train')
+        elif self.dt == 'valid':
+            self.datapath = join(self.path, 'valid')
+        elif self.dt == 'test':
+            self.datapath = join(self.path, 'test')
+        else:
+            raise ValueError('Unknown mode: {}. Available modes: train, test, valid.'.format(self.dt))
+        
+        self.doc_address = os.listdir(self.datapath)  # list of files addresses        
+        self.len = len(self.doc_address)
+        self.doc_id = 0 
         self.iter = 0
         self.epoch = 0
         self.epochDone = False
-        self.reports_datapath = os.path.join(opt['datapath'], self.task, self.language, 'report')
+        self.reports_datapath = join(self.path, 'report')
         super().__init__(opt, shared)
     
     def __len__(self):
-        if self.dt == 'train':
-            return self.train_len
-        if self.dt == 'test':
-            return self.test_len
-        if self.dt == 'valid':
-            return self.valid_len
+        return self.len
+
 
     def __iter__(self):
         self.epochDone = False
@@ -80,81 +78,35 @@ class BaseTeacher(Teacher):
     
     
     def act(self):
-        if self.dt == 'train':
-            if self.train_doc_id == self.train_len - 1:
-                datafile = os.path.join(self.train_datapath, self.train_doc_address[self.train_doc_id])
-                act_dict = utils.conll2dict(self.iter, datafile, self.id, self.dt, epoch_done=True)
-            else:
-                datafile = os.path.join(self.train_datapath, self.train_doc_address[self.train_doc_id])
-                act_dict = utils.conll2dict(self.iter, datafile, self.id, self.dt)
-            return act_dict
-        elif self.dt == 'test':
-            if self.test_doc_id == self.test_len - 1:
-                datafile = os.path.join(self.test_datapath, self.test_doc_address[self.test_doc_id])
-                act_dict = utils.conll2dict(self.iter, datafile, self.id, self.dt, epoch_done=True)
-            else:
-                datafile = os.path.join(self.test_datapath, self.test_doc_address[self.test_doc_id])
-                act_dict = utils.conll2dict(self.iter, datafile, self.id, self.dt)
-        elif self.dt == 'valid':
-            if self.valid_doc_id == self.valid_len - 1:
-                datafile = os.path.join(self.valid_datapath, self.valid_doc_address[self.valid_doc_id])
-                act_dict = utils.conll2dict(self.iter, datafile, self.id, self.dt, epoch_done=True)
-            else:
-                datafile = os.path.join(self.valid_datapath, self.valid_doc_address[self.valid_doc_id])
-                act_dict = utils.conll2dict(self.iter, datafile, self.id, self.dt)
+        datafile = join(self.datapath, self.doc_address[self.doc_id])
+        if self.doc_id == self.len - 1:
+            act_dict = utils.conll2dict(self.iter, datafile, self.id, self.dt, self.doc_address[self.doc_id], epoch_done=True)
         else:
-            raise ValueError('Unknown mode: {}. Available modes: train, test, valid.'.format(self.dt))
+            act_dict = utils.conll2dict(self.iter, datafile, self.id, self.dt, self.doc_address[self.doc_id])
+   
         return act_dict
             
     def observe(self, observation):
         self.observation = copy.deepcopy(observation)
-        if self.dt == 'train':
-            if self.observation['epoch_done']:
-                self.train_doc_id = 0
-                self.epoch += 1
-                self.epochDone = True
-            else:
-                self.train_doc_id = int(self.observation['iter_id']) + 1
-                self.iter += 1
-            if self.observation['conll']:
-                predict = os.path.join(self.reports_datapath, 'response_files', self.train_doc_address[int(self.observation['iter_id'])])
-                utils.dict2conll(self.observation, predict)  # predict it is file name
-
-        elif self.dt == 'test':
-            if self.observation['epoch_done']:
-                self.test_doc_id = 0
-                self.epochDone = True
-            else:
-                self.test_doc_id = int(self.observation['iter_id']) + 1
-            predict = os.path.join(self.reports_datapath, 'response_files', self.test_doc_address[int(self.observation['iter_id'])])
-            utils.dict2conll(self.observation, predict)  # predict it is file name
-
-        elif self.dt == 'valid':
-            if self.observation['epoch_done']:
-                self.valid_doc_id = 0
-            else:
-                self.valid_doc_id = int(self.observation['iter_id']) + 1
-            predict = os.path.join(self.reports_datapath, 'response_files', self.valid_doc_address[int(self.observation['iter_id'])])
-            utils.dict2conll(self.observation, predict)  # predict it is file name
+        if self.observation['epoch_done']:
+            self.doc_id = 0
+            self.epoch += 1
+            self.epochDone = True
         else:
-            raise ValueError('Unknown mode: {}. Available modes: train, test.'.format(self.dt))
+            self.doc_id = int(self.observation['iter_id']) + 1
+            self.iter += 1
+            
+        if self.observation['conll']:
+            predict = os.path.join(self.reports_datapath, 'response_files', self.doc_address[int(self.observation['iter_id'])])
+            utils.dict2conll(self.observation, predict)  # predict it is file name
         return None
 
     def report(self):  # not done yet
         print('End epoch ...')
         scorer = self.scorer_path
         predicts_path = os.path.join(self.reports_datapath, 'response_files')
-        if self.dt == 'train':
-            keys_path = self.train_datapath
-            results = utils.score(scorer, keys_path, predicts_path)
-        elif self.dt == 'valid':
-            keys_path = self.valid_datapath
-            results = utils.score(scorer, keys_path, predicts_path)
-        elif self.dt == 'test':
-            keys_path = self.test_datapath
-            results = utils.score(scorer, keys_path, predicts_path)
-        else:
-            raise ValueError('Unknown mode: {}. Available modes: train, test.'.format(self.dt))
+        keys_path = self.datapath
+        results = utils.score(scorer, keys_path, predicts_path)
         
         resp_list = os.listdir(predicts_path)
         resu_list = os.listdir(os.path.join(self.reports_datapath, 'results'))
@@ -164,3 +116,9 @@ class BaseTeacher(Teacher):
             os.remove(os.path.join(self.reports_datapath, 'results', x))
 
         return results
+    
+    def reset(self):
+        self.doc_id = 0 
+        self.iter = 0        
+        self.episode_done = True
+        self.epochDone = False
