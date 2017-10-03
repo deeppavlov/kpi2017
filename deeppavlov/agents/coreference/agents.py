@@ -18,7 +18,7 @@ import copy
 from parlai.core.agents import Agent
 from . import config
 from .models import CorefModel
-from . import utils
+from deeppavlov.tasks.coreference import utils
 
 class CoreferenceAgent(Agent):
 
@@ -49,13 +49,8 @@ class CoreferenceAgent(Agent):
 
     def observe(self, observation):
         self.observation = copy.deepcopy(observation)
-<<<<<<< HEAD
         self.obs_dict = utils.conll2modeldata(self.observation)
         return self.obs_dict
-=======
-        self.obs_dict = utils.conll2modeldata(observation)
-#        return self.obs_dict
->>>>>>> 7f6eb564c90900aa9994ae9969039c5965183c97
 
     def act(self):
         if self.is_shared:
@@ -83,10 +78,6 @@ class CoreferenceAgent(Agent):
             conll['conll'] = True
             conll['iter_id'] = self.observation['iter_id']
             return conll
-
-    def eval(self):
-        loss = self.model.eval(self.obs_dict)
-        return loss
 
     def predict(self):
         y = self.model.predict(self.obs_dict, self.observation)

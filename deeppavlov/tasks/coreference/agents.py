@@ -15,8 +15,7 @@ limitations under the License.
 """
 
 import os
-from os.path import basename, join
-import numpy as np
+from os.path import join
 import copy
 from parlai.core.agents import Teacher
 from .build import build

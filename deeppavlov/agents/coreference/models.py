@@ -14,18 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import operator
 import random
 import os
 import threading
 import copy
 import numpy as np
 import tensorflow as tf
-from . import utils
+from deeppavlov.tasks.coreference import utils
 from os.path import isdir
 
-# coref_op_library = tf.load_op_library("./coref_kernels.so")
-coref_op_library = tf.load_op_library('/home/petrov/coreference_kpi/coreference/coref_kernels.so') # Need path as variable in opt 
+coref_op_library = tf.load_op_library("./coref_kernels.so")
 spans = coref_op_library.spans
 tf.NotDifferentiable("Spans")
 get_antecedents = coref_op_library.antecedents
@@ -528,7 +526,6 @@ class CorefModel(object):
         
         tensorise = lambda example: self.tensorize_example(example, is_training=False)
         _, _, _, _, _, _, gold_starts, gold_ends, _ = tensorise(batch)
-        text_length = sum(len(s) for s in batch["sentences"])
         gold_spans = set(zip(gold_starts, gold_ends))
 
         if len(candidate_starts) > 0:
@@ -540,13 +537,11 @@ class CorefModel(object):
         num_predictions = len(gold_spans)
         predicted_starts = sorted_starts[:num_predictions]
         predicted_ends = sorted_ends[:num_predictions]
-        predicted_spans = set(zip(predicted_starts, predicted_ends))
-        
-        
+        # predicted_spans = set(zip(predicted_starts, predicted_ends))
 
         predicted_antecedents = self.get_predicted_antecedents(antecedents, antecedent_scores)
 
-#        predicted_clusters, mention_to_predicted = self.get_predicted_clusters(mention_starts, mention_ends,                                                                               predicted_antecedents)
+        # predicted_clusters, mention_to_predicted = self.get_predicted_clusters(mention_starts, mention_ends,                                                                               predicted_antecedents)
         predicted_clusters, mention_to_predicted = self.get_predicted_clusters(mention_starts, mention_ends,                predicted_antecedents)
         new_cluters = {}
         new_cluters[batch['doc_key']] = predicted_clusters
