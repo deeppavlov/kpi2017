@@ -22,7 +22,7 @@ from . import utils
 
 def build(opt):
     # get path to data directory and create folders tree
-    dpath = join(opt['datapath'], 'coreference')  # opt['datapath'] = './built/'
+    dpath = join(opt['datapath'])
     # define version if any, and languages
     version = '1.0'
     language = opt['language']

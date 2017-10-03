@@ -17,6 +17,7 @@ limitations under the License.
 import os
 from os.path import join
 import copy
+import random
 from parlai.core.agents import Teacher
 from .build import build
 from . import utils
@@ -26,15 +27,13 @@ class BaseTeacher(Teacher):
     @staticmethod
     def add_cmdline_args(argparser):
         group = argparser.add_argument_group('Coreference Teacher')
-        group.add_argument('--data-path', default=None, help='path to rucorp/Ontonotes dataset')
+        group.add_argument('--datapath', default=None, help='path to rucorp/Ontonotes dataset')
         group.add_argument('--random-seed', default=None)
         group.add_argument('--split', type=float, default=0.2)
-        group.add_argument('--cor', type=str, default='coreference')
         group.add_argument('--language', type=str, default='russian')
     
     def __init__(self, opt, shared=None):
-        
-        self.task = opt['cor']  # 'coreference'
+
         self.language = opt['language']
         self.id = 'coreference_teacher'
 
@@ -42,9 +41,9 @@ class BaseTeacher(Teacher):
         self.dt = opt['datatype'].split(':')[0]
         build(opt)
         
-        self.scorer_path = os.path.join(opt['datapath'], self.task, self.language, 'scorer/reference-coreference-scorers/v8.01/scorer.pl')
+        self.scorer_path = os.path.join(opt['datapath'], self.language, 'scorer/reference-coreference-scorers/v8.01/scorer.pl')
         
-        self.path = join(opt['datapath'], self.task, self.language)
+        self.path = join(opt['datapath'], self.language)
         if self.dt == 'train':
             self.datapath = join(self.path, 'train')
         elif self.dt == 'valid':
@@ -90,6 +89,7 @@ class BaseTeacher(Teacher):
         if self.observation['epoch_done']:
             self.doc_id = 0
             self.epoch += 1
+            self.doc_address = random.shuffle(self.doc_address)
             self.epochDone = True
         else:
             self.doc_id = int(self.observation['iter_id']) + 1

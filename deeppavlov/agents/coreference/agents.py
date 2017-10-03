@@ -15,6 +15,7 @@ limitations under the License.
 """
 
 import copy
+import time
 from parlai.core.agents import Agent
 from . import config
 from .models import CorefModel
@@ -39,6 +40,8 @@ class CoreferenceAgent(Agent):
         self.is_shared = False
         self.obs_dict = None
         self.iterations = 0
+        self.start = None
+        self.tf_loss = None
         self.rep_iter = opt['rep_iter']
         self.model = CorefModel(opt)
         if self.opt['pretrained_model']:
@@ -57,9 +60,15 @@ class CoreferenceAgent(Agent):
             raise RuntimeError("Parallel act is not supported.")
         if self.observation['mode'] == 'train':
             self.tf_loss = self.model.train(self.obs_dict)
-            if self.observation['iter_id'] % self.rep_iter == 0:
+            if self.iterations == 0:
+                self.start = time.time()
+            if self.observation['iter_id'] % self.rep_iter == 0 and self.iterations != 0:
                 self.iterations += self.rep_iter
-                print('iter: {} | Loss: {}'.format(self.iterations, self.tf_loss))
+                n = self.opt['validation-every-n-epochs']*self.rep_iter - self.iterations
+                t = time.time() - self.start
+                remaining_time = n*(t/self.rep_iter)
+                remaining_time = time.localtime(remaining_time)
+                print('iter: {} | Loss: {} | Remaining Time: {}'.format(self.iterations, self.tf_loss, remaining_time))
             act_dict = {'iter_id': self.observation['iter_id'], 'Loss': self.tf_loss}
             act_dict['id'] = self.id
             act_dict['epoch_done'] = self.observation['epoch_done']

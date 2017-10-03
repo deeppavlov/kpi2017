@@ -4,11 +4,10 @@
 export CUDA_VISIBLE_DEVICES=1; python3 ./utils/train_model.py -t deeppavlov.tasks.coreference.agents:BaseTeacher \
                          -m deeppavlov.agents.coreference.agents:CoreferenceAgent \
                          -mf ./build/ \
-                         --cor coreference \
-                         --datapath ./built/coreference \
-		         --language russian \
-			 --name main \
-			 --pretrained_model True \
+                         --datapath ./build/ \
+		                 --language russian \
+			             --name main \
+			             --pretrained_model False \
                          --split 0.2 \
                          --random-seed None \
                          -dt train:ordered \
