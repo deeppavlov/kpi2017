@@ -27,29 +27,26 @@ class BaseTeacher(Teacher):
     @staticmethod
     def add_cmdline_args(argparser):
         group = argparser.add_argument_group('Coreference Teacher')
-        group.add_argument('--datapath', default=None, help='path to rucorp/Ontonotes dataset')
         group.add_argument('--random-seed', default=None)
         group.add_argument('--split', type=float, default=0.2)
         group.add_argument('--language', type=str, default='russian')
     
     def __init__(self, opt, shared=None):
-
+        
         self.language = opt['language']
         self.id = 'coreference_teacher'
 
         # store datatype
         self.dt = opt['datatype'].split(':')[0]
-        build(opt)
+        self.datapath = join(opt['datapath'], 'coreference', self.language)
+        self.scorer_path = join(self.datapath, 'scorer/reference-coreference-scorers/v8.01/scorer.pl')       
         
-        self.scorer_path = os.path.join(opt['datapath'], self.language, 'scorer/reference-coreference-scorers/v8.01/scorer.pl')
-        
-        self.path = join(opt['datapath'], self.language)
         if self.dt == 'train':
-            self.datapath = join(self.path, 'train')
+            self.datapath = join(self.datapath, 'train')
         elif self.dt == 'valid':
-            self.datapath = join(self.path, 'valid')
+            self.datapath = join(self.datapath, 'valid')
         elif self.dt == 'test':
-            self.datapath = join(self.path, 'test')
+            self.datapath = join(self.datapath, 'test')
         else:
             raise ValueError('Unknown mode: {}. Available modes: train, test, valid.'.format(self.dt))
         
@@ -59,7 +56,7 @@ class BaseTeacher(Teacher):
         self.iter = 0
         self.epoch = 0
         self.epochDone = False
-        self.reports_datapath = join(self.path, 'report')
+        self.reports_datapath = join(self.datapath, 'report')
         super().__init__(opt, shared)
     
     def __len__(self):
@@ -89,7 +86,7 @@ class BaseTeacher(Teacher):
         if self.observation['epoch_done']:
             self.doc_id = 0
             self.epoch += 1
-            self.doc_address = random.shuffle(self.doc_address)
+            random.shuffle(self.doc_address)
             self.epochDone = True
         else:
             self.doc_id = int(self.observation['iter_id']) + 1

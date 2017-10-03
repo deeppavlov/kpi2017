@@ -61,8 +61,8 @@ def RuCoref2CoNLL(path, out_path, language='russian'):
     with open(groups_path, "r") as groups_file:
         for line in groups_file:
             doc_id, variant, group_id, chain_id, link, shift, lens, content, tk_shifts, attributes, head, hd_shifts = line[
-                                                                                                                      :-1].split(
-                '\t')
+                                                                                                                      :-1].split('\t')
+
             if doc_id not in coref_dict:
                 coref_dict[doc_id] = {'unos': {}, 'starts': {}, 'ends': {}}
                 if len(tk_shifts.split(',')) == 1:
@@ -103,6 +103,8 @@ def RuCoref2CoNLL(path, out_path, language='russian'):
         k = 0
         for line in tokens_file:
             doc_id, shift, length, token, lemma, gram = line[:-1].split('\t')
+            if doc_id == 'doc_id':
+                continue
             data['word_number'].append(k)
             data['word'].append(token)
             if token == '.':

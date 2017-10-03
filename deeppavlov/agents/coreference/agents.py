@@ -20,6 +20,7 @@ from parlai.core.agents import Agent
 from . import config
 from .models import CorefModel
 from deeppavlov.tasks.coreference import utils
+from deeppavlov.tasks.coreference.build import build
 
 class CoreferenceAgent(Agent):
 
@@ -28,6 +29,9 @@ class CoreferenceAgent(Agent):
         config.add_cmdline_args(argparser)
 
     def __init__(self, opt, shared=None):
+        
+        build(opt)
+        
         self.id = 'Coreference_Agent'
         self.episode_done = True
         super().__init__(opt, shared)
@@ -62,13 +66,15 @@ class CoreferenceAgent(Agent):
             self.tf_loss = self.model.train(self.obs_dict)
             if self.iterations == 0:
                 self.start = time.time()
-            if self.observation['iter_id'] % self.rep_iter == 0 and self.iterations != 0:
+            if self.observation['iter_id'] % self.rep_iter == 0:
                 self.iterations += self.rep_iter
-                n = self.opt['validation-every-n-epochs']*self.rep_iter - self.iterations
+                n = self.rep_iter**2 - self.iterations
                 t = time.time() - self.start
-                remaining_time = n*(t/self.rep_iter)
-                remaining_time = time.localtime(remaining_time)
-                print('iter: {} | Loss: {} | Remaining Time: {}'.format(self.iterations, self.tf_loss, remaining_time))
+                r_time = n*(t/self.rep_iter)
+                hours = int(r_time/(60**2))
+                minutes = int(r_time/60 - hours*60)
+                self.start = time.time()
+                print('iter: {} | Loss: {} | Remaining Time: {} hours {} minutes'.format(self.iterations, self.tf_loss, hours, minutes))
             act_dict = {'iter_id': self.observation['iter_id'], 'Loss': self.tf_loss}
             act_dict['id'] = self.id
             act_dict['epoch_done'] = self.observation['epoch_done']

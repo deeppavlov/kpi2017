@@ -26,8 +26,8 @@ def build(opt):
     # define version if any, and languages
     version = '1.0'
     language = opt['language']
-    dpath = join(dpath, language)
-
+    dpath = join(dpath, 'coreference', language)
+    build_data.make_dir(dpath)
     # check if data had been previously built
     if not build_data.built(dpath, version_string=version):
         print('[building data: ' + dpath + '] ...')
@@ -52,13 +52,13 @@ def build(opt):
 
         # urls
         dataset_url = 'http://rucoref.maimbava.net/files/rucoref_29.10.2015.zip'
-        embed_url = 'https://drive.google.com/open?id=0B7A8-2DSIVoeelVIT1BMUFVLSnM'
+        embed_url = '0B7A8-2DSIVoeelVIT1BMUFVLSnM'
         scorer_url = 'http://conll.cemantix.org/download/reference-coreference-scorers.v8.01.tar.gz'
         
         # download embeddings
         start = time.time()
         print('[Download the word embeddings]...')
-        build_data.download(embed_url, join(dpath, 'embeddings'), 'embeddings_lenta.vec')
+        build_data.download_from_google_drive(embed_url, join(dpath, 'embeddings', 'embeddings_lenta_100.vec'))
         print('[End of download the word embeddings]...')
         
         # download the conll-2012 scorer v 8.1
@@ -105,19 +105,6 @@ def build(opt):
         build_data.remove_dir(conlls)
         build_data.remove_dir(join(dpath, 'rucoref_29.10.2015'))
         print('End of data splitting. Time - {}'.format(time.time()-start))
-        
-        cmd = """#  Build custom kernels.
-                    TF_INC=$(python -c 'import tensorflow as tf; print(tf.sysconfig.get_include())')
-
-                    # Linux (pip)
-                    #g++ -std=c++11 -shared coref_kernels.cc -o coref_kernels.so -I $TF_INC -fPIC -D_GLIBCXX_USE_CXX11_ABI=0
-
-                    # Linux (build from source)
-                    g++ -std=c++11 -shared coref_kernels.cc -o coref_kernels.so -I $TF_INC -fPIC
-
-                    # Mac
-                    #g++ -std=c++11 -shared coref_kernels.cc -o coref_kernels.so -I $TF_INC -fPIC -D_GLIBCXX_USE_CXX11_ABI=0  -undefined dynamic_lookup"""
-        os.system(cmd)
 
         # mark the data as built
         build_data.mark_done(dpath, version_string=version)
