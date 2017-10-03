@@ -293,10 +293,11 @@ def score(scorer, keys_path, predicts_path):
 
     print('score: Files to process: {}'.format(len(pred_files)))
     for key_file in tqdm(pred_files):
-        pred_files = join(predicts_path, basename(key_file))
+        predict_files = join(predicts_path, basename(key_file))
+        gold_files = join(keys_path, basename(key_file))
         for metric in ['muc', 'bcub', 'ceafm', 'ceafe']:
             out_pred_score = '{0}.{1}'.format(join(predicts_path, basename(key_file)), metric)
-            cmd = '{0} {1} {2} {3} none > {4}'.format(scorer, metric, key_file, pred_files, out_pred_score)
+            cmd = '{0} {1} {2} {3} none > {4}'.format(scorer, metric, gold_files, predict_files, out_pred_score)
             #print(cmd)
             os.system(cmd)
 
@@ -310,9 +311,9 @@ def score(scorer, keys_path, predicts_path):
     f1=[]
     for metric in ['muc', 'bcub', 'ceafm', 'ceafe']:
         recall = []
-        precision = []	
+        precision = []
         for key_file in pred_files:
-            out_pred_score = '{0}.{1}'.format(join(predicts_path, basename(pred_files)), metric)
+            out_pred_score = '{0}.{1}'.format(join(predicts_path, basename(key_file)), metric)
             with open(out_pred_score, 'r', encoding='utf8') as score_file:
                 lines = score_file.readlines()
                 if lines[-1].strip() != '--------------------------------------------------------------------------':

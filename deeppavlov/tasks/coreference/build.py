@@ -284,6 +284,9 @@ def get_char_vocab(input_filename, output_filename):
 def build(opt):
     # get path to data directory
     dpath = os.path.join(opt['datapath'], 'coreference')
+    
+    
+    
     # define version if any
     version = '1.0'
     language = opt['language']
@@ -300,13 +303,13 @@ def build(opt):
 
         # download the russian datasets, pretrain embeddings.
         url = 'http://rucoref.maimbava.net/files/rucoref_29.10.2015.zip'  # datasets URL
-        embed_url = 'https://drive.google.com/uc?export=download&confirm=Lno_&id=0B2Ow60cJSy7EWUpSdVoxV2JsTTA'  #  embeddings url
+        embed_url = 'https://drive.google.com/open?id=0B7A8-2DSIVoeelVIT1BMUFVLSnM'  #embeddings url
         scorer_url = 'http://conll.cemantix.org/download/reference-coreference-scorers.v8.01.tar.gz'        
         
         # download embeddings
         print('[Download the word embeddings]...')
         build_data.make_dir(os.path.join(dpath, 'embeddings'))
-        #build_data.download(embed_url, os.path.join(dpath, 'embeddings'), 'embeddings_lenta.vec')
+        build_data.download(embed_url, os.path.join(dpath, 'embeddings'), 'embeddings_lenta.vec')
         print('[End of download the word embeddings]...')
         
         # download the conll-2012 scorer v 8.1
