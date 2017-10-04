@@ -47,6 +47,8 @@ class InsultsModel(object):
         self.pool_sizes = [int(x) for x in opt['pool_sizes_cnn'].split(' ')]
         self.model_type = None
         self.from_saved = False
+        np.random.seed(opt['model_seed'])
+        tf.set_random_seed(opt['model_seed'])
 
         if self.model_name == 'cnn_word' or self.model_name == 'lstm_word':
             self.model_type = 'nn'
