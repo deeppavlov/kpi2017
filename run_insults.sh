@@ -55,7 +55,8 @@ python utils/train_model.py -t deeppavlov.tasks.insults.agents \
                             --fasttext_model ./build/reddit_fasttext_model.bin \
                             --fasttext_embeddings_dict ./build/emb_dict.emb \
                             --cross-validation-splits-count 3 \
-                            -ve 10
+                            -ve 10 \
+                            --chosen-metric auc
 
 
 python utils/train_model.py -t deeppavlov.tasks.insults.agents \
@@ -80,7 +81,8 @@ python utils/train_model.py -t deeppavlov.tasks.insults.agents \
                             --dense_dim 100 \
                             --fasttext_model ./build/reddit_fasttext_model.bin \
                             --fasttext_embeddings_dict ./build/emb_dict.emb \
-                            --cross-validation-splits-count 3
+                            --cross-validation-splits-count 3 \
+                            --chosen-metric auc
 
 python3 ./utils/train_model.py -t deeppavlov.tasks.insults.agents:FullTeacher \
                                -m deeppavlov.agents.insults.insults_agents:EnsembleInsultsAgent \
