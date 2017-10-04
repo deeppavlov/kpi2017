@@ -291,8 +291,8 @@ def __train_single_model(opt):
             if 0 < opt['max_train_time'] < train_dict['train_time'].time():
                 print('[ max_train_time elapsed: {} ]'.format(train_dict['train_time'].time()))
                 break
-            world, agent, train_dict = __train_log(opt, world, agent, train_dict)
-            _, agent, train_dict = __intermediate_validation(opt, world, agent, train_dict)
+            world, agent, train_dict = __train_log(opt, world, agent, copy.deepcopy(train_dict))
+            _, agent, train_dict = __intermediate_validation(opt, world, agent, copy.deepcopy(train_dict))
 
             if train_dict['break']:
                 break

@@ -1,6 +1,8 @@
 # to run model training type 'pyb train_<task>' replacing <task> with the model name
 
 from pybuilder.core import use_plugin, init, task
+import os
+import build_utils as bu
 
 use_plugin('python.core')
 use_plugin('python.unittest')
@@ -11,15 +13,19 @@ default_task = 'build'
 
 @init
 def set_properties(project):
-    import os
     import sys
+    if not os.path.exists('./build'):
+        os.mkdir('build', mode=0o755)
     cwd = os.getcwd()
     sys.path.append(cwd)
-    os.environ['IPAVLOV_FTP'] = 'ftp://share.ipavlov.mipt.ru'
-    os.environ['EMBEDDINGS_URL'] = 'http://share.ipavlov.mipt.ru:8080/repository/embeddings/'
-    os.environ['MODELS_URL'] = 'http://share.ipavlov.mipt.ru:8080/repository/models/'
-    os.environ['DATASETS_URL'] = 'http://share.ipavlov.mipt.ru:8080/repository/datasets/'
-    os.environ['CUDA_VISIBLE_DEVICES'] = '7'  #
+    os.environ['EMBEDDINGS_URL'] = os.getenv('EMBEDDINGS_URL',
+                                             default='http://share.ipavlov.mipt.ru:8080/repository/embeddings/')
+    os.environ['MODELS_URL'] = os.getenv('MODELS_URL',
+                                         default='http://share.ipavlov.mipt.ru:8080/repository/models/')
+    os.environ['DATASETS_URL'] = os.getenv('DATASETS_URL',
+                                           default='http://share.ipavlov.mipt.ru:8080/repository/datasets/')
+    os.environ['CUDA_VISIBLE_DEVICES'] = os.getenv('CUDA_VISIBLE_DEVICES',
+                                                   default='7')
     project.set_property('dir_source_main_python', '.')
     project.set_property('dir_source_unittest_python', 'tests')
 
@@ -30,8 +36,16 @@ def build(project):
 
 
 @task
+def clean(project):
+    import shutil
+    shutil.rmtree('./build')
+    pass
+
+
+@task
 def train_paraphraser(project):
-    import build_utils as bu
+    if not os.path.exists('./build/paraphraser'):
+        os.mkdir('build/paraphraser', mode=0o755)
     metrics = bu.model(['-t', 'deeppavlov.tasks.paraphrases.agents',
                         '-m', 'deeppavlov.agents.paraphraser.paraphraser:ParaphraserAgent',
                         '-mf', './build/paraphraser/paraphraser',
@@ -57,7 +71,8 @@ def train_paraphraser(project):
 
 @task
 def train_ner(project):
-    import build_utils as bu
+    if not os.path.exists('./build/ner'):
+        os.mkdir('build/ner', mode=0o755)
 
     metrics = bu.model(['-t', 'deeppavlov.tasks.ner.agents',
                         '-m', 'deeppavlov.agents.ner.ner:NERAgent',
@@ -77,7 +92,8 @@ def train_ner(project):
 
 @task
 def train_insults(project):
-    import build_utils as bu
+    if not os.path.exists('./build/insults'):
+        os.mkdir('build/insults', mode=0o755)
     metrics = bu.model(['-t', 'deeppavlov.tasks.insults.agents',
                         '-m', 'deeppavlov.agents.insults.insults_agents:InsultsAgent',
                         '--model_file', './build/insults/cnn_word',
@@ -110,7 +126,8 @@ def train_insults(project):
 
 @task
 def train_squad(project):
-    import build_utils as bu
+    if not os.path.exists('./build/squad'):
+        os.mkdir('build/squad', mode=0o755)
     metrics = bu.model(['-t', 'squad',
                         '-m', 'deeppavlov.agents.squad.squad:SquadAgent',
                         '--batchsize', '64',
