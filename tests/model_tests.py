@@ -1,5 +1,5 @@
 import unittest
-from utils import parlai_stuff as ps
+import build_utils as bu
 
 
 class KPIException(Exception):
@@ -7,12 +7,12 @@ class KPIException(Exception):
     pass
 
 
-class KPITests(unittest.TestCase):
+class TestKPIs(unittest.TestCase):
     """Class for tests of different KPIs"""
 
 
     def test_paraphraser(self):
-        metrics = ps.model(['-t', 'deeppavlov.tasks.paraphrases.agents',
+        metrics = bu.model(['-t', 'deeppavlov.tasks.paraphrases.agents',
                             '-m', 'deeppavlov.agents.paraphraser.paraphraser:EnsembleParaphraserAgent',
                             '-mf', './build/paraphraser/paraphraser',
                             '--model_files', './build/paraphraser/paraphraser',
@@ -28,7 +28,7 @@ class KPITests(unittest.TestCase):
         self.assertTrue(metrics['f1'] > 0.8, 'KPI for paraphraser is not satisfied')
 
     def test_ner(self):
-        metrics = ps.model(['-t', 'deeppavlov.tasks.ner.agents',
+        metrics = bu.model(['-t', 'deeppavlov.tasks.ner.agents',
                             '-m', 'deeppavlov.agents.ner.ner:NERAgent',
                             '-mf', './build/ner/ner',
                             '-dt', 'test',
@@ -41,53 +41,33 @@ class KPITests(unittest.TestCase):
                             '--pretrained-model', './build/ner/ner',
                             '--chosen-metrics', 'f1'
                             ])
-        self.assertTrue(metrics['f1'] > 0, 'KPI for NER is not satisfied')
+        self.assertTrue(metrics['f1'] > 70, 'KPI for NER is not satisfied')
 
     def test_insults(self):
-        metrics = ps.model(['-t', 'deeppavlov.tasks.paraphrases.agents',
+        metrics = bu.model(['-t', 'deeppavlov.tasks.paraphrases.FullTecher',
                             '-m', 'deeppavlov.agents.insults.insults_agents:EnsembleInsultsAgent',
                             '--model_file', './build/insults/insults_ensemble',
-                            #'--model_files', './build/insults/cnn_word_0 \
-                            #./build/insults/cnn_word_1 \
-                            #./build/insults/cnn_word_2 \
-                            #./build/insults/lstm_word_0 \
-                            #./build/insults/lstm_word_1 \
-                            #./build/insults/lstm_word_2 \
-                            #./build/insults/log_reg \
-                            #./build/insults/svc', \
                             '--model_files', './build/insults/cnn_word_0 \
                                     ./build/insults/cnn_word_1 \
-                                    ./build/insults/cnn_word_2 \
-                                    ./build/insults/log_reg \
-                                    ./build/insults/svc',
-                            '--model_names', 'cnn_word cnn_word cnn_word lstm_word lstm_word lstm_word log_reg svc',
-                            '--model_coefs', '0.05 0.05 0.05 0.05 0.05 0.05 0.2 0.5',
+                                    ./build/insults/cnn_word_2',
+                            '--model_names', 'cnn_word cnn_word cnn_word',
+                            '--model_coefs', '0.3333333 0.3333333 0.3333334',
                             '--datatype', 'test',
                             '--batchsize', '64',
                             '--display-examples', 'False',
                             '--raw-dataset-path', './build/insults/',
-                            '--max-train-time', '-1',
-                            '--num-epochs', '1',
                             '--max_sequence_length', '100',
-                            '--learning_rate', '0.01',
-                            '--learning_decay', '0.1',
                             '--filters_cnn', '256',
-                            '--kernel_sizes_cnn', '3 3 3',
-                            '--regul_coef_conv', '0.001',
-                            '--regul_coef_dense', '0.001',
-                            '--pool_sizes_cnn', '2 2 2',
-                            '--units_lstm', '128',
+                            '--kernel_sizes_cnn', '1 2 3',
                             '--embedding_dim', '100',
-                            '--regul_coef_lstm', '0.001',
-                            '--dropout_rate', '0.5',
                             '--dense_dim', '100',
                             '--fasttext_model', './build/insults/reddit_fasttext_model.bin'
                             ])
         self.assertTrue(metrics['auc'] > 0.85, 'KPI for insults is not satisfied')
 
     def test_squad(self):
-        metrics = ps.model(['-t', 'squad',
-                            'm', 'deeppavlov.agents.squad.squad:SquadAgent',
+        metrics = bu.model(['-t', 'squad',
+                            '-m', 'deeppavlov.agents.squad.squad:SquadAgent',
                             '--batchsize', '64',
                             '--display-examples', 'False',
                             '--max-train-time', '-1',

@@ -25,7 +25,6 @@ TODO List:
 import copy
 import math
 import sys
-import importlib
 import os
 
 from parlai.core.agents import create_agent
@@ -148,8 +147,7 @@ def __evaluate_model(valid_world, batchsize, datatype, display_examples, max_exs
             break
     valid_report = valid_world.report()
 
-    metrics = datatype + ':' + str(valid_report)
-    print(metrics)
+    print(datatype + ':' + str(valid_report))
 
     return valid_report, valid_world
 
@@ -203,9 +201,9 @@ def __train_log(opt, world, agent, train_dict):
 
         # join log string and add full metrics report to end of log
         log = '[ {} ] {}'.format(' '.join(logs), train_dict['train_report'])
-
-        train_dict['log_time'].reset()
         print(log)
+        train_dict['log_time'].reset()
+    return world, agent, train_dict
 
 
 def __intermediate_validation(opt, valid_world, agent, train_dict):
@@ -213,8 +211,16 @@ def __intermediate_validation(opt, valid_world, agent, train_dict):
             (opt['validation_every_n_epochs'] > 0 and train_dict['new_epoch'] and (
                     train_dict['epochs_done'] % opt['validation_every_n_epochs']) == 0):
 
-        valid_report, valid_world = __evaluate_model(valid_world, opt['batchsize'], 'valid',
-                                                     opt['display_examples'], opt['validation_max_exs'])
+        iopt = copy.deepcopy(opt)
+        if iopt.get('evaltask'):
+            iopt['task'] = iopt['evaltask']
+            print(iopt['task'])
+        iopt['datatype'] = 'valid'
+        ivalid_world = create_task(iopt, agent)
+
+        valid_report, valid_world = __evaluate_model(ivalid_world, iopt['batchsize'], 'valid',
+                                                     iopt['display_examples'], iopt['validation_max_exs'])
+
         if train_dict['best_metrics'] not in valid_report and 'accuracy' in valid_report:
             train_dict['best_metrics'] = 'accuracy'
         if valid_report[train_dict['best_metrics']] > train_dict['best_metrics_value']:
@@ -222,11 +228,8 @@ def __intermediate_validation(opt, valid_world, agent, train_dict):
             train_dict['impatience'] = 0
             train_dict['lr_drop_impatience'] = 0
             print('[ new best ' + train_dict['best_metrics'] + ': ' + str(train_dict['best_metrics_value']) + ' ]')
-            world.save_agents()
+            valid_world.save_agents()
             train_dict['saved'] = True
-            # if train_dict['best_metrics_value'] == 1:
-            #     print('[ task solved! stopping. ]')
-            #     return 'break'
         else:
             train_dict['impatience'] += 1
             train_dict['lr_drop_impatience'] += 1
@@ -235,7 +238,7 @@ def __intermediate_validation(opt, valid_world, agent, train_dict):
         train_dict['validate_time'].reset()
         if 0 < opt['validation_patience'] <= train_dict['impatience']:
             print('[ ran out of patience! stopping training. ]')
-            return 'break'
+            train_dict['break'] = True
         if 'lr_drop_patience' in opt and 0 < opt['lr_drop_patience'] <= train_dict['lr_drop_impatience']:
             if hasattr(agent, 'drop_lr'):
                 print('[ validation metric is decreasing, dropping learning rate ]')
@@ -243,7 +246,7 @@ def __intermediate_validation(opt, valid_world, agent, train_dict):
                 agent.reset_metrics()
             else:
                 print('[ there is no drop_lr method in agent, ignoring ]')
-    return None
+    return valid_world, agent, train_dict
 
 
 def __train_single_model(opt):
@@ -253,7 +256,6 @@ def __train_single_model(opt):
     # Create model and assign it to the specified task
     agent = create_agent(opt)
     world = create_task(opt, agent)
-
     print('[ training... ]')
 
     train_dict = {'train_time': Timer(),
@@ -272,7 +274,8 @@ def __train_single_model(opt):
                   'saved': False,
                   'train_report': None,
                   'train_report_agent': None,
-                  'train_report_world': None}
+                  'train_report_world': None,
+                  'break': None}
 
     try:
         while True:
@@ -288,11 +291,11 @@ def __train_single_model(opt):
             if 0 < opt['max_train_time'] < train_dict['train_time'].time():
                 print('[ max_train_time elapsed: {} ]'.format(train_dict['train_time'].time()))
                 break
-            __train_log(opt, world, agent, train_dict)
-            s = __intermediate_validation(opt, world, agent, train_dict)
-            if s == 'break':
-                break
+            world, agent, train_dict = __train_log(opt, world, agent, train_dict)
+            _, agent, train_dict = __intermediate_validation(opt, world, agent, train_dict)
 
+            if train_dict['break']:
+                break
     except KeyboardInterrupt:
         print('Stopped training, starting testing')
 
@@ -300,9 +303,13 @@ def __train_single_model(opt):
         world.save_agents()
 
     world.shutdown()
+    agent.shutdown()
 
     # reload best validation model
     vopt = copy.deepcopy(opt)
+    if vopt.get('evaltask'):
+        vopt['task'] = vopt['evaltask']
+    vopt['datatype'] = 'valid'
     vopt['pretrained_model'] = vopt['model_file']
     agent = create_agent(vopt)
     valid_world = create_task(vopt, agent)
@@ -318,18 +325,20 @@ def __create_ensemble_model(opt):
     opt is a dictionary returned by arg_parse
     """
     metrics_list = []
-    for i in range(opt['bags_per_model']):
-        print("%i bag is being trained" % (i + 1))
+    folds = opt['bagging_folds_number']
+    print('The number of folds is', folds)
+    for fold in range(folds):
+        print('The {} fold is being trained'.format(fold + 1))
         local_opt = copy.deepcopy(opt)
-        local_opt['model_file'] = opt.get('model_file', '') + '_' + str(i)
-        local_opt['bag_index'] = i
+        local_opt['model_file'] = opt.get('model_file', '') + '_' + str(fold)
+        local_opt['bagging_fold_index'] = fold
         metrics_list.append(__train_single_model(local_opt))
     return metrics_list
 
 
 def model(args=None):
     """Main function.
-    args could be provided insted of sys.argv
+    args could be provided instead of sys.argv
     """
     args = args if args else sys.argv
     opt = arg_parse(args)
@@ -338,17 +347,17 @@ def model(args=None):
     __build_bag_of_words(opt)
 
     if opt.get('model_files'):
-        opt['model_files'] = [fname+'_'+str(i) for fname in opt['model_files']
-                              for i in range(opt['bags_per_model'])]
+        opt['model_files'] = ['{}_{}'.format(fname, i) for fname in opt['model_files'] for i in range(opt['bagging_folds_number'])]
 
     if opt['datatype'].split(':')[0] == 'train':
-        if opt.get('bag_per_model', 0) > 1 and opt.get('bag_index') is None:
+        if opt.get('bagging_folds_number', 0) > 1 and opt.get('bagging_fold_index') is None:
             return __create_ensemble_model(opt)
         else:
             return __train_single_model(opt)
     elif opt['datatype'].split(':')[0] == 'test':
+        if opt.get('evaltask'):
+            opt['task'] = opt['evaltask']
         agent = create_agent(opt)
-        opt['task'] = opt.get('evaltask', opt['task'])
         test_world = create_task(opt, agent)
         metrics, _ = __evaluate_model(test_world, opt['batchsize'], 'test',
                                       opt['display_examples'], opt['validation_max_exs'])
