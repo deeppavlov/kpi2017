@@ -47,11 +47,13 @@ class TestKPIs(unittest.TestCase):
         metrics = bu.model(['-t', 'deeppavlov.tasks.insults.agents:FullTeacher',
                             '-m', 'deeppavlov.agents.insults.insults_agents:EnsembleInsultsAgent',
                             '--model_file', './build/insults/insults_ensemble',
-                            '--model_files', './build/insults/cnn_word_0 \
-                                    ./build/insults/cnn_word_1 \
-                                    ./build/insults/cnn_word_2',
-                            '--model_names', 'cnn_word cnn_word cnn_word',
-                            '--model_coefs', '0.3333333 0.3333333 0.3333334',
+                            '--model_files', './build/insults/cnn_word_0',
+                            './build/insults/cnn_word_1',
+                            './build/insults/cnn_word_2',
+                            '--model_names', 'cnn_word',
+                            'cnn_word', 'cnn_word',
+                            '--model_coefs', '0.3333333',
+                            '0.3333333', '0.3333334',
                             '--datatype', 'test',
                             '--batchsize', '64',
                             '--display-examples', 'False',
