@@ -44,7 +44,7 @@ class TestKPIs(unittest.TestCase):
         self.assertTrue(metrics['f1'] > 70, 'KPI for NER is not satisfied')
 
     def test_insults(self):
-        metrics = bu.model(['-t', 'deeppavlov.tasks.paraphrases.FullTeacher',
+        metrics = bu.model(['-t', 'deeppavlov.tasks.insults.agents:FullTeacher',
                             '-m', 'deeppavlov.agents.insults.insults_agents:EnsembleInsultsAgent',
                             '--model_file', './build/insults/insults_ensemble',
                             '--model_files', './build/insults/cnn_word_0 \
