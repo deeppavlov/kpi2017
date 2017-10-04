@@ -32,10 +32,6 @@ from .utils import vectorize_select_from_data
 
 from .embeddings_dict import EmbeddingsDict
 
-SEED = 23
-np.random.seed(SEED)
-tf.set_random_seed(SEED)
-
 class InsultsModel(object):
 
     def __init__(self, model_name, word_index, embedding_dict, opt):
@@ -47,6 +43,8 @@ class InsultsModel(object):
         self.pool_sizes = [int(x) for x in opt['pool_sizes_cnn'].split(' ')]
         self.model_type = None
         self.from_saved = False
+        np.random.seed(opt['model_seed'])
+        tf.set_random_seed(opt['model_seed'])
 
         if self.model_name == 'cnn_word' or self.model_name == 'lstm_word':
             self.model_type = 'nn'
