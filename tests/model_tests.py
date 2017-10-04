@@ -21,7 +21,7 @@ class TestKPIs(unittest.TestCase):
                             '--display-examples', 'False',
                             '--fasttext_embeddings_dict', './build/paraphraser/paraphraser.emb',
                             '--fasttext_model', './build/paraphraser/ft_0.8.3_nltk_yalen_sg_300.bin',
-                            '--bags-per-model', '5',
+                            '--bagging-folds-number', '5',
                             '--chosen-metrics', 'f1'
                             ])
         print(metrics)

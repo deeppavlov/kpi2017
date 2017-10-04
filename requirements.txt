@@ -1,13 +1,14 @@
-pybuilder>=0.11.10
+pybuilder==0.11.10
 Cython==0.26.0
-numpy>=1.13.0
-tensorflow>=1.2.1
-Keras>=2.0.6
-h5py>=2.7.0
+numpy==1.13.0
+tensorflow==1.2.1
+Keras==2.0.6
+h5py==2.7.0
 fasttext==0.8.3
-pandas>=0.20.3
-nltk>=3.2.4
-spacy>=1.9.0
-scikit-learn>=0.19.0
+pandas==0.20.3
+nltk==3.2.4
+spacy==1.9.0
+scikit-learn==0.19.0
 -e git+https://github.com/facebookresearch/ParlAI.git@7b979b43e06c482ebe5139ae977691b9213484e5#egg=parlai
 scipy==0.19.1
+xmlrunner==1.7.7

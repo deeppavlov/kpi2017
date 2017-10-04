@@ -154,61 +154,66 @@ def __evaluate_model(valid_world, batchsize, datatype, display_examples, max_exs
     return valid_report, valid_world
 
 
-def __train_log(opt, world, agent, train_dict):
+def __train_log(opt, world, agent, input_train_dict):
     """Log training procedure.
     - opt is a dictionary returned by arg_parse
     - world used for training
     - agent to be trained
     - train_dict is dictionary of parameters for training, logging, intermediate validation
     """
-    if (0 < opt['log_every_n_secs'] < train_dict['log_time'].time()) or \
-            (opt['log_every_n_epochs'] > 0 and train_dict['new_epoch'] and
-                     (train_dict['epochs_done'] % opt['log_every_n_epochs']) == 0):
-        if opt['display_examples']:
-            print(world.display() + '\n~~')
+    train_dict = copy.deepcopy(input_train_dict)
 
-        logs = list()
-        # time elapsed
-        logs.append('time:{}s'.format(math.floor(train_dict['train_time'].time())))
-        logs.append('parleys:{}'.format(train_dict['parleys']))
-        if train_dict['epochs_done'] > 0:
-            logs.append('epochs done:{}'.format(train_dict['epochs_done']))
+    if (opt['log_every_n_secs'] <= 0 or opt['log_every_n_secs'] >= train_dict['log_time'].time()) and \
+            (opt['log_every_n_epochs'] <= 0 or not train_dict['new_epoch'] or
+                     (train_dict['epochs_done'] % opt['log_every_n_epochs']) != 0):
+            return world, agent, train_dict
 
-        # get report and update total examples seen so far
-        if hasattr(agent, 'report'):
-            train_dict['train_report_agent'] = agent.report()
-            train_dict['train_report'] = agent.report()
-            agent.reset_metrics()
-        else:
-            train_dict['train_report_world'] = world.report()
-            train_dict['train_report'] = world.report()
-            world.reset_metrics()
-        if hasattr(train_dict['train_report'], 'get') and train_dict['train_report'].get('total'):
-            train_dict['total_exs'] += train_dict['train_report']['total']
-            logs.append('total_exs:{}'.format(train_dict['total_exs']))
+    if opt['display_examples']:
+        print(world.display() + '\n~~')
 
-        # check if we should log amount of time remaining
-        time_left = None
-        if opt['num_epochs'] > 0 and train_dict['total_exs'] > 0:
-            exs_per_sec = train_dict['train_time'].time() / train_dict['total_exs']
-            time_left = (train_dict['max_exs'] - train_dict['total_exs']) * exs_per_sec
-        if opt['max_train_time'] > 0:
-            other_time_left = opt['max_train_time'] - train_dict['train_time'].time()
-            if time_left is not None:
-                time_left = min(time_left, other_time_left)
-            else:
-                time_left = other_time_left
+    logs = list()
+    # time elapsed
+    logs.append('time:{}s'.format(math.floor(train_dict['train_time'].time())))
+    logs.append('parleys:{}'.format(train_dict['parleys']))
+    if train_dict['epochs_done'] > 0:
+        logs.append('epochs done:{}'.format(train_dict['epochs_done']))
+
+    # get report and update total examples seen so far
+    if hasattr(agent, 'report'):
+        train_dict['train_report_agent'] = agent.report()
+        train_dict['train_report'] = agent.report()
+        agent.reset_metrics()
+    else:
+        train_dict['train_report_world'] = world.report()
+        train_dict['train_report'] = world.report()
+        world.reset_metrics()
+    if hasattr(train_dict['train_report'], 'get') and train_dict['train_report'].get('total'):
+        train_dict['total_exs'] += train_dict['train_report']['total']
+        logs.append('total_exs:{}'.format(train_dict['total_exs']))
+
+    # check if we should log amount of time remaining
+    time_left = None
+    if opt['num_epochs'] > 0 and train_dict['total_exs'] > 0:
+        exs_per_sec = train_dict['train_time'].time() / train_dict['total_exs']
+        time_left = (train_dict['max_exs'] - train_dict['total_exs']) * exs_per_sec
+    if opt['max_train_time'] > 0:
+        other_time_left = opt['max_train_time'] - train_dict['train_time'].time()
         if time_left is not None:
-            logs.append('time_left:{}s'.format(math.floor(time_left)))
+            time_left = min(time_left, other_time_left)
+        else:
+            time_left = other_time_left
+    if time_left is not None:
+        logs.append('time_left:{}s'.format(math.floor(time_left)))
 
-        # join log string and add full metrics report to end of log
-        log = '[ {} ] {}'.format(' '.join(logs), train_dict['train_report'])
-        print(log)
-        train_dict['log_time'].reset()
+    # join log string and add full metrics report to end of log
+    log = '[ {} ] {}'.format(' '.join(logs), train_dict['train_report'])
+    print(log)
+    train_dict['log_time'].reset()
     return world, agent, train_dict
 
 
-def __intermediate_validation(opt, valid_world, agent, train_dict):
+def __intermediate_validation(opt, valid_world, agent, input_train_dict):
+    train_dict = copy.deepcopy(input_train_dict)
     if 0 < opt['validation_every_n_secs'] < train_dict['validate_time'].time() or \
             (opt['validation_every_n_epochs'] > 0 and train_dict['new_epoch'] and (
                     train_dict['epochs_done'] % opt['validation_every_n_epochs']) == 0):
@@ -293,8 +298,8 @@ def __train_single_model(opt):
             if 0 < opt['max_train_time'] < train_dict['train_time'].time():
                 print('[ max_train_time elapsed: {} ]'.format(train_dict['train_time'].time()))
                 break
-            world, agent, train_dict = __train_log(opt, world, agent, copy.deepcopy(train_dict))
-            _, agent, train_dict = __intermediate_validation(opt, world, agent, copy.deepcopy(train_dict))
+            world, agent, train_dict = __train_log(opt, world, agent, train_dict)
+            _, agent, train_dict = __intermediate_validation(opt, world, agent, train_dict)
 
             if train_dict['break']:
                 break

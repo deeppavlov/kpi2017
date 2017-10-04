@@ -39,7 +39,6 @@ def build(project):
 def clean(project):
     import shutil
     shutil.rmtree('./build')
-    pass
 
 
 @task
