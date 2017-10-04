@@ -39,6 +39,7 @@ class BaseTeacher(Teacher):
         # store datatype
         self.dt = opt['datatype'].split(':')[0]
         self.datapath = join(opt['datapath'], 'coreference', self.language)
+        self.reports_datapath = join(self.datapath, 'report')
         self.scorer_path = join(self.datapath, 'scorer/reference-coreference-scorers/v8.01/scorer.pl')       
         
         if self.dt == 'train':
@@ -56,7 +57,6 @@ class BaseTeacher(Teacher):
         self.iter = 0
         self.epoch = 0
         self.epochDone = False
-        self.reports_datapath = join(self.datapath, 'report')
         super().__init__(opt, shared)
     
     def __len__(self):

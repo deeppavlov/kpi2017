@@ -21,7 +21,7 @@ import copy
 import numpy as np
 import tensorflow as tf
 from deeppavlov.tasks.coreference import utils
-from os.path import isdir
+from os.path import isdir, join
 
 coref_op_library = tf.load_op_library("./coref_kernels.so")
 spans = coref_op_library.spans
@@ -36,11 +36,16 @@ tf.NotDifferentiable("DistanceBins")
 class CorefModel(object):
     def __init__(self, opt):
         self.opt = copy.deepcopy(opt)
+        
+        dpath = join(self.opt['datapath'], 'coreference', sefl.opt['language'])
+        self.char_vocab_path = join(dpath, 'vocab', 'char_vocab.russian.txt')
+        self.embedding_path = join(dpath, 'embeddings', 'embeddings_lenta_100.vec')
+        self.log_root = join(dpath, 'logs')
 
         self.embedding_info = (self.opt["embedding_size"], self.opt["emb_lowercase"])
         self.embedding_size = self.opt['embedding_size']
         self.char_embedding_size = self.opt["char_embedding_size"]
-        self.char_dict = utils.load_char_dict(self.opt["char_vocab_path"])
+        self.char_dict = utils.load_char_dict(self.char_vocab_path)
         self.embedding_dicts = utils.load_embedding_dict(self.opt["embedding_path"], self.embedding_size, self.opt["emb_format"])
         self.max_mention_width = self.opt["max_mention_width"]
         self.genres = {g: i for i, g in enumerate(self.opt["genres"])}
@@ -478,10 +483,10 @@ class CorefModel(object):
         return predicted_clusters, mention_to_predicted
 
     def init_from_saved(self):               
-        log_dir = os.path.join(self.opt["log_root"], self.opt['name'])
+        log_dir = join(self.log_root, self.opt['name'])
         if isdir(log_dir):
             saver = tf.train.Saver()
-            checkpoint_path = os.path.join(log_dir, "model.max.ckpt")
+            checkpoint_path = join(log_dir, "model.max.ckpt")
             saver.restore(self.sess, checkpoint_path)
         else:
             print('{0} not found'.format(log_dir))
@@ -490,28 +495,28 @@ class CorefModel(object):
         tf.reset_default_graph()
 
     def save(self):
-        log_dir = os.path.join(self.opt["log_root"])
+        log_dir = self.log_root
         if isdir(log_dir):
-            if isdir(os.path.join(log_dir, self.opt['name'])):  
+            if isdir(join(log_dir, self.opt['name'])):  
                 saver = tf.train.Saver()
-                print('saving path ' + os.path.join(log_dir, self.opt['name'], 'model.max.ckpt'))
-                saver.save(self.sess, os.path.join(log_dir, self.opt['name'], 'model.max.ckpt'))
+                print('saving path ' + join(log_dir, self.opt['name'], 'model.max.ckpt'))
+                saver.save(self.sess, join(log_dir, self.opt['name'], 'model.max.ckpt'))
             else:
                 os.mkdir(self.opt['name'])
                 saver = tf.train.Saver()
-                print('saving path ' + os.path.join(log_dir, self.opt['name'], 'model.max.ckpt'))
-                saver.save(self.sess, os.path.join(log_dir, self.opt['name'], 'model.max.ckpt'))
+                print('saving path ' + join(log_dir, self.opt['name'], 'model.max.ckpt'))
+                saver.save(self.sess, join(log_dir, self.opt['name'], 'model.max.ckpt'))
         else:
             os.mkdir(self.opt["log_root"])
-            if isdir(os.path.join(log_dir, self.opt['name'])):  
+            if isdir(join(log_dir, self.opt['name'])):  
                 saver = tf.train.Saver()
-                print('saving path ' + os.path.join(log_dir, self.opt['name'], 'model.max.ckpt'))
-                saver.save(self.sess, os.path.join(log_dir, self.opt['name'], 'model.max.ckpt'))
+                print('saving path ' + join(log_dir, self.opt['name'], 'model.max.ckpt'))
+                saver.save(self.sess, join(log_dir, self.opt['name'], 'model.max.ckpt'))
             else:
                 os.mkdir(self.opt['name'])
                 saver = tf.train.Saver()
-                print('saving path ' + os.path.join(log_dir, self.opt['name'], 'model.max.ckpt'))
-                saver.save(self.sess, os.path.join(log_dir, self.opt['name'], 'model.max.ckpt'))
+                print('saving path ' + join(log_dir, self.opt['name'], 'model.max.ckpt'))
+                saver.save(self.sess, join(log_dir, self.opt['name'], 'model.max.ckpt'))
 
     def train(self, batch):
 #        print(batch)
