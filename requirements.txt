@@ -1,3 +1,4 @@
+pybuilder>=0.11.10
 Cython==0.26.0
 numpy>=1.13.0
 tensorflow>=1.2.1
@@ -12,4 +13,3 @@ image>=1.5.15
 -e git+https://github.com/facebookresearch/ParlAI.git@7b979b43e06c482ebe5139ae977691b9213484e5#egg=parlai
 Pillow==4.2.1
 scipy==0.19.1
-
