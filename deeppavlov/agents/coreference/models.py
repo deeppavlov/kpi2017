@@ -46,7 +46,7 @@ class CorefModel(object):
         self.embedding_size = self.opt['embedding_size']
         self.char_embedding_size = self.opt["char_embedding_size"]
         self.char_dict = utils.load_char_dict(self.char_vocab_path)
-        self.embedding_dicts = utils.load_embedding_dict(self.opt["embedding_path"], self.embedding_size, self.opt["emb_format"])
+        self.embedding_dicts = utils.load_embedding_dict(self.embedding_path, self.embedding_size, self.opt["emb_format"])
         self.max_mention_width = self.opt["max_mention_width"]
         self.genres = {g: i for i, g in enumerate(self.opt["genres"])}
 
