@@ -1,7 +1,19 @@
 #!/usr/bin/env bash
-python3 ./train_model.py -t parlai_tasks.ner.agents \
-                         -m parlai_agents.repeat_label.repeat_label:RepeatLabelAgent \
-                         -mf /tmp/paraphraser \
-                         --batchsize 16 \
-                         --display-examples True \
-                         --max-train-time 10
+
+mkdir -p ./build/ner
+
+. ./env.sh
+
+python3 ./utils/train_model.py -t deeppavlov.tasks.ner.agents \
+                         -m deeppavlov.agents.ner.ner:NERAgent \
+                         -mf ./build/ner \
+                         --raw-dataset-path ./build/ner/ \
+                         -dt train:ordered \
+                         --learning_rate 0.01 \
+                         --batchsize 2 \
+                         --display-examples False \
+                         --max-train-time -1 \
+                         --validation-every-n-epochs 5 \
+                         --log-every-n-epochs 1 \
+                         --log-every-n-secs -1  \
+                         --chosen-metric f1

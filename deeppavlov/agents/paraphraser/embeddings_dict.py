@@ -19,6 +19,8 @@ import copy
 import numpy as np
 import urllib.request
 import fasttext
+import nltk
+from nltk.tokenize import sent_tokenize, word_tokenize
 
 
 class EmbeddingsDict(object):
@@ -28,25 +30,30 @@ class EmbeddingsDict(object):
         self.opt = copy.deepcopy(opt)
         self.load_items()
 
+        nltk.download('punkt')
+
         if not self.opt.get('fasttext_model'):
             raise RuntimeError('No pretrained fasttext model provided')
         self.fasttext_model_file = self.opt.get('fasttext_model')
         if not os.path.isfile(self.fasttext_model_file):
-            ftppath = os.environ.get('IPAVLOV_FTP')
-            if not ftppath:
+            emb_path = os.environ.get('EMBEDDINGS_URL')
+            if not emb_path:
                 raise RuntimeError('No pretrained fasttext model provided')
             fname = os.path.basename(self.fasttext_model_file)
             try:
-                print('Trying to download a pretrained fasttext model from the ftp server')
-                urllib.request.urlretrieve(ftppath + '/paraphraser_data/' + fname, self.fasttext_model_file)
+                print('Trying to download a pretrained fasttext model from the repository')
+                url = urllib.parse.urljoin(emb_path, fname)
+                urllib.request.urlretrieve(url, self.fasttext_model_file)
                 print('Downloaded a fasttext model')
-            except:
-                raise RuntimeError('Looks like the `IPAVLOV_FTP` variable is set incorrectly')
+            except Exception as e:
+                raise RuntimeError('Looks like the `EMBEDDINGS_URL` variable is set incorrectly', e)
         self.fasttext_model = fasttext.load_model(self.fasttext_model_file)
 
     def add_items(self, sentence_li):
         for sen in sentence_li:
-            tokens = sen.split(' ')
+            sent_toks = sent_tokenize(sen)
+            word_toks = [word_tokenize(el) for el in sent_toks]
+            tokens = [val for sublist in word_toks for val in sublist]
             tokens = [el for el in tokens if el != '']
             for tok in tokens:
                 if self.tok2emb.get(tok) is None:

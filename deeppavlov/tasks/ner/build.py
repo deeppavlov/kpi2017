@@ -16,32 +16,62 @@ limitations under the License.
 
 import parlai.core.build_data as build_data
 import os
-from glob import glob
+import urllib
+
+
+def is_end_of_sentence(prev_token, current_token):
+    is_capital = current_token[0].isupper()
+    is_punctuation = prev_token in ('!', '?', '.')
+    return is_capital and is_punctuation
+
+
+def create_heap_file(dpath, heap_filename='heap.txt'):
+    if not os.path.exists(dpath):
+        os.mkdir(dpath)
+
+    prev_token = '\n'
+    with open(os.path.join(dpath, heap_filename), 'w') as outfile:
+        for file_name in [os.path.join(dpath, iob_file) for iob_file in os.listdir(dpath) if iob_file.endswith(".iob")]:
+            with open(file_name) as f:
+                lines_list = f.readlines()
+            for line in lines_list:
+                if len(line) > 2:
+                    token, tag = line.split()
+                    if not is_end_of_sentence(prev_token, token):
+                        outfile.write(token + ' ' + tag + '\n')
+                    else:
+                        outfile.write('\n' + token + ' ' + tag + '\n')
+                    prev_token = token
+
 
 def build(opt):
-    # get path to data directory
-    dpath = os.path.join(opt['datapath'], 'gareev')
-    # define version if any
-    version = None
+    version = '1.1'
+    dpath = os.path.join(opt['datapath'], 'ner')
 
     # check if data had been previously built
-    if not build_data.built(dpath, version_string=version):
-        print('[building data: ' + dpath + ']')
+    raw_path = os.path.abspath(opt['raw_dataset_path'] or ".")
+    if len([f for f in os.listdir(raw_path) if f.endswith(".iob")]) == 0:
+        if not build_data.built(dpath, version_string=version):
+            print('[target data path: ' + dpath + ']')
+            # make a clean directory if needed
+            if build_data.built(dpath):
+                # an older version exists, so remove these outdated files.
+                build_data.remove_dir(dpath)
+            build_data.make_dir(dpath)
 
-        # make a clean directory if needed
-        if build_data.built(dpath):
-            # an older version exists, so remove these outdated files.
-            build_data.remove_dir(dpath)
-        build_data.make_dir(dpath)
+            ds_path = os.environ.get('DATASETS_URL')
+            file_name = 'gareev.tar.gz'
+            if not ds_path:
+                raise RuntimeError("Looks like the `DATASETS_URL` variable is set incorrectly")
+            print('Trying to download a dataset %s from the repository' % file_name)
+            url = urllib.parse.urljoin(ds_path, file_name)
+            build_data.download(url, dpath, file_name)
+            build_data.untar(dpath, file_name)
+            print('Downloaded a %s dataset' % file_name)
+            # mark the data as built
+            build_data.mark_done(dpath, version_string=version)
+        opt['raw_dataset_path']=dpath
+    print("Use dataset from path: %s" % repr(opt['raw_dataset_path']))
+    create_heap_file(opt['raw_dataset_path'])
 
-        # assamble the data.
-        iob_files = glob(os.path.join('dataset/gareev/', '*.iob'))
-        with open(os.path.join(dpath, 'gareev.txt'), 'w') as outfile:
-            outfile.write('-DOCSTART- -X- -X- O\n')
-            for iob in iob_files:
-                with open(iob) as infile:
-                    for line in infile:
-                        outfile.write(line)
 
-        # mark the data as built
-        build_data.mark_done(dpath, version_string=version)

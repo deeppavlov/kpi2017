@@ -30,8 +30,7 @@ from parlai.core.params import ParlaiParser
 from parlai.core.utils import Timer
 from parlai.core.worlds import create_task
 
-import build_dict
-
+from utils import build_dict
 
 def run_eval(agent, opt, datatype, max_exs=-1, write_log=False, valid_world=None):
     """Eval on validation/test data.
@@ -99,8 +98,10 @@ def train_model(opt):
         max_exs = opt['num_epochs'] * len(world)
         epochs_done = 0
         max_parleys = math.ceil(max_exs / opt['batchsize'])
-        best_accuracy = 0
+        best_metric_name = opt['chosen_metric']
+        best_metric = 0
         impatience = 0
+        lr_drop_impatience = 0
         saved = False
         valid_world = None
         try:
@@ -170,23 +171,35 @@ def train_model(opt):
                     valid_report, valid_world = run_eval(agent, opt, 'valid',
                                                          opt['validation_max_exs'],
                                                          valid_world=valid_world)
-                    if valid_report['accuracy'] > best_accuracy:
-                        best_accuracy = valid_report['accuracy']
+                    if best_metric_name not in valid_report and 'accuracy' in valid_report:
+                        best_metric_name = 'accuracy'
+                    if valid_report[best_metric_name] > best_metric:
+                        best_metric = valid_report[best_metric_name]
                         impatience = 0
-                        print('[ new best accuracy: ' + str(best_accuracy) + ' ]')
+                        lr_drop_impatience = 0
+                        print('[ new best ' + best_metric_name + ': ' + str(best_metric) + ' ]')
                         world.save_agents()
                         saved = True
-                        if best_accuracy == 1:
+                        if best_metric == 1:
                             print('[ task solved! stopping. ]')
                             break
                     else:
                         impatience += 1
-                        print('[ did not beat best accuracy: {} impatience: {} ]'.format(
-                                round(best_accuracy, 4), impatience))
+                        lr_drop_impatience +=1
+                        print('[ did not beat best ' + best_metric_name + ': {} impatience: {} ]'.format(
+                                round(best_metric, 4), impatience))
                     validate_time.reset()
                     if 0 < opt['validation_patience'] <= impatience:
                         print('[ ran out of patience! stopping training. ]')
                         break
+                    if 'lr_drop_patience' in opt and 0 < opt['lr_drop_patience'] <= lr_drop_impatience:
+                        if hasattr(agent, 'drop_lr'):
+                            print('[ validation metric is decreasing, dropping learning rate ]')
+                            train_report = agent.drop_lr()
+                            agent.reset_metrics()
+                        else:
+                            print('[ there is no drop_lr method in agent, ignoring ]')
+
         except KeyboardInterrupt:
             print('Stopped training, starting testing')
 
@@ -251,6 +264,10 @@ def main(args=None):
     train.add_argument('-dbf', '--dict-build-first',
                         type='bool', default=True,
                         help='build dictionary first before training agent')
+    train.add_argument('--chosen-metric', default='accuracy',
+                       help='metric with which to measure improvement')
+    train.add_argument('--lr-drop', '--lr-drop-patience', type=int, default=-1,
+                       help='drop learning rate if validation metric is not improving')
     opt = parser.parse_args(args=args)
     if opt.get('cross_validation_splits_count', 0) > 1 and opt.get('cross_validation_model_index') is None:
         train_cross_valid(opt)

@@ -21,7 +21,7 @@ import json
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
 config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction = 0.95
+config.gpu_options.per_process_gpu_memory_fraction = 0.8
 config.gpu_options.visible_device_list = '0'
 set_session(tf.Session(config=config))
 
@@ -33,6 +33,7 @@ from keras.layers.wrappers import Bidirectional
 from keras.initializers import glorot_uniform, Orthogonal
 from keras import backend as K
 from keras.optimizers import Adam
+from nltk.tokenize import sent_tokenize, word_tokenize
 
 
 class ParaphraserModel(object):
@@ -70,6 +71,7 @@ class ParaphraserModel(object):
 
     def shutdown(self):
         self.embdict = None
+        # tf.reset_default_graph()
 
     def _init_params(self, param_dict=None):
         if param_dict is None:
@@ -108,6 +110,8 @@ class ParaphraserModel(object):
             self.model = self.att_match_model()
         if self.model_name == 'maxatt_match':
             self.model = self.maxatt_match_model()
+        if self.model_name == 'bilstm_woatt':
+            self.model = self.bilstm_woatt_model()
         optimizer = Adam(lr=self.learning_rate)
         self.model.compile(loss='binary_crossentropy',
                            optimizer=optimizer,
@@ -180,13 +184,17 @@ class ParaphraserModel(object):
         embeddings_batch = []
         for sen in sentence_li:
             embeddings = []
-            tokens = sen.split(' ')
+            sent_toks = sent_tokenize(sen)
+            word_toks = [word_tokenize(el) for el in sent_toks]
+            tokens = [val for sublist in word_toks for val in sublist]
             tokens = [el for el in tokens if el != '']
             for tok in tokens:
                 embeddings.append(self.embdict.tok2emb.get(tok))
             if len(tokens) < self.max_sequence_length:
                 pads = [np.zeros(self.embedding_dim) for _ in range(self.max_sequence_length - len(tokens))]
                 embeddings = pads + embeddings
+            else:
+                embeddings = embeddings[-self.max_sequence_length:]
             embeddings = np.asarray(embeddings)
             embeddings_batch.append(embeddings)
         embeddings_batch = np.asarray(embeddings_batch)
@@ -251,6 +259,26 @@ class ParaphraserModel(object):
         dropout_forw = Dropout(self.dropout_val)(bioutp[0])
         dropout_back = Dropout(self.dropout_val)(bioutp[1])
         model = Model(inputs=inp, outputs=[dropout_forw, dropout_back], name="biLSTM_enc_persp")
+        return model
+
+    def create_lstm_layer_last(self, input_dim):
+        inp = Input(shape=(input_dim,  self.embedding_dim,))
+        inp_drop = Dropout(self.ldrop_val)(inp)
+        ker_in = glorot_uniform(seed=self.seed)
+        rec_in = Orthogonal(seed=self.seed)
+        bioutp = Bidirectional(LSTM(self.hidden_dim,
+                                    input_shape=(input_dim, self.embedding_dim,),
+                                    kernel_regularizer=None,
+                                    recurrent_regularizer=None,
+                                    bias_regularizer=None,
+                                    activity_regularizer=None,
+                                    recurrent_dropout=self.recdrop_val,
+                                    dropout=self.inpdrop_val,
+                                    kernel_initializer=ker_in,
+                                    recurrent_initializer=rec_in,
+                                    return_sequences=False), merge_mode='concat')(inp_drop)
+        dropout = Dropout(self.dropout_val)(bioutp)
+        model = Model(inputs=inp, outputs=dropout, name="biLSTM_encoder_last")
         return model
 
     def create_attention_layer(self, input_dim_a, input_dim_b):
@@ -352,7 +380,8 @@ class ParaphraserModel(object):
         inp_b = Input(shape=(input_dim_b, self.hidden_dim,))
         W = []
         for i in range(self.perspective_num):
-            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0, seed=self.seed)
+            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0,
+                                           seed=self.seed if self.seed is not None else 243)
             W.append(wi)
 
         val = np.concatenate((np.zeros((self.max_sequence_length-1,1)), np.ones((1,1))), axis=0)
@@ -381,7 +410,8 @@ class ParaphraserModel(object):
         inp_b = Input(shape=(input_dim_b, self.hidden_dim,))
         W = []
         for i in range(self.perspective_num):
-            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0, seed=self.seed)
+            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0,
+                                           seed=self.seed if self.seed is not None else 243)
             W.append(wi)
 
         val = np.concatenate((np.ones((1, 1)), np.zeros((self.max_sequence_length - 1, 1))), axis=0)
@@ -410,7 +440,8 @@ class ParaphraserModel(object):
         inp_b = Input(shape=(input_dim_b, self.hidden_dim,))
         W = []
         for i in range(self.perspective_num):
-            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0, seed=self.seed)
+            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0,
+                                           seed=self.seed if self.seed is not None else 243)
             W.append(wi)
 
         m = []
@@ -437,7 +468,8 @@ class ParaphraserModel(object):
 
         w = []
         for i in range(self.perspective_num):
-            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0, seed=self.seed)
+            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0,
+                                           seed=self.seed if self.seed is not None else 243)
             w.append(wi)
 
         outp_a = Lambda(lambda x: K.l2_normalize(x, -1))(inp_a)
@@ -472,7 +504,8 @@ class ParaphraserModel(object):
 
         W = []
         for i in range(self.perspective_num):
-            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0, seed=self.seed)
+            wi = K.random_uniform_variable((1, self.hidden_dim), -1.0, 1.0,
+                                           seed=self.seed if self.seed is not None else 243)
             W.append(wi)
 
         outp_a = Lambda(lambda x: K.l2_normalize(x, -1))(inp_a)
@@ -510,7 +543,6 @@ class ParaphraserModel(object):
     def cosine_dist_output_shape(self, shapes):
         shape1, shape2 = shapes
         return shape1[0], 2*shape1[1]
-
 
     def terminal_f(self, inp):
         val = np.concatenate((np.zeros((self.max_sequence_length-1,1)), np.ones((1,1))), axis=0)
@@ -790,4 +822,23 @@ class ParaphraserModel(object):
                       activity_regularizer=None)(dense)
 
         model = Model([input_a, input_b], dense)
+        return model
+
+    def bilstm_woatt_model(self):
+        input_a = Input(shape=(self.max_sequence_length, self.embedding_dim,))
+        input_b = Input(shape=(self.max_sequence_length, self.embedding_dim,))
+        lstm_layer = self.create_lstm_layer_last(self.max_sequence_length)
+        lstm_last_a = lstm_layer(input_a)
+        lstm_last_b = lstm_layer(input_b)
+
+        dist = Lambda(self.cosine_dist, output_shape=self.cosine_dist_output_shape,
+                      name="similarity_network")([lstm_last_a, lstm_last_b])
+
+        dense = Dense(1, activation='sigmoid', name='similarity_score',
+                      kernel_regularizer=None,
+                      bias_regularizer=None,
+                      activity_regularizer=None)(dist)
+
+        model = Model([input_a, input_b], dense)
+
         return model
