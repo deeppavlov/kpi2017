@@ -8,23 +8,26 @@ use_plugin('python.install_dependencies')
 
 default_task = 'build'
 
+
 @init
 def set_properties(project):
-	import os
-	import sys
-	cwd = os.getcwd()
-	sys.path.append(cwd)
-	os.environ['IPAVLOV_FTP'] = 'ftp://share.ipavlov.mipt.ru'
-	os.environ['EMBEDDINGS_URL'] = 'http://share.ipavlov.mipt.ru:8080/repository/embeddings/'
-	os.environ['MODELS_URL'] = 'http://share.ipavlov.mipt.ru:8080/repository/models/'
-	os.environ['DATASETS_URL'] = 'http://share.ipavlov.mipt.ru:8080/repository/datasets/'
-	os.environ['CUDA_VISIBLE_DEVICES'] = '7'#
-	project.set_property('dir_source_main_python', '.')
-	project.set_property('dir_source_unittest_python', 'tests')
+    import os
+    import sys
+    cwd = os.getcwd()
+    sys.path.append(cwd)
+    os.environ['IPAVLOV_FTP'] = 'ftp://share.ipavlov.mipt.ru'
+    os.environ['EMBEDDINGS_URL'] = 'http://share.ipavlov.mipt.ru:8080/repository/embeddings/'
+    os.environ['MODELS_URL'] = 'http://share.ipavlov.mipt.ru:8080/repository/models/'
+    os.environ['DATASETS_URL'] = 'http://share.ipavlov.mipt.ru:8080/repository/datasets/'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '7'  #
+    project.set_property('dir_source_main_python', '.')
+    project.set_property('dir_source_unittest_python', 'tests')
+
 
 @task
 def build(project):
-	pass
+    pass
+
 
 @task
 def train_paraphraser(project):
@@ -51,6 +54,7 @@ def train_paraphraser(project):
                         ])
     return metrics
 
+
 @task
 def train_ner(project):
     import build_utils as bu
@@ -69,6 +73,7 @@ def train_ner(project):
                         '--chosen-metrics', 'f1'
                         ])
     return metrics
+
 
 @task
 def train_insults(project):
@@ -102,10 +107,11 @@ def train_insults(project):
                         ])
     return metrics
 
+
 @task
 def train_squad(project):
-    import utils.parlai_stuff as ps
-    metrics = ps.model(['-t', 'squad',
+    import build_utils as bu
+    metrics = bu.model(['-t', 'squad',
                         '-m', 'deeppavlov.agents.squad.squad:SquadAgent',
                         '--batchsize', '64',
                         '--display-examples', 'False',
