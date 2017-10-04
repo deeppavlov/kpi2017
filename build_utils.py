@@ -353,7 +353,7 @@ def model(args=None):
     # Possibly build a dictionary (not all models do this).
     __build_bag_of_words(opt)
 
-    if opt.get('model_files'):
+    if opt.get('model_files') and opt.get('bagging_folds_number', 0) > 1 and opt.get('bagging_fold_index') is None:
         opt['model_files'] = ['{}_{}'.format(fname, i) for fname in opt['model_files'] for i in range(opt['bagging_folds_number'])]
 
     if opt['datatype'].split(':')[0] == 'train':
