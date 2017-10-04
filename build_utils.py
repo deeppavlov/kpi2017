@@ -79,48 +79,50 @@ def __build_bag_of_words(opt):
     """Build a dictionary for some models.
     opt is a dictionary returned by arg_parse
     """
-    if opt['dict_build_first'] and 'dict_file' in opt:
-        if opt['dict_file'] is None and opt.get('pretrained_model'):
-            opt['dict_file'] = opt['pretrained_model'] + '.dict'
-        if opt['dict_file'] is None and opt.get('model_file'):
-            opt['dict_file'] = opt['model_file'] + '.dict'
-        print("[ building dictionary first... ]")
+    if not opt['dict_build_first'] or not 'dict_file' in opt:
+        return
 
-        if not opt.get('dict_file'):
-            print('Tried to build dictionary but `--dict-file` is not set. Set ' +
-                  'this param so the dictionary can be saved.')
-            return
-        print('[ setting up dictionary. ]')
-        if os.path.isfile(opt['dict_file']):
-            # Dictionary already built
-            print("[ dictionary already built .]")
-            return
-        if opt.get('dict_class'):
-            # Custom dictionary class
-            dictionary = str2class(opt['dict_class'])(opt)
-        else:
-            # Default dictionary class
-            dictionary = DictionaryAgent(opt)
-        ordered_opt = copy.deepcopy(opt)
-        cnt = 0
-        # we use train set to build dictionary
-        ordered_opt['datatype'] = 'train:ordered'
-        if 'stream' in opt['datatype']:
-            ordered_opt['datatype'] += ':stream'
-        ordered_opt['numthreads'] = 1
-        ordered_opt['batchsize'] = 1
-        world_dict = create_task(ordered_opt, dictionary)
-        # pass examples to dictionary
-        for _ in world_dict:
-            cnt += 1
-            if cnt > opt['dict_maxexs'] and opt['dict_maxexs'] > 0:
-                print('Processed {} exs, moving on.'.format(opt['dict_maxexs']))
-                # don't wait too long...
-                break
-            world_dict.parley()
-        print('[ dictionary built. ]')
-        dictionary.save(opt['dict_file'], sort=True)
-        # print('[ num words =  %d ]' % len(dictionary))
+    if opt['dict_file'] is None and opt.get('pretrained_model'):
+        opt['dict_file'] = opt['pretrained_model'] + '.dict'
+    if opt['dict_file'] is None and opt.get('model_file'):
+        opt['dict_file'] = opt['model_file'] + '.dict'
+    print("[ building dictionary first... ]")
+
+    if not opt.get('dict_file'):
+        print('Tried to build dictionary but `--dict-file` is not set. Set ' +
+              'this param so the dictionary can be saved.')
+        return
+    print('[ setting up dictionary. ]')
+    if os.path.isfile(opt['dict_file']):
+        # Dictionary already built
+        print("[ dictionary already built .]")
+        return
+    if opt.get('dict_class'):
+        # Custom dictionary class
+        dictionary = str2class(opt['dict_class'])(opt)
+    else:
+        # Default dictionary class
+        dictionary = DictionaryAgent(opt)
+    ordered_opt = copy.deepcopy(opt)
+    cnt = 0
+    # we use train set to build dictionary
+    ordered_opt['datatype'] = 'train:ordered'
+    if 'stream' in opt['datatype']:
+        ordered_opt['datatype'] += ':stream'
+    ordered_opt['numthreads'] = 1
+    ordered_opt['batchsize'] = 1
+    world_dict = create_task(ordered_opt, dictionary)
+    # pass examples to dictionary
+    for _ in world_dict:
+        cnt += 1
+        if cnt > opt['dict_maxexs'] and opt['dict_maxexs'] > 0:
+            print('Processed {} exs, moving on.'.format(opt['dict_maxexs']))
+            # don't wait too long...
+            break
+        world_dict.parley()
+    print('[ dictionary built. ]')
+    dictionary.save(opt['dict_file'], sort=True)
+    # print('[ num words =  %d ]' % len(dictionary))
 
 
 def __evaluate_model(valid_world, batchsize, datatype, display_examples, max_exs=-1):
