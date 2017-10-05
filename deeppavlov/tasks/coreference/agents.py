@@ -76,10 +76,9 @@ class BaseTeacher(Teacher):
     
     def act(self):
         datafile = join(self.datapath, self.doc_address[self.doc_id])
-        if self.doc_id == self.len - 1:
-            act_dict = utils.conll2dict(self.iter, datafile, self.id, self.dt, self.doc_address[self.doc_id], epoch_done=True)
-        else:
-            act_dict = utils.conll2dict(self.iter, datafile, self.id, self.dt, self.doc_address[self.doc_id])
+        epoch_done = self.doc_id == self.len - 1
+        act_dict = utils.conll2dict(self.iter, datafile, self.id, self.dt, self.doc_address[self.doc_id],
+                                    epoch_done=epoch_done)
    
         return act_dict
             
@@ -101,7 +100,7 @@ class BaseTeacher(Teacher):
         if self.observation['conll']:
             predict = os.path.join(self.reports_datapath, 'response_files', self.doc_address[int(self.observation['iter_id'])])
             utils.dict2conll(self.observation, predict)  # predict it is file name
-        return None
+        return self.observation
 
     def report(self):
         print('End epoch ...')
