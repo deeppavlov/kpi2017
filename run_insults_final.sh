@@ -27,7 +27,7 @@ python utils/train_model.py -t deeppavlov.tasks.insults.agents \
                             --fasttext_embeddings_dict ./build/emb_dict.emb \
                             --cross-validation-splits-count 3 \
                             -ve 10 \
-                            -vp 1 \
+                            -vp 5 \
                             --chosen-metric auc
 
 python3 ./utils/train_model.py -t deeppavlov.tasks.insults.agents:FullTeacher \
