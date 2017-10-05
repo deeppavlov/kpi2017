@@ -103,7 +103,7 @@ class BaseTeacher(Teacher):
             utils.dict2conll(self.observation, predict)  # predict it is file name
         return None
 
-    def report(self):  # not done yet
+    def report(self):
         print('End epoch ...')
         scorer = self.scorer_path
         predicts_path = os.path.join(self.reports_datapath, 'response_files')
