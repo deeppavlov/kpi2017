@@ -482,14 +482,13 @@ class CorefModel(object):
 
         return predicted_clusters, mention_to_predicted
 
-    def init_from_saved(self):               
-        log_dir = join(self.log_root, self.opt['name'])
-        if isdir(log_dir):
+    def init_from_saved(self):
+        checkpoint_path = join(self.log_root, self.opt['name'], "model.max.ckpt")
+        if os.path.isfile(checkpoint_path):
             saver = tf.train.Saver()
-            checkpoint_path = join(log_dir, "model.max.ckpt")
             saver.restore(self.sess, checkpoint_path)
         else:
-            print('{0} not found'.format(log_dir))
+            print('{0} not found'.format(checkpoint_path))
 
     def shutdown(self):
         tf.reset_default_graph()
