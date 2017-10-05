@@ -39,29 +39,20 @@ def build(opt):
 
         # Build the folders tree
         build_data.make_dir(dpath)
-        build_data.make_dir(join(dpath, 'embeddings'))
         build_data.make_dir(join(dpath, 'logs'))
         build_data.make_dir(join(dpath, 'report', 'response_files'))
         build_data.make_dir(join(dpath, 'report', 'results'))
-        build_data.make_dir(join(dpath, 'pure_text'))
         build_data.make_dir(join(dpath, 'scorer'))
-        build_data.make_dir(join(dpath, 'vocab'))
         build_data.make_dir(join(dpath, 'train'))
         build_data.make_dir(join(dpath, 'test'))
         build_data.make_dir(join(dpath, 'valid'))
 
         # urls
         dataset_url = 'http://rucoref.maimbava.net/files/rucoref_29.10.2015.zip'
-        embed_url = '0B7A8-2DSIVoeelVIT1BMUFVLSnM'
         scorer_url = 'http://conll.cemantix.org/download/reference-coreference-scorers.v8.01.tar.gz'
         
-        # download embeddings
-        start = time.time()
-        print('[Download the word embeddings]...')
-        build_data.download_from_google_drive(embed_url, join(dpath, 'embeddings', 'embeddings_lenta_100.vec'))
-        print('[End of download the word embeddings]...')
-        
         # download the conll-2012 scorer v 8.1
+        start = time.time()
         print('[Download the conll-2012 scorer]...')
         build_data.download(scorer_url, join(dpath, 'scorer'), 'reference-coreference-scorers.v8.01.tar.gz')
         build_data.untar(join(dpath, 'scorer'), 'reference-coreference-scorers.v8.01.tar.gz')
@@ -75,12 +66,6 @@ def build(opt):
         # uncompress it
         build_data.untar(join(dpath, 'rucoref_29.10.2015'), 'rucoref_29.10.2015.zip')
         print('End of download: time - {}'.format(time.time()-start))
-        
-        # Get pure text from Tokens.txt for creating char dictionary
-        utils.get_all_texts_from_tokens_file(join(dpath, 'rucoref_29.10.2015', 'Tokens.txt'), join(dpath, 'pure_text', 'Pure_text.txt'))
-        
-        # Get char dictionary from pure text
-        utils.get_char_vocab(join(dpath, 'pure_text', 'Pure_text.txt'), join(dpath, 'vocab', 'char_vocab.{}.txt'.format(language)))
         
         # Convertation rucorpus files in conll files
         conllpath = join(dpath, 'ru_conll')

@@ -35,7 +35,7 @@ class BaseTeacher(Teacher):
         
         self.language = opt['language']
         self.id = 'coreference_teacher'
-
+        build(opt)
         # store datatype
         self.dt = opt['datatype'].split(':')[0]
         self.datapath = join(opt['datapath'], 'coreference', self.language)

@@ -20,7 +20,32 @@ from parlai.core.agents import Agent
 from . import config
 from .models import CorefModel
 from deeppavlov.tasks.coreference import utils
-from deeppavlov.tasks.coreference.build import build
+import parlai.core.build_data as build_data
+from os.path import join, isdir
+
+def bdfa(opt):
+    
+    embed_url = '0B7A8-2DSIVoeelVIT1BMUFVLSnM'
+    vocab_url = '0B7A8-2DSIVoed0FIMXdqU0FlQ3M'
+    # get path to data directory and create folders tree
+    dpath = join(opt['datapath'])
+    # define languages
+    language = opt['language']
+    dpath = join(dpath, 'coreference', language, 'agent')
+    build_data.make_dir(dpath)
+    
+    if not isdir(join(dpath, 'embeddings')):
+        build_data.make_dir(join(dpath, 'embeddings'))
+        print('[Download the word embeddings]...')
+        build_data.download_from_google_drive(embed_url, join(dpath, 'embeddings', 'embeddings_lenta_100.vec'))
+        print('[End of download the word embeddings]...')
+    
+    if not isdir(join(dpath, 'vocab')):
+        build_data.make_dir(join(dpath, 'vocab'))
+        print('[Download the chars vocalibary]...')
+        build_data.download_from_google_drive(vocab_url, join(dpath, 'vocab', 'char_vocab.{}.txt'.format(language)))
+        print('[End of download the chars vocalibary]...')
+    return None 
 
 class CoreferenceAgent(Agent):
 
@@ -30,7 +55,7 @@ class CoreferenceAgent(Agent):
 
     def __init__(self, opt, shared=None):
         
-        build(opt)
+        bdfa(opt)
         
         self.id = 'Coreference_Agent'
         self.episode_done = True

@@ -37,7 +37,7 @@ class CorefModel(object):
     def __init__(self, opt):
         self.opt = copy.deepcopy(opt)
         
-        dpath = join(self.opt['datapath'], 'coreference', self.opt['language'])
+        dpath = join(self.opt['datapath'], 'coreference', self.opt['language'], 'agent')
         self.char_vocab_path = join(dpath, 'vocab', 'char_vocab.russian.txt')
         self.embedding_path = join(dpath, 'embeddings', 'embeddings_lenta_100.vec')
         self.log_root = join(dpath, 'logs')
