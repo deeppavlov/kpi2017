@@ -45,6 +45,9 @@ def bdfa(opt):
         print('[Download the chars vocalibary]...')
         build_data.download_from_google_drive(vocab_url, join(dpath, 'vocab', 'char_vocab.{}.txt'.format(language)))
         print('[End of download the chars vocalibary]...')
+    
+    if not isdir(join(dpath, 'logs', opt['name'])):
+        build_data.make_dir(join(dpath, 'logs', opt['name']))
     return None 
 
 class CoreferenceAgent(Agent):
@@ -89,17 +92,7 @@ class CoreferenceAgent(Agent):
             raise RuntimeError("Parallel act is not supported.")
         if self.observation['mode'] == 'train':
             self.tf_loss = self.model.train(self.obs_dict)
-            if self.iterations == 0:
-                self.start = time.time()
-            if self.observation['iter_id'] % self.rep_iter == 0:
-                self.iterations += self.rep_iter
-                n = self.rep_iter**2 - self.iterations
-                t = time.time() - self.start
-                r_time = n*(t/self.rep_iter)
-                hours = int(r_time/(60**2))
-                minutes = int(r_time/60 - hours*60)
-                self.start = time.time()
-                print('iter: {} | Loss: {} | Remaining Time: {} hours {} minutes'.format(self.iterations, self.tf_loss, hours, minutes))
+            self.remaining_time()
             act_dict = {'iter_id': self.observation['iter_id'], 'Loss': self.tf_loss}
             act_dict['id'] = self.id
             act_dict['epoch_done'] = self.observation['epoch_done']
@@ -137,3 +130,17 @@ class CoreferenceAgent(Agent):
 
     def report(self):
         return {'loss': self.tf_loss}
+    
+    def remaining_time(self):
+        if self.iterations == 0:
+            self.start = time.time()
+        if self.observation['iter_id'] % self.rep_iter == 0:
+            self.iterations += self.rep_iter
+            n = self.rep_iter**2 - self.iterations
+            t = time.time() - self.start
+            r_time = n*(t/self.rep_iter)
+            hours = int(r_time/(60**2))
+            minutes = int(r_time/60 - hours*60)
+            self.start = time.time()
+            print('iter: {} | Loss: {} | Remaining Time: {} hours {} minutes'.format(self.iterations, self.tf_loss, hours, minutes))
+        return None
