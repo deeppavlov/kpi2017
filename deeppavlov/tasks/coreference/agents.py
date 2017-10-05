@@ -21,6 +21,7 @@ import random
 from parlai.core.agents import Teacher
 from .build import build
 from . import utils
+import tensorflow as tf
 
 class BaseTeacher(Teacher):
     
@@ -57,6 +58,7 @@ class BaseTeacher(Teacher):
         self.iter = 0
         self.epoch = 0
         self.epochDone = False
+        self.writer = tf.summary.FileWriter(join(opt['datapath'], 'coreference', self.language, 'agent', 'logs', opt['name']))
         super().__init__(opt, shared)
     
     def __len__(self):
@@ -90,6 +92,10 @@ class BaseTeacher(Teacher):
         else:
             self.doc_id = int(self.observation['iter_id']) + 1
             self.iter += 1
+            if self.dt == 'train':
+                summary_dict = {'Loss': self.observation['loss']}
+                step = self.observation['iteration']
+                utils.summary(summary_dict, step, self.writer)
             
         if self.observation['conll']:
             predict = os.path.join(self.reports_datapath, 'response_files', self.doc_address[int(self.observation['iter_id'])])

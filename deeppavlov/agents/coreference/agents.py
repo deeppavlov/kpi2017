@@ -99,6 +99,7 @@ class CoreferenceAgent(Agent):
             act_dict['mode'] = self.observation['mode']
             act_dict['conll'] = False
             act_dict['loss'] = self.tf_loss
+            act_dict['iteration'] = self.iterations
             return act_dict
         elif self.observation['mode'] == 'valid':
             # tf_loss = self.model.train_op(observation)
