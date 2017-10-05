@@ -513,7 +513,7 @@ def load_char_dict(char_vocab_path):
     with open(char_vocab_path) as f:
         vocab.extend(c.strip() for c in f.readlines())
     char_dict = collections.defaultdict(int)
-    char_dict.update({c: i for i, c in enumerate(vocab)})
+    char_dict.update({c: i for i, c in enumerate(sorted(set(vocab)))})
     return char_dict
 
 
