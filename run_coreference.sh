@@ -6,7 +6,7 @@ export CUDA_VISIBLE_DEVICES=1; python3 ./utils/train_model.py -t deeppavlov.task
                          -mf ./build/coreference/ \
                          --model-file 'train_model' \
 		         --language russian \
-			 --name main \
+			 --name fasttext \
 			 --pretrained_model True \
                          -dt train:ordered \
                          --batchsize 1 \

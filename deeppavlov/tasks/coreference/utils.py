@@ -325,12 +325,12 @@ def conll2dict(iter_id, conll, agent, mode, doc, epoch_done=False):
                 data['doc_id'].append('bc')
                 data['part_id'].append('0')
                 data['word_number'].append('0')
-                data['word'].append('SeNt')
+                data['word'].append('.')
                 data['part_of_speech'].append('End_of_sentence')
                 data['parse_bit'].append('-')
                 data['lemma'].append('-')
                 data['sense'].append('-')
-                data['speaker'].append('-')
+                data['speaker'].append('spk1')
                 data['entiti'].append('-')
                 data['predict'].append('-')
                 data['coreference'].append('-')
@@ -738,12 +738,9 @@ def conll2modeldata(data):
         coref = data['coreference'][i]
         speaker = data['speaker'][i]
         word_index = i + 1
-        if word == 'SeNt':
-            continue
-        else:
-            document_state.text.append(word)
-            document_state.text_speakers.append(speaker)
-
+        document_state.text.append(word)
+        document_state.text_speakers.append(speaker)
+        
         if coref != "-":
             for segment in coref.split("|"):
                 if segment[0] == "(":
