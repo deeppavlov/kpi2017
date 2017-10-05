@@ -499,6 +499,10 @@ def normalize(v):
 def make_summary(value_dict):
     return tf.Summary(value=[tf.Summary.Value(tag=k, simple_value=v) for k, v in value_dict.items()])
 
+def summary(value_dict, global_step, writer):
+    summary = tf.Summary(value=[tf.Summary.Value(tag=k, simple_value=v) for k, v in value_dict.items()])
+    writer.add_summary(summary, global_step)
+    return None
 
 def flatten(l):
     return [item for sublist in l for item in sublist]
