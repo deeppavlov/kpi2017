@@ -738,8 +738,11 @@ def conll2modeldata(data):
         coref = data['coreference'][i]
         speaker = data['speaker'][i]
         word_index = i + 1
-        document_state.text.append(word)
-        document_state.text_speakers.append(speaker)
+        if word == 'SeNt':
+            continue
+        else:
+            document_state.text.append(word)
+            document_state.text_speakers.append(speaker)
 
         if coref != "-":
             for segment in coref.split("|"):
