@@ -67,7 +67,7 @@ def arg_parse(args=None):
                         help='build dictionary first before training agent')
     train.add_argument('--chosen-metrics', default='accuracy',
                        help='metrics chosen to measure improvement') # custom arg
-    train.add_argument('--lr-drop', '--lr-drop-patience', type=int, default=-1,
+    train.add_argument('--lr-drop', '--lr-drop-patience', type=float, default=-1,
                        help='drop learning rate if validation metric is not improving') # custom arg
 
     opt = parser.parse_args(args=args)
@@ -181,11 +181,11 @@ def __train_log(opt, world, agent, input_train_dict):
     # get report and update total examples seen so far
     if hasattr(agent, 'report'):
         train_dict['train_report_agent'] = agent.report()
-        train_dict['train_report'] = agent.report()
+        train_dict['train_report'] = train_dict['train_report_agent']
         agent.reset_metrics()
     else:
         train_dict['train_report_world'] = world.report()
-        train_dict['train_report'] = world.report()
+        train_dict['train_report'] = train_dict['train_report_world']
         world.reset_metrics()
     if hasattr(train_dict['train_report'], 'get') and train_dict['train_report'].get('total'):
         train_dict['total_exs'] += train_dict['train_report']['total']

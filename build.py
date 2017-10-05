@@ -11,11 +11,16 @@ use_plugin('python.install_dependencies')
 default_task = 'build'
 
 
+def create_dir(dir):
+    if not os.path.exists('./build'):
+        os.mkdir('build', mode=0o755)
+    if not os.path.exists('./build/' + dir):
+        os.mkdir('build/' + dir, mode=0o755)
+
+
 @init
 def set_properties(project):
     import sys
-    if not os.path.exists('./build'):
-        os.mkdir('build', mode=0o755)
     cwd = os.getcwd()
     sys.path.append(cwd)
     os.environ['EMBEDDINGS_URL'] = os.getenv('EMBEDDINGS_URL',
@@ -43,8 +48,7 @@ def clean(project):
 
 @task
 def train_paraphraser(project):
-    if not os.path.exists('./build/paraphraser'):
-        os.mkdir('build/paraphraser', mode=0o755)
+    create_dir('paraphraser')
     metrics = bu.model(['-t', 'deeppavlov.tasks.paraphrases.agents',
                         '-m', 'deeppavlov.agents.paraphraser.paraphraser:ParaphraserAgent',
                         '-mf', './build/paraphraser/paraphraser',
@@ -70,9 +74,7 @@ def train_paraphraser(project):
 
 @task
 def train_ner(project):
-    if not os.path.exists('./build/ner'):
-        os.mkdir('build/ner', mode=0o755)
-
+    create_dir('ner')
     metrics = bu.model(['-t', 'deeppavlov.tasks.ner.agents',
                         '-m', 'deeppavlov.agents.ner.ner:NERAgent',
                         '-mf', './build/ner/ner',
@@ -91,8 +93,7 @@ def train_ner(project):
 
 @task
 def train_insults(project):
-    if not os.path.exists('./build/insults'):
-        os.mkdir('build/insults', mode=0o755)
+    create_dir('insults')
     metrics = bu.model(['-t', 'deeppavlov.tasks.insults.agents',
                         '-m', 'deeppavlov.agents.insults.insults_agents:InsultsAgent',
                         '--model_file', './build/insults/cnn_word',
@@ -125,8 +126,7 @@ def train_insults(project):
 
 @task
 def train_squad(project):
-    if not os.path.exists('./build/squad'):
-        os.mkdir('build/squad', mode=0o755)
+    create_dir('squad')
     metrics = bu.model(['-t', 'squad',
                         '-m', 'deeppavlov.agents.squad.squad:SquadAgent',
                         '--batchsize', '64',
@@ -139,9 +139,9 @@ def train_squad(project):
                         '--validation-every-n-epochs', '-1',
                         '--chosen-metrics', 'f1',
                         '--validation-patience', '5',
-                        '--lr-drop-patience', '1',
                         '--type', 'fastqa_default',
                         '--lr', '0.0001',
+                        '--lr_drop', '0.3',
                         '--linear_dropout', '0.0',
                         '--embedding_dropout', '0.5',
                         '--rnn_dropout', '0.0',
