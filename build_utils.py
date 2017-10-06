@@ -45,7 +45,7 @@ def arg_parse(args=None):
                         type='bool', default=False)
     train.add_argument('-e', '--num-epochs', type=float, default=-1)
     train.add_argument('-ttim', '--max-train-time',
-                        type=float, default=-1)
+                        type=float, default=86400)
     train.add_argument('-ltim', '--log-every-n-secs',
                         type=float, default=2)
     train.add_argument('-le', '--log-every-n-epochs',
