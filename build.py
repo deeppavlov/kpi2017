@@ -12,10 +12,7 @@ default_task = 'build'
 
 
 def create_dir(dir):
-    if not os.path.exists('./build'):
-        os.mkdir('build', mode=0o755)
-    if not os.path.exists('./build/' + dir):
-        os.mkdir('build/' + dir, mode=0o755)
+    os.makedirs('build/' + dir, mode=0o755, exist_ok=True)
 
 
 @init

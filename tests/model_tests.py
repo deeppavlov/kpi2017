@@ -12,6 +12,7 @@ class TestKPIs(unittest.TestCase):
 
 
     def test_paraphraser(self):
+        expected_KPI = 0.8
         metrics = bu.model(['-t', 'deeppavlov.tasks.paraphrases.agents',
                             '-m', 'deeppavlov.agents.paraphraser.paraphraser:EnsembleParaphraserAgent',
                             '-mf', './build/paraphraser/paraphraser',
@@ -24,10 +25,12 @@ class TestKPIs(unittest.TestCase):
                             '--bagging-folds-number', '5',
                             '--chosen-metrics', 'f1'
                             ])
-        print(metrics)
-        self.assertTrue(metrics['f1'] > 0.8, 'KPI for paraphraser is not satisfied')
+        self.assertTrue(metrics['f1'] > expected_KPI,
+                        'KPI for paraphraser is not satisfied. \
+                        Got {}, expected more than {}'.format(metrics['auc'], expected_KPI))
 
     def test_ner(self):
+        expected_KPI = 70
         metrics = bu.model(['-t', 'deeppavlov.tasks.ner.agents',
                             '-m', 'deeppavlov.agents.ner.ner:NERAgent',
                             '-mf', './build/ner/ner',
@@ -41,9 +44,12 @@ class TestKPIs(unittest.TestCase):
                             '--pretrained-model', './build/ner/ner',
                             '--chosen-metrics', 'f1'
                             ])
-        self.assertTrue(metrics['f1'] > 70, 'KPI for NER is not satisfied')
+        self.assertTrue(metrics['f1'] > expected_KPI,
+                        'KPI for NER is not satisfied. \
+                        Got {}, expected more than {}'.format(metrics['f1'], expected_KPI))
 
     def test_insults(self):
+        expected_KPI = 0.85
         metrics = bu.model(['-t', 'deeppavlov.tasks.insults.agents:FullTeacher',
                             '-m', 'deeppavlov.agents.insults.insults_agents:EnsembleInsultsAgent',
                             '--model_file', './build/insults/insults_ensemble',
@@ -65,9 +71,12 @@ class TestKPIs(unittest.TestCase):
                             '--dense_dim', '100',
                             '--fasttext_model', './build/insults/reddit_fasttext_model.bin'
                             ])
-        self.assertTrue(metrics['auc'] > 0.85, 'KPI for insults is not satisfied')
+        self.assertTrue(metrics['auc'] > expected_KPI,
+                        'KPI for insults is not satisfied. \
+                        Got {}, expected more than {}'.format(metrics['auc'], expected_KPI))
 
     def test_squad(self):
+        expected_KPI = 0.7
         metrics = bu.model(['-t', 'squad',
                             '-m', 'deeppavlov.agents.squad.squad:SquadAgent',
                             '--batchsize', '64',
@@ -91,8 +100,9 @@ class TestKPIs(unittest.TestCase):
                             '--pretrained_model', './build/squad/squad1',
                             '--datatype', 'test'
                             ])
-        self.assertTrue(metrics['f1'] > 0.7, 'KPI for SQuAD is not satisfied')
-
+        self.assertTrue(metrics['f1'] > expected_KPI,
+                        'KPI for SQuAD is not satisfied. \
+                        Got {}, expected more than {}'.format(metrics['f1'], expected_KPI))
 
 if __name__ == '__main__':
     unittest.main()
