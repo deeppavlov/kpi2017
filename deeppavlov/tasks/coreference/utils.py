@@ -23,12 +23,8 @@ from sklearn import cross_validation
 from tqdm import tqdm
 import parlai.core.build_data as build_data
 import tensorflow as tf
-<<<<<<< HEAD
-=======
-from collections import Counter, defaultdict
-import operator
-import copy
->>>>>>> 3d863dbb50c5f5f4f715be91bf1d298883926262
+from collections import defaultdict
+
 
 def RuCoref2CoNLL(path, out_path, language='russian'):
     data = {"doc_id": [],
