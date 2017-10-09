@@ -16,6 +16,7 @@ limitations under the License.
 
 import copy
 import time
+import tensorflow as tf
 from parlai.core.agents import Agent
 from . import config
 from .models import CorefModel
@@ -75,10 +76,13 @@ class CoreferenceAgent(Agent):
         self.start = None
         self.tf_loss = None
         self.rep_iter = opt['rep_iter']
+        self.nitr = opt['nitr']
         self.model = CorefModel(opt)
+        
+        self.saver = tf.train.Saver()
         if self.opt['pretrained_model']:
             print('[ Initializing model from checkpoint ]')
-            self.model.init_from_saved()
+            self.model.init_from_saved(self.saver)
         else:
             print('[ Initializing model from scratch ]')
 
@@ -103,7 +107,6 @@ class CoreferenceAgent(Agent):
             act_dict['iteration'] = self.iterations
             return act_dict
         elif self.observation['mode'] == 'valid':
-            # tf_loss = self.model.train_op(observation)
             conll = self.model.predict(self.obs_dict, self.observation)
             conll['conll'] = True
             conll['iter_id'] = self.observation['iter_id']
@@ -117,9 +120,14 @@ class CoreferenceAgent(Agent):
     def predict(self):
         y = self.model.predict(self.obs_dict, self.observation)
         return y
+    
+    def prediction(self, path):
+        y = self.model.predict(self.obs_dict, self.observation)
+        utils.dict2conll(y, path)
+        return None
 
     def save(self):
-        self.model.save()
+        self.model.save(self.saver)
 
     def shutdown(self):
         if not self.is_shared:
@@ -133,12 +141,12 @@ class CoreferenceAgent(Agent):
     def remaining_time(self):
         if self.observation['iter_id'] % self.rep_iter == 0:
             self.iterations += self.rep_iter
-            glob_time = self.opt['validation-every-n-epochs']*100
-            n = glob_time - self.iterations
+            n = self.nitr*100 - self.iterations
             t = time.time() - self.start
             r_time = n*(t/self.rep_iter)
             hours = int(r_time/(60**2))
             minutes = int(r_time/60 - hours*60)
             self.start = time.time()
-            print('iter: {} | Loss: {} | Remaining Time: {} hours {} minutes'.format(self.iterations, self.tf_loss, hours, minutes))
+            if self.iterations != 100:
+                print('iter: {} | Loss: {} | Remaining Time: {} hours {} minutes'.format(self.iterations, self.tf_loss, hours, minutes))
         return None

@@ -13,11 +13,13 @@ import copy
 from keras.layers import Dense, Activation, Input, concatenate
 from keras.models import Model
 
-from keras.layers.pooling import MaxPooling1D
+from keras.layers.pooling import GlobalMaxPooling1D
 from keras.layers.convolutional import Conv1D
 from keras.layers.recurrent import LSTM
 from keras.layers.wrappers import Bidirectional
-from keras.layers.core import Dropout, Reshape
+from keras.layers.core import Dropout
+from keras.layers.normalization import BatchNormalization
+
 from keras.regularizers import l2
 from keras.optimizers import Adam
 from keras.losses import binary_crossentropy
@@ -30,6 +32,10 @@ from .utils import vectorize_select_from_data
 
 from .embeddings_dict import EmbeddingsDict
 
+SEED = 23
+np.random.seed(SEED)
+tf.set_random_seed(SEED)
+
 class InsultsModel(object):
 
     def __init__(self, model_name, word_index, embedding_dict, opt):
@@ -41,6 +47,8 @@ class InsultsModel(object):
         self.pool_sizes = [int(x) for x in opt['pool_sizes_cnn'].split(' ')]
         self.model_type = None
         self.from_saved = False
+        np.random.seed(opt['model_seed'])
+        tf.set_random_seed(opt['model_seed'])
 
         if self.model_name == 'cnn_word' or self.model_name == 'lstm_word':
             self.model_type = 'nn'
@@ -255,47 +263,43 @@ class InsultsModel(object):
 
         outputs = []
         for i in range(len(self.kernel_sizes)):
-            output_i = Conv1D(self.opt['filters_cnn'], kernel_size=self.kernel_sizes[i], activation='relu',
+            output_i = Conv1D(self.opt['filters_cnn'], kernel_size=self.kernel_sizes[i], activation=None,
                               kernel_regularizer=l2(self.opt['regul_coef_conv']), padding='same')(embed_input)
-            output_i = MaxPooling1D(pool_size=self.pool_sizes[i], strides=1, padding='same')(output_i)
+            output_i = BatchNormalization()(output_i)
+            output_i = Activation('relu')(output_i)
+            output_i = GlobalMaxPooling1D()(output_i)
             outputs.append(output_i)
 
         output = concatenate(outputs, axis=1)
-        output = Reshape(((self.opt['max_sequence_length']
-                           * len(self.kernel_sizes))
-                          * self.opt['filters_cnn'],))(output)
         output = Dropout(rate=self.opt['dropout_rate'])(output)
-        output = Dense(self.opt['dense_dim'], activation='relu',
+        output = Dense(self.opt['dense_dim'], activation=None,
                        kernel_regularizer=l2(self.opt['regul_coef_dense']))(output)
+        output = BatchNormalization()(output)
+        output = Activation('relu')(output)
         output = Dropout(rate=self.opt['dropout_rate'])(output)
         output = Dense(1, activation=None, kernel_regularizer=l2(self.opt['regul_coef_dense']))(output)
+        output = BatchNormalization()(output)
         act_output = Activation('sigmoid')(output)
         model = Model(inputs=embed_input, outputs=act_output)
         return model
 
+
     def lstm_word_model(self):
         embed_input = Input(shape=(self.opt['max_sequence_length'], self.opt['embedding_dim'],))
 
-        output_0 = Bidirectional(LSTM(self.opt['units_lstm'],
+        output = Bidirectional(LSTM(self.opt['units_lstm'], activation='tanh',
                                       kernel_regularizer=l2(self.opt['regul_coef_lstm']),
                                       dropout=self.opt['dropout_rate']))(embed_input)
-
-        output_1 = Bidirectional(LSTM(self.opt['units_lstm'],
-                                      kernel_regularizer=l2(self.opt['regul_coef_lstm']),
-                                      dropout=self.opt['dropout_rate']))(embed_input)
-
-        output_2 = Bidirectional(LSTM(self.opt['units_lstm'],
-                                      kernel_regularizer=l2(self.opt['regul_coef_lstm']),
-                                      dropout=self.opt['dropout_rate']))(embed_input)
-
-        output = concatenate([output_0, output_1, output_2], axis=1)
 
         output = Dropout(rate=self.opt['dropout_rate'])(output)
-        output = Dense(self.opt['dense_dim'], activation='relu',
+        output = Dense(self.opt['dense_dim'], activation=None,
                        kernel_regularizer=l2(self.opt['regul_coef_dense']))(output)
+        output = BatchNormalization()(output)
+        output = Activation('relu')(output)
         output = Dropout(rate=self.opt['dropout_rate'])(output)
         output = Dense(1, activation=None,
                        kernel_regularizer=l2(self.opt['regul_coef_dense']))(output)
+        output = BatchNormalization()(output)
         act_output = Activation('sigmoid')(output)
         model = Model(inputs=embed_input, outputs=act_output)
         return model
