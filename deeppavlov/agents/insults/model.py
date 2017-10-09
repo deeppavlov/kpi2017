@@ -32,6 +32,10 @@ from .utils import vectorize_select_from_data
 
 from .embeddings_dict import EmbeddingsDict
 
+SEED = 23
+np.random.seed(SEED)
+tf.set_random_seed(SEED)
+
 class InsultsModel(object):
 
     def __init__(self, model_name, word_index, embedding_dict, opt):
