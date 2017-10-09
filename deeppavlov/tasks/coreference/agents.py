@@ -23,7 +23,7 @@ from .build import build
 from . import utils
 import tensorflow as tf
 
-class BaseTeacher(Teacher):
+class DefaultTeacher(Teacher):
     
     @staticmethod
     def add_cmdline_args(argparser):

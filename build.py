@@ -151,3 +151,25 @@ def train_squad(project):
                         '--embedding_file', './build/squad/glove.840B.300d.txt'
                         ])
     return metrics
+
+
+@task
+def train_coreference(project):
+    create_dir('coreference')
+    metrics = bu.model(['-t', 'deeppavlov.tasks.coreference.agents',
+                        '-m', 'deeppavlov.agents.coreference.agents:CoreferenceAgent',
+                        '-mf', './build/coreference/',
+                        '--model-file', 'train_model',
+                        '--language', 'russian',
+                        '--name', 'fasttext',
+                        '--pretrained_model', 'True',
+                        '-dt', 'train:ordered',
+                        '--batchsize', '1',
+                        '--display-examples', 'False',
+                        '--max-train-time', '-1',
+                        '--validation-every-n-epochs', '30',
+                        '--log-every-n-epochs', '10',
+                        '--log-every-n-secs', '-1',
+                        '--chosen-metric', 'conll-F-1'
+                        ])
+    return metrics
