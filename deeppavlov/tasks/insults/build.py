@@ -15,17 +15,17 @@ def data_preprocessing(f):
     f = [x.replace("\\xa0", " ") for x in f]
     f = [x.replace("\\xc2", " ") for x in f]
 
-    f = [re.sub('[!!]+', ' !! ', x) for x in f]
+    f = [re.sub('!!+', ' !! ', x) for x in f]
     f = [re.sub('!', ' ! ', x) for x in f]
     f = [re.sub('! !', '!!', x) for x in f]
 
-    f = [re.sub('[\?\?]+', ' ?? ', x) for x in f]
+    f = [re.sub('\?\?+', ' ?? ', x) for x in f]
     f = [re.sub('\?', ' ? ', x) for x in f]
     f = [re.sub('\? \?', '??', x) for x in f]
 
-    f = [re.sub('[\?!]+', ' ?! ', x) for x in f]
+    f = [re.sub('\?!+', ' ?! ', x) for x in f]
 
-    f = [re.sub('[\.\.]+', '..', x) for x in f]
+    f = [re.sub('\.\.+', '..', x) for x in f]
     f = [re.sub('\.', ' . ', x) for x in f]
     f = [re.sub('\.  \.', '..', x) for x in f]
 
