@@ -43,9 +43,9 @@ class DefaultTeacher(DialogTeacher):
     @staticmethod
     def add_cmdline_args(argparser):
         teacher = argparser.add_argument_group('paraphrases teacher arguments')
-        teacher.add_argument('--cross-validation-seed', type=int, default=71)
-        teacher.add_argument('--cross-validation-model-index', type=int)
-        teacher.add_argument('--cross-validation-splits-count', type=int, default=5)
+        teacher.add_argument('--teacher-random-seed', type=int, default=71)
+        teacher.add_argument('--bagging-fold-index', type=int)
+        teacher.add_argument('--bagging-folds-number', type=int, default=5)
 
     def __init__(self, opt, shared=None):
         # store datatype
@@ -61,7 +61,7 @@ class DefaultTeacher(DialogTeacher):
         self.answer_candidates = ['Да', 'Нет']
 
         random_state = random.getstate()
-        random.seed(opt.get('cross_validation_seed'))
+        random.seed(opt.get('teacher_random_seed'))
         self.random_state = random.getstate()
         random.setstate(random_state)
 
@@ -102,12 +102,12 @@ class DefaultTeacher(DialogTeacher):
             random_state = random.getstate()
             random.setstate(self.random_state)
             kf_seed = random.randrange(500000)
-            kf = KFold(self.opt.get('cross_validation_splits_count'), shuffle=True,
+            kf = KFold(self.opt.get('bagging_folds_number'), shuffle=True,
                        random_state=kf_seed)
             i = 0
             for train_index, test_index in kf.split(questions):
                 indexes = train_index if self.datatype_strict == 'train' else test_index
-                if i >= self.opt.get('cross_validation_model_index', 0):
+                if i >= self.opt.get('bagging_fold_index', 0):
                     break
             self.random_state = random.getstate()
             random.setstate(random_state)

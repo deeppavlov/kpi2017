@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Build custom kernels.
-TF_INC=$(python -c 'import tensorflow as tf; print(tf.sysconfig.get_include())')
+TF_INC=$(python3 -c 'import tensorflow as tf; print(tf.sysconfig.get_include())')
 
 # Linux (pip)
 #g++ -std=c++11 -shared coref_kernels.cc -o coref_kernels.so -I $TF_INC -fPIC -D_GLIBCXX_USE_CXX11_ABI=0
