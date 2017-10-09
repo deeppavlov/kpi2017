@@ -39,7 +39,6 @@ def build(opt):
 
         # Build the folders tree
         build_data.make_dir(dpath)
-        build_data.make_dir(join(dpath, 'logs'))
         build_data.make_dir(join(dpath, 'report', 'response_files'))
         build_data.make_dir(join(dpath, 'report', 'results'))
         build_data.make_dir(join(dpath, 'scorer'))

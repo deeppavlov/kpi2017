@@ -37,6 +37,9 @@ class CorefModel(object):
     def __init__(self, opt):
         self.opt = copy.deepcopy(opt)
         
+        config = tf.ConfigProto()
+        config.gpu_options.per_process_gpu_memory_fraction = 0.8
+        
         dpath = join(self.opt['datapath'], 'coreference', self.opt['language'], 'agent')
         self.char_vocab_path = join(dpath, 'vocab', 'char_vocab.russian.txt')
         self.embedding_path = join(dpath, 'embeddings', 'embeddings_lenta_100.vec')
@@ -83,8 +86,10 @@ class CorefModel(object):
         }
         optimizer = optimizers[self.opt["optimizer"]](learning_rate)
         self.train_op = optimizer.apply_gradients(zip(gradients, trainable_params), global_step=self.global_step)
-        self.sess = tf.Session()
-        self.sess.run(tf.global_variables_initializer())
+        
+        self.sess = tf.Session(config=config)
+        self.init_op = tf.global_variables_initializer()
+        self.sess.run(self.init_op)
         
     def start_enqueue_thread(self, train_example, is_training):
         def _enqueue_loop():
@@ -287,8 +292,7 @@ class CorefModel(object):
                                    [1, max_antecedents, 1])  # [num_mentions, max_ant, emb]
         similarity_emb = antecedent_emb * target_emb_tiled  # [num_mentions, max_ant, emb]
 
-        pair_emb = tf.concat([target_emb_tiled, antecedent_emb, similarity_emb, feature_emb],
-                             2)  # [num_mentions, max_ant, emb]
+        pair_emb = tf.concat([target_emb_tiled, antecedent_emb, similarity_emb, feature_emb], 2)  # [num_mentions, max_ant, emb]
 
         with tf.variable_scope("iteration"):
             with tf.variable_scope("antecedent_scoring"):
@@ -482,38 +486,34 @@ class CorefModel(object):
 
         return predicted_clusters, mention_to_predicted
 
-    def init_from_saved(self):
-        checkpoint_path = join(self.log_root, self.opt['name'], "model.max.ckpt")
-        if os.path.isfile(checkpoint_path):
-            saver = tf.train.Saver()
-            saver.restore(self.sess, checkpoint_path)
+    def init_from_saved(self, saver):
+        checkpoint_path = join(self.log_root, self.opt['name'])
+        if os.path.isfile(join(checkpoint_path, "model.max.ckpt.meta")):
+            saver.restore(self.sess, join(checkpoint_path, "model.max.ckpt"))
         else:
             print('{0} not found'.format(checkpoint_path))
+            print('Init from scratch')
 
     def shutdown(self):
         tf.reset_default_graph()
 
-    def save(self):
+    def save(self, saver):
         log_dir = self.log_root
         if isdir(log_dir):
             if isdir(join(log_dir, self.opt['name'])):  
-                saver = tf.train.Saver()
                 print('saving path ' + join(log_dir, self.opt['name'], 'model.max.ckpt'))
                 saver.save(self.sess, join(log_dir, self.opt['name'], 'model.max.ckpt'))
             else:
                 os.mkdir(self.opt['name'])
-                saver = tf.train.Saver()
                 print('saving path ' + join(log_dir, self.opt['name'], 'model.max.ckpt'))
                 saver.save(self.sess, join(log_dir, self.opt['name'], 'model.max.ckpt'))
         else:
             os.mkdir(self.opt["log_root"])
             if isdir(join(log_dir, self.opt['name'])):  
-                saver = tf.train.Saver()
                 print('saving path ' + join(log_dir, self.opt['name'], 'model.max.ckpt'))
                 saver.save(self.sess, join(log_dir, self.opt['name'], 'model.max.ckpt'))
             else:
                 os.mkdir(self.opt['name'])
-                saver = tf.train.Saver()
                 print('saving path ' + join(log_dir, self.opt['name'], 'model.max.ckpt'))
                 saver.save(self.sess, join(log_dir, self.opt['name'], 'model.max.ckpt'))
 
