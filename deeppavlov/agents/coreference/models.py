@@ -40,7 +40,7 @@ class CorefModel(object):
         config = tf.ConfigProto()
         config.gpu_options.per_process_gpu_memory_fraction = 0.8
         
-        dpath = join(self.opt['log_root'], self.opt['language'], 'agent')
+        dpath = join(self.opt['model_file'], self.opt['language'], 'agent')
         self.char_vocab_path = join(dpath, 'vocab', 'char_vocab.russian.txt')
         self.embedding_path = join(dpath, 'embeddings', 'embeddings_lenta_100.vec')
         self.log_root = join(dpath, 'logs')
