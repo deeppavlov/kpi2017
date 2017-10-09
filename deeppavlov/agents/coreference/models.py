@@ -91,10 +91,12 @@ class CorefModel(object):
         self.init_op = tf.global_variables_initializer()
         self.sess.run(self.init_op)
         
-    def start_enqueue_thread(self, train_example, is_training):
+    def start_enqueue_thread(self, train_example, is_training, returning=False):
         tensorized_example = self.tensorize_example(train_example, is_training=is_training)
         feed_dict = dict(zip(self.queue_input_tensors, tensorized_example))
         self.sess.run(self.enqueue_op, feed_dict=feed_dict)
+        if returning:
+            return tensorized_example
 
     def tensorize_mentions(self, mentions):
         if len(mentions) > 0:
@@ -518,16 +520,14 @@ class CorefModel(object):
         return self.tf_loss
 
     def predict(self, batch, out_file):        
-        self.start_enqueue_thread(batch, True)
+        self.start_enqueue_thread(batch, False)        
+        candidate_starts, candidate_ends, mention_scores, mention_starts, mention_ends, antecedents, antecedent_scores = self.sess.run(self.predictions)
+        
         
         tensorise = lambda example: self.tensorize_example(example, is_training=False)
-        
-        _, _, _, _, _, _, gold_starts, gold_ends, _ = feed_dict = tensorise(batch)
+        _, _, _, _, _, _, gold_starts, gold_ends, _ = tensorise(batch)
         gold_spans = set(zip(gold_starts, gold_ends))
-        
-        candidate_starts, candidate_ends, mention_scores, mention_starts, mention_ends, antecedents, antecedent_scores = self.predictions
-        
-          
+
         if len(candidate_starts) > 0:
           sorted_starts, sorted_ends, _ = zip(*sorted(zip(candidate_starts, candidate_ends, mention_scores)))
         else:
@@ -537,12 +537,12 @@ class CorefModel(object):
         num_predictions = len(gold_spans)
         predicted_starts = sorted_starts[:num_predictions]
         predicted_ends = sorted_ends[:num_predictions]
+        # predicted_spans = set(zip(predicted_starts, predicted_ends))
 
         predicted_antecedents = self.get_predicted_antecedents(antecedents, antecedent_scores)
 
-
-        predicted_clusters, mention_to_predicted = self.get_predicted_clusters(mention_starts, mention_ends, predicted_antecedents)
-
+        # predicted_clusters, mention_to_predicted = self.get_predicted_clusters(mention_starts, mention_ends,                                                                               predicted_antecedents)
+        predicted_clusters, mention_to_predicted = self.get_predicted_clusters(mention_starts, mention_ends,                predicted_antecedents)
         new_cluters = {}
         new_cluters[batch['doc_key']] = predicted_clusters
         outconll = utils.output_conll(out_file, batch, new_cluters)
