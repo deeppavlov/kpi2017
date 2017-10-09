@@ -17,7 +17,6 @@ limitations under the License.
 
 import random
 import os
-import threading
 import copy
 import numpy as np
 import tensorflow as tf
@@ -93,14 +92,10 @@ class CorefModel(object):
         self.sess.run(self.init_op)
         
     def start_enqueue_thread(self, train_example, is_training):
-        def _enqueue_loop():
-            while True:
-                tensorized_example = self.tensorize_example(train_example, is_training=is_training)
-                feed_dict = dict(zip(self.queue_input_tensors, tensorized_example))
-                self.sess.run(self.enqueue_op, feed_dict=feed_dict)
-        enqueue_thread = threading.Thread(target=_enqueue_loop)
-        enqueue_thread.daemon = True
-        enqueue_thread.start()
+        tensorized_example = self.tensorize_example(train_example, is_training=is_training)
+        feed_dict = dict(zip(self.queue_input_tensors, tensorized_example))
+        self.sess.run(self.enqueue_op, feed_dict=feed_dict)
+
 
     def tensorize_mentions(self, mentions):
         if len(mentions) > 0:
@@ -541,11 +536,9 @@ class CorefModel(object):
         num_predictions = len(gold_spans)
         predicted_starts = sorted_starts[:num_predictions]
         predicted_ends = sorted_ends[:num_predictions]
-        # predicted_spans = set(zip(predicted_starts, predicted_ends))
 
         predicted_antecedents = self.get_predicted_antecedents(antecedents, antecedent_scores)
 
-        # predicted_clusters, mention_to_predicted = self.get_predicted_clusters(mention_starts, mention_ends,                                                                               predicted_antecedents)
         predicted_clusters, mention_to_predicted = self.get_predicted_clusters(mention_starts, mention_ends, predicted_antecedents)
         new_cluters = {}
         new_cluters[batch['doc_key']] = predicted_clusters
