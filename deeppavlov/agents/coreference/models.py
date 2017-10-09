@@ -14,13 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+
 import random
 import os
 import threading
 import copy
 import numpy as np
 import tensorflow as tf
-from deeppavlov.tasks.coreference import utils
+from . import utils
 from os.path import isdir, join
 
 coref_op_library = tf.load_op_library("./coref_kernels.so")
@@ -518,7 +519,6 @@ class CorefModel(object):
                 saver.save(self.sess, join(log_dir, self.opt['name'], 'model.max.ckpt'))
 
     def train(self, batch):
-#        print(batch)
         self.start_enqueue_thread(batch, True)
         self.tf_loss, tf_global_step, _ = self.sess.run([self.loss, self.global_step, self.train_op])
         return self.tf_loss
@@ -546,7 +546,7 @@ class CorefModel(object):
         predicted_antecedents = self.get_predicted_antecedents(antecedents, antecedent_scores)
 
         # predicted_clusters, mention_to_predicted = self.get_predicted_clusters(mention_starts, mention_ends,                                                                               predicted_antecedents)
-        predicted_clusters, mention_to_predicted = self.get_predicted_clusters(mention_starts, mention_ends,                predicted_antecedents)
+        predicted_clusters, mention_to_predicted = self.get_predicted_clusters(mention_starts, mention_ends, predicted_antecedents)
         new_cluters = {}
         new_cluters[batch['doc_key']] = predicted_clusters
         outconll = utils.output_conll(out_file, batch, new_cluters)

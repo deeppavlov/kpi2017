@@ -20,7 +20,7 @@ import tensorflow as tf
 from parlai.core.agents import Agent
 from . import config
 from .models import CorefModel
-from deeppavlov.tasks.coreference import utils
+from . import utils
 import parlai.core.build_data as build_data
 from os.path import join, isdir
 
