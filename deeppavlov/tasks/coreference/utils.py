@@ -23,6 +23,12 @@ from sklearn import cross_validation
 from tqdm import tqdm
 import parlai.core.build_data as build_data
 import tensorflow as tf
+<<<<<<< HEAD
+=======
+from collections import Counter, defaultdict
+import operator
+import copy
+>>>>>>> 3d863dbb50c5f5f4f715be91bf1d298883926262
 
 def RuCoref2CoNLL(path, out_path, language='russian'):
     data = {"doc_id": [],
@@ -60,38 +66,14 @@ def RuCoref2CoNLL(path, out_path, language='russian'):
                                                                                                                       :-1].split('\t')
 
             if doc_id not in coref_dict:
-                coref_dict[doc_id] = {'unos': {}, 'starts': {}, 'ends': {}}
-                if len(tk_shifts.split(',')) == 1:
-                    if tk_shifts not in coref_dict[doc_id]['unos']:
-                        coref_dict[doc_id]['unos'][shift] = [chain_id]
-                    else:
-                        coref_dict[doc_id]['unos'][shift].append(chain_id)
-                else:
-                    tk = tk_shifts.split(',')
-                    if tk[0] not in coref_dict[doc_id]['starts']:
-                        coref_dict[doc_id]['starts'][tk[0]] = [chain_id]
-                    else:
-                        coref_dict[doc_id]['starts'][tk[0]].append(chain_id)
-                    if tk[-1] not in coref_dict[doc_id]['ends']:
-                        coref_dict[doc_id]['ends'][tk[-1]] = [chain_id]
-                    else:
-                        coref_dict[doc_id]['ends'][tk[-1]].append(chain_id)
+                coref_dict[doc_id] = {'unos': defaultdict(list), 'starts': defaultdict(list), 'ends': defaultdict(list)}
+
+            if len(tk_shifts.split(',')) == 1:
+                coref_dict[doc_id]['unos'][shift].append(chain_id)
             else:
-                if len(tk_shifts.split(',')) == 1:
-                    if tk_shifts not in coref_dict[doc_id]['unos']:
-                        coref_dict[doc_id]['unos'][shift] = [chain_id]
-                    else:
-                        coref_dict[doc_id]['unos'][shift].append(chain_id)
-                else:
-                    tk = tk_shifts.split(',')
-                    if tk[0] not in coref_dict[doc_id]['starts']:
-                        coref_dict[doc_id]['starts'][tk[0]] = [chain_id]
-                    else:
-                        coref_dict[doc_id]['starts'][tk[0]].append(chain_id)
-                    if tk[-1] not in coref_dict[doc_id]['ends']:
-                        coref_dict[doc_id]['ends'][tk[-1]] = [chain_id]
-                    else:
-                        coref_dict[doc_id]['ends'][tk[-1]].append(chain_id)
+                tk = tk_shifts.split(',')
+                coref_dict[doc_id]['starts'][tk[0]].append(chain_id)
+                coref_dict[doc_id]['ends'][tk[-1]].append(chain_id)
         groups_file.close()
 
     # Write conll structure

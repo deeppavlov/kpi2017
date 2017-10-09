@@ -29,10 +29,10 @@ def bdfa(opt):
     embed_url = '0B7A8-2DSIVoeelVIT1BMUFVLSnM'
     vocab_url = '0B7A8-2DSIVoed0FIMXdqU0FlQ3M'
     # get path to data directory and create folders tree
-    dpath = join(opt['datapath'])
+    dpath = join(opt['model_file'])
     # define languages
     language = opt['language']
-    dpath = join(dpath, 'coreference', language, 'agent')
+    dpath = join(dpath, language, 'agent')
     build_data.make_dir(dpath)
     
     if not isdir(join(dpath, 'embeddings')):
