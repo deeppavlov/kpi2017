@@ -159,6 +159,7 @@ def train_coreference(project):
     metrics = bu.model(['-t', 'deeppavlov.tasks.coreference.agents',
                         '-m', 'deeppavlov.agents.coreference.agents:CoreferenceAgent',
                         '-mf', './build/coreference/',
+                        '--log_root', './build/coreference/',
                         '--model-file', 'train_model',
                         '--language', 'russian',
                         '--name', 'fasttext',
