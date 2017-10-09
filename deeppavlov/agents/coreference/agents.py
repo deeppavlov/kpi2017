@@ -84,6 +84,7 @@ class CoreferenceAgent(Agent):
 
     def observe(self, observation):
         self.observation = copy.deepcopy(observation)
+        self.start = time.time()
         self.obs_dict = utils.conll2modeldata(self.observation)
         return self.obs_dict
 
@@ -120,9 +121,6 @@ class CoreferenceAgent(Agent):
     def save(self):
         self.model.save()
 
-    def load(self):
-        self.model.init_from_saved()
-
     def shutdown(self):
         if not self.is_shared:
             if self.model is not None:
@@ -133,11 +131,10 @@ class CoreferenceAgent(Agent):
         return {'loss': self.tf_loss}
     
     def remaining_time(self):
-        if self.iterations == 0:
-            self.start = time.time()
         if self.observation['iter_id'] % self.rep_iter == 0:
             self.iterations += self.rep_iter
-            n = self.rep_iter**2 - self.iterations
+            glob_time = self.opt['validation-every-n-epochs']*100
+            n = glob_time - self.iterations
             t = time.time() - self.start
             r_time = n*(t/self.rep_iter)
             hours = int(r_time/(60**2))
