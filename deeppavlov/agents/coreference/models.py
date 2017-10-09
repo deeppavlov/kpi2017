@@ -92,14 +92,9 @@ class CorefModel(object):
         self.sess.run(self.init_op)
         
     def start_enqueue_thread(self, train_example, is_training):
-        def _enqueue_loop():
-            while True:
-                tensorized_example = self.tensorize_example(train_example, is_training=is_training)
-                feed_dict = dict(zip(self.queue_input_tensors, tensorized_example))
-                self.sess.run(self.enqueue_op, feed_dict=feed_dict)
-        enqueue_thread = threading.Thread(target=_enqueue_loop)
-        enqueue_thread.daemon = True
-        enqueue_thread.start()
+        tensorized_example = self.tensorize_example(train_example, is_training=is_training)
+        feed_dict = dict(zip(self.queue_input_tensors, tensorized_example))
+        self.sess.run(self.enqueue_op, feed_dict=feed_dict)
 
     def tensorize_mentions(self, mentions):
         if len(mentions) > 0:
@@ -523,15 +518,17 @@ class CorefModel(object):
         self.tf_loss, tf_global_step, _ = self.sess.run([self.loss, self.global_step, self.train_op])
         return self.tf_loss
 
-    def predict(self, batch, out_file):
-        self.start_enqueue_thread(batch, False)        
-        candidate_starts, candidate_ends, mention_scores, mention_starts, mention_ends, antecedents, antecedent_scores = self.sess.run(self.predictions)
-        
+    def predict(self, batch, out_file):        
+        self.start_enqueue_thread(batch, True)
         
         tensorise = lambda example: self.tensorize_example(example, is_training=False)
-        _, _, _, _, _, _, gold_starts, gold_ends, _ = tensorise(batch)
+        
+        _, _, _, _, _, _, gold_starts, gold_ends, _ = feed_dict = tensorise(batch)
         gold_spans = set(zip(gold_starts, gold_ends))
-
+        
+        candidate_starts, candidate_ends, mention_scores, mention_starts, mention_ends, antecedents, antecedent_scores = self.predictions
+        
+          
         if len(candidate_starts) > 0:
           sorted_starts, sorted_ends, _ = zip(*sorted(zip(candidate_starts, candidate_ends, mention_scores)))
         else:
@@ -547,6 +544,7 @@ class CorefModel(object):
 
         # predicted_clusters, mention_to_predicted = self.get_predicted_clusters(mention_starts, mention_ends,                                                                               predicted_antecedents)
         predicted_clusters, mention_to_predicted = self.get_predicted_clusters(mention_starts, mention_ends,                predicted_antecedents)
+        
         new_cluters = {}
         new_cluters[batch['doc_key']] = predicted_clusters
         outconll = utils.output_conll(out_file, batch, new_cluters)
