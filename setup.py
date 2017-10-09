@@ -47,5 +47,5 @@ setup(name='deeppavlov',
                 'coreference resolution',
                 'text comprehension',
                 'insult detection',
-                'AI'],
+                'AI']
       )

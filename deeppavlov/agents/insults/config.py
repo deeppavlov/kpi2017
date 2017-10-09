@@ -4,6 +4,7 @@ def add_cmdline_args(parser):
     agent.add_argument('--no_cuda', type='bool', default=False)
     agent.add_argument('--gpu', type=int, default=-1)
     agent.add_argument('--random_seed', type=int, default=1013)
+    agent.add_argument('--model_seed', type=int, default=23)
 
     # Basics
     agent.add_argument('--embedding_file', type=str, default=None,
