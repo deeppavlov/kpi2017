@@ -55,5 +55,3 @@ def add_cmdline_args(parser):
     agent.add_argument('--name', type=str, default='main')
     agent.add_argument('--nitr', type=int, default=200)
     agent.add_argument('--rep_iter', type=int, default=100)
-    agent.add_argument('--log_root', type=str, default='./build/coreference/')
-    

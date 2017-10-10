@@ -20,7 +20,7 @@ import tensorflow as tf
 from parlai.core.agents import Agent
 from . import config
 from .models import CorefModel
-from deeppavlov.tasks.coreference import utils
+from . import utils
 import parlai.core.build_data as build_data
 from os.path import join, isdir
 
@@ -29,7 +29,7 @@ def bdfa(opt):
     embed_url = '0B7A8-2DSIVoeelVIT1BMUFVLSnM'
     vocab_url = '0B7A8-2DSIVoed0FIMXdqU0FlQ3M'
     # get path to data directory and create folders tree
-    dpath = join(opt['log_root'])
+    dpath = join(opt['model_file'])
     # define languages
     language = opt['language']
     dpath = join(dpath, language, 'agent')

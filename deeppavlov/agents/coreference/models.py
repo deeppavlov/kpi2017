@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+
 import random
 import os
-import threading
 import copy
 import numpy as np
 import tensorflow as tf
-from deeppavlov.tasks.coreference import utils
+from . import utils
 from os.path import isdir, join
 
 coref_op_library = tf.load_op_library("./coref_kernels.so")
@@ -40,7 +40,7 @@ class CorefModel(object):
         config = tf.ConfigProto()
         config.gpu_options.per_process_gpu_memory_fraction = 0.8
         
-        dpath = join(self.opt['log_root'], self.opt['language'], 'agent')
+        dpath = join(self.opt['model_file'], self.opt['language'], 'agent')
         self.char_vocab_path = join(dpath, 'vocab', 'char_vocab.russian.txt')
         self.embedding_path = join(dpath, 'embeddings', 'embeddings_lenta_100.vec')
         self.log_root = join(dpath, 'logs')
@@ -91,15 +91,12 @@ class CorefModel(object):
         self.init_op = tf.global_variables_initializer()
         self.sess.run(self.init_op)
         
-    def start_enqueue_thread(self, train_example, is_training):
-        def _enqueue_loop():
-            while True:
-                tensorized_example = self.tensorize_example(train_example, is_training=is_training)
-                feed_dict = dict(zip(self.queue_input_tensors, tensorized_example))
-                self.sess.run(self.enqueue_op, feed_dict=feed_dict)
-        enqueue_thread = threading.Thread(target=_enqueue_loop)
-        enqueue_thread.daemon = True
-        enqueue_thread.start()
+    def start_enqueue_thread(self, train_example, is_training, returning=False):
+        tensorized_example = self.tensorize_example(train_example, is_training=is_training)
+        feed_dict = dict(zip(self.queue_input_tensors, tensorized_example))
+        self.sess.run(self.enqueue_op, feed_dict=feed_dict)
+        if returning:
+            return tensorized_example
 
     def tensorize_mentions(self, mentions):
         if len(mentions) > 0:
@@ -518,12 +515,11 @@ class CorefModel(object):
                 saver.save(self.sess, join(log_dir, self.opt['name'], 'model.max.ckpt'))
 
     def train(self, batch):
-#        print(batch)
         self.start_enqueue_thread(batch, True)
         self.tf_loss, tf_global_step, _ = self.sess.run([self.loss, self.global_step, self.train_op])
         return self.tf_loss
 
-    def predict(self, batch, out_file):
+    def predict(self, batch, out_file):        
         self.start_enqueue_thread(batch, False)        
         candidate_starts, candidate_ends, mention_scores, mention_starts, mention_ends, antecedents, antecedent_scores = self.sess.run(self.predictions)
         
