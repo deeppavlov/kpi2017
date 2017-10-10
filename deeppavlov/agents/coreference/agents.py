@@ -61,7 +61,7 @@ class CoreferenceAgent(Agent):
     @staticmethod
     def add_cmdline_args(argparser):
         config.add_cmdline_args(argparser)
-
+        
     def __init__(self, opt, shared=None):
         
         bdfa(opt)
@@ -92,14 +92,12 @@ class CoreferenceAgent(Agent):
             print('[ Initializing model from scratch ]')
 
     def observe(self, observation):
-        print('agent_obs {}'.format(0))
         self.observation = copy.deepcopy(observation)
         self.obs_dict = utils.conll2modeldata(self.observation)
-        print(self.obs_dict)
+        self.start = time.time()
         return self.obs_dict
 
     def act(self):
-        print('agent_act {}'.format(0))
         if self.is_shared:
             raise RuntimeError("Parallel act is not supported.")
         if self.observation['mode'] == 'train':
@@ -118,6 +116,8 @@ class CoreferenceAgent(Agent):
             conll_str = self.model.predict(self.obs_dict, self.observation)
             conll['conll'] = True
             conll['iter_id'] = self.observation['iter_id']
+            conll['iteration'] = self.iterations
+            conll['epoch_done'] = self.observation['epoch_done']
             conll['conll_str'] = conll_str
             return conll
         elif self.observation['mode'] == 'test':
@@ -125,6 +125,8 @@ class CoreferenceAgent(Agent):
             conll_str = self.model.predict(self.obs_dict, self.observation)
             conll['conll'] = True
             conll['iter_id'] = self.observation['iter_id']
+            conll['iteration'] = self.iterations
+            conll['epoch_done'] = self.observation['epoch_done']
             conll['conll_str'] = conll_str
             return conll
 

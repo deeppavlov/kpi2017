@@ -76,7 +76,6 @@ class DefaultTeacher(Teacher):
     
     
     def act(self):
-        print('techer_act {}'.format(0))
         datafile = join(self.datapath, self.doc_address[self.doc_id])
         epoch_done = self.doc_id == self.len - 1
         act_dict = utils.conll2dict(datafile, self.iter, self.id, self.dt, self.doc_address[self.doc_id],
@@ -85,7 +84,6 @@ class DefaultTeacher(Teacher):
         return act_dict
             
     def observe(self, observation):
-        print('techer_obs {}'.format(0))
         self.observation = copy.deepcopy(observation)
         if self.observation['epoch_done']:
             self.doc_id = 0
