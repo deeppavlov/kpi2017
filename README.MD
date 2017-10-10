@@ -1,8 +1,3 @@
-To automatically get private datasets and pretrained models from ipavlov's ftp server,
-please set the `IPAVLOV_FTP` environment variable:
-```
-export IPAVLOV_FTP=ftp://{user}:{password}@{host}
-```
 Install from internal PyPi server
 ```sh
 pip install --extra-index-url http://{host}:{port}/ --trusted-host {host} deeppavlov
@@ -15,3 +10,10 @@ cd deeppavlov
 python setup.py develop
 ```
 
+Run model training
+```sh
+pyb train_<model_name>
+```
+where <model_name> should be replaced with the name of the model from the library: ner, paraphraser, insults, squad.
+
+Works on Ubuntu 16.04.

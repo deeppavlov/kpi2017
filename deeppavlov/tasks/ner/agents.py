@@ -58,7 +58,7 @@ class DefaultTeacher(DialogTeacher):
     @staticmethod
     def add_cmdline_args(argparser):
         group = argparser.add_argument_group('NER Teacher')
-        group.add_argument('--raw-data-path', default=None,
+        group.add_argument('--raw-dataset-path', default=None,
                            help='path to Gareev dataset')
         group.add_argument('--teacher-seed', type=int, default=42)
         group.add_argument('--train-part', type=int, default=0.8)
