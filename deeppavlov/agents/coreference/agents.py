@@ -49,6 +49,11 @@ def bdfa(opt):
     
     if not isdir(join(dpath, 'logs', opt['name'])):
         build_data.make_dir(join(dpath, 'logs', opt['name']))
+        
+    if not isdir(join(dpath, 'reports')):
+        build_data.make_dir(join(dpath, 'reports', 'response_files'))
+        build_data.make_dir(join(dpath, 'reports', 'results'))
+        build_data.make_dir(join(dpath, 'reports', 'predictions'))
     return None 
 
 class CoreferenceAgent(Agent):
@@ -148,5 +153,5 @@ class CoreferenceAgent(Agent):
             minutes = int(r_time/60 - hours*60)
             self.start = time.time()
             if self.iterations != 100:
-                print('iter: {} | Loss: {} | Remaining Time: {} hours {} minutes'.format(self.iterations, self.tf_loss, hours, minutes))
+                print('iter: {0} | Loss: {1:.3f} | Remaining Time: {2} hours {3} minutes'.format(self.iterations, self.tf_loss, hours, minutes))
         return None

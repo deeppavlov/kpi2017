@@ -407,28 +407,17 @@ def dict2conll(data, predict):
     return None
 
 def score(scorer, keys_path, predicts_path):
-    key_files = []
-    pred_files = []
+    key_files = os.listdir(keys_path)
+    pred_files = os.listdir(predicts_path)
+#    assert set(key_files) == set(pred_files)
     
-    for dirpath, dirnames, filenames in os.walk(keys_path):
-        # f.endswith("auto_conll") or f.endswith("gold_conll") or f.endswith('gold_parse_conll')
-        for filename in [f for f in filenames if (f.endswith('v4_conll'))]:
-            key_files.append(os.path.join(dirpath, filename))
-    key_files = list(sorted(key_files))
-    
-    for dirpath, dirnames, filenames in os.walk(predicts_path):
-        # f.endswith("auto_conll") or f.endswith("gold_conll") or f.endswith('gold_parse_conll')
-        for filename in [f for f in filenames if (f.endswith('v4_conll'))]:
-            pred_files.append(os.path.join(dirpath, filename))
-    pred_files = list(sorted(pred_files))    
-
     print('score: Files to process: {}'.format(len(pred_files)))
-    for key_file in tqdm(pred_files):
-        predict_files = join(predicts_path, basename(key_file))
-        gold_files = join(keys_path, basename(key_file))
+    for file in tqdm(pred_files):
+        predict_file = join(predicts_path, file)
+        gold_file = join(keys_path, file)
         for metric in ['muc', 'bcub', 'ceafm', 'ceafe']:
-            out_pred_score = '{0}.{1}'.format(join(predicts_path, basename(key_file)), metric)
-            cmd = '{0} {1} {2} {3} none > {4}'.format(scorer, metric, gold_files, predict_files, out_pred_score)
+            out_pred_score = '{0}.{1}'.format(predict_file, metric)
+            cmd = '{0} {1} {2} {3} none > {4}'.format(scorer, metric, gold_file, predict_file, out_pred_score)
             #print(cmd)
             os.system(cmd)
 
@@ -443,8 +432,8 @@ def score(scorer, keys_path, predicts_path):
     for metric in ['muc', 'bcub', 'ceafm', 'ceafe']:
         recall = []
         precision = []
-        for key_file in pred_files:
-            out_pred_score = '{0}.{1}'.format(join(predicts_path, basename(key_file)), metric)
+        for file in pred_files:
+            out_pred_score = '{0}.{1}'.format(join(predicts_path, file), metric)
             with open(out_pred_score, 'r', encoding='utf8') as score_file:
                 lines = score_file.readlines()
                 if lines[-1].strip() != '--------------------------------------------------------------------------':
@@ -479,13 +468,14 @@ def score(scorer, keys_path, predicts_path):
 
     print('avg: {0:.5f}'.format(np.mean(f1)))
     # muc bcub ceafe
-    conllf1 = np.mean(f1[:2] + f1[-1:])
+    conllf1 = np.mean(f1[:2] + f1[-1:]) # wtf
     print('conll F-1: {0:.5f}'.format(conllf1))
     print('using {}/{}'.format(k, 4 * len(key_files)))
-    results['avg F-1'] = np.mean(f1)
+    res = dict()
+    res['avg-F-1'] = np.mean(f1)
     results['conll-F-1'] = conllf1
     json.dump(results, open(join(predicts_path, 'results.json'), 'w'))
-    return results
+    return res
 
 
 def normalize(v):
