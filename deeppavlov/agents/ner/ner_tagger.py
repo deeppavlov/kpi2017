@@ -20,6 +20,9 @@ class NERTagger:
                  n_blocks=1,
                  learning_rate=1e-3):
         tf.reset_default_graph()
+        seed = opt.get('random_seed')
+        np.random.seed(seed)
+        tf.set_random_seed(seed)
         self.token_emb_dim = token_emb_dim
         self.char_emb_dim = char_emb_dim
         self.n_char_cnn_filters = n_char_cnn_filters
@@ -30,6 +33,11 @@ class NERTagger:
         x_w = tf.placeholder(dtype=tf.int32, shape=[None, None], name='x_word')
         x_c = tf.placeholder(dtype=tf.int32, shape=[None, None, None], name='x_char')
         y_t = tf.placeholder(dtype=tf.int32, shape=[None, None], name='y_tag')
+
+        # Learning stuff
+        glob_step = tf.Variable(0, trainable=False)
+        lr = tf.train.exponential_decay(learning_rate, glob_step, decay_steps=1024, decay_rate=0.5, staircase=True)
+
 
         # Load embeddings
         w_embeddings = np.random.randn(vocab_size, token_emb_dim).astype(np.float32) / np.sqrt(token_emb_dim)
@@ -54,7 +62,8 @@ class NERTagger:
         wc_features = tf.concat([w_emb, char_emb], axis=-1)
 
         # Cutdown dimensionality of the network via projection
-        units = tf.layers.dense(wc_features, 50, kernel_initializer=xavier_initializer())
+        # units = tf.layers.dense(wc_features, 50, kernel_initializer=xavier_initializer())
+        units = wc_features
 
         units, auxilary_outputs = self.dense_network(units, n_layers_per_block, dilated_filter_width)
 
@@ -66,7 +75,8 @@ class NERTagger:
         loss = tf.reduce_mean(loss_tensor)
 
         self.loss = loss
-        self.train_op = tf.train.AdamOptimizer(learning_rate).minimize(loss)
+        self.train_op = tf.train.AdamOptimizer(lr).minimize(loss)
+
         self.sess = tf.Session()
         self.word_dict = word_dict
         self.x = x_w
