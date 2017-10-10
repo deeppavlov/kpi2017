@@ -354,7 +354,7 @@ def score(scorer, keys_path, predicts_path):
     print('using {}/{}'.format(k, 4 * len(key_files)))
     res = dict()
     res['avg-F-1'] = np.mean(f1)
-    results['conll-F-1'] = conllf1
+    res['conll-F-1'] = conllf1
     json.dump(results, open(join(predicts_path, 'results.json'), 'w'))
     return res
 
