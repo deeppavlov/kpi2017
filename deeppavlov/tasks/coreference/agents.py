@@ -103,7 +103,6 @@ class DefaultTeacher(Teacher):
         return self.observation
 
     def report(self):
-        print('End epoch ...')
         scorer = self.scorer_path
         predicts_path = os.path.join(self.reports_datapath, 'response_files')
         keys_path = self.datapath
