@@ -114,7 +114,8 @@ def train_insults(project):
                         '--fasttext_embeddings_dict', './build/insults/emb_dict.emb',
                         '--bagging-folds-number', '3',
                         '-ve', '10',
-                        '-vp', '1'
+                        '-vp', '5',
+                        '--chosen-metric', 'auc'
                         ])
     return metrics
 
