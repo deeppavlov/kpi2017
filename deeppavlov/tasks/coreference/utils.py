@@ -297,57 +297,16 @@ def get_char_vocab(input_filename, output_filename):
 
 
 #
-def conll2dict(iter_id, conll, agent, mode, doc, epoch_done=False):
-    data = {'doc_id': [],
-            'part_id': [],
-            'word_number': [],
-            'word': [],
-            'part_of_speech': [],
-            'parse_bit': [],
-            'lemma': [],
-            'sense': [],
-            'speaker': [],
-            'entiti': [],
-            'predict': [],
-            'coreference': [],
-            'iter_id': iter_id,
+def conll2dict(conll, iter_id=None, agent=None, mode='train', doc=None, epoch_done=False):
+    data = {'iter_id': iter_id,
             'id': agent,
             'epoch_done': epoch_done,
             'mode': mode,
             'doc_name': doc}
 
-    with open(conll, 'r') as f:
-        for line in f:
-            row = line.split('\t')
-            if row[0].startswith('#'):
-                continue
-            elif row[0] == '\n':
-                data['doc_id'].append('bc')
-                data['part_id'].append('0')
-                data['word_number'].append('0')
-                data['word'].append('.')
-                data['part_of_speech'].append('End_of_sentence')
-                data['parse_bit'].append('-')
-                data['lemma'].append('-')
-                data['sense'].append('-')
-                data['speaker'].append('spk1')
-                data['entiti'].append('-')
-                data['predict'].append('-')
-                data['coreference'].append('-')
-            else:
-                assert len(row) >= 12
-                data['doc_id'].append(row[0])
-                data['part_id'].append(row[1])
-                data['word_number'].append(row[2])
-                data['word'].append(row[3])
-                data['part_of_speech'].append(row[4])
-                data['parse_bit'].append(row[5])
-                data['lemma'].append(row[6])
-                data['sense'].append(row[7])
-                data['speaker'].append(row[8])
-                data['entiti'].append(row[9])
-                data['predict'].append(row[10])
-                data['coreference'].append(row[11][0:-1])
+    with open(conll, 'r', encoding='utf8') as f:
+        s = f.read()
+        data['conll_str'] = s
         f.close()
     return data
 
