@@ -95,6 +95,7 @@ class CoreferenceAgent(Agent):
         print('agent_obs {}'.format(0))
         self.observation = copy.deepcopy(observation)
         self.obs_dict = utils.conll2modeldata(self.observation)
+        print(self.obs_dict)
         return self.obs_dict
 
     def act(self):
