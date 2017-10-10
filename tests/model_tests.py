@@ -27,7 +27,7 @@ class TestKPIs(unittest.TestCase):
                             ])
         self.assertTrue(metrics['f1'] > expected_KPI,
                         'KPI for paraphraser is not satisfied. \
-                        Got {}, expected more than {}'.format(metrics['auc'], expected_KPI))
+                        Got {}, expected more than {}'.format(metrics['f1'], expected_KPI))
 
     def test_ner(self):
         expected_KPI = 70
