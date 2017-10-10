@@ -268,9 +268,6 @@ def get_char_vocab(input_filename, output_filename):
             f.write(u"{}\n".format(c))
     print("[Wrote {} characters to {}] ...".format(len(vocab), output_filename))
 
-
-
-#
 def conll2dict(conll, iter_id=None, agent=None, mode='train', doc=None, epoch_done=False):
     data = {'iter_id': iter_id,
             'id': agent,
@@ -285,57 +282,8 @@ def conll2dict(conll, iter_id=None, agent=None, mode='train', doc=None, epoch_do
     return data
 
 def dict2conll(data, predict):
-    #
     with open(predict, 'w') as CoNLL:
-        for i in range(len(data['doc_id'])):
-            if i == 0:
-                CoNLL.write('#begin document ({}); part {}\n'.format(data['doc_id'][i], data["part_id"][i]))
-                CoNLL.write(u'{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(data['doc_id'][i],
-                                                    data["part_id"][i],
-                                                    data["word_number"][i],
-                                                    data["word"][i],
-                                                    data["part_of_speech"][i],
-                                                    data["parse_bit"][i],
-                                                    data["lemma"][i],
-                                                    data["sense"][i],
-                                                    data["speaker"][i],
-                                                    data["entiti"][i],
-                                                    data["predict"][i],
-                                                    data["coreference"][i]))
-            elif i == len(data['doc_id'])-1 and data['part_of_speech'][i] == 'End_of_sentence':
-                CoNLL.write('#end document\n')
-            elif data['part_of_speech'][i] == 'End_of_sentence':
-                continue
-            else:
-                if data['doc_id'][i] == data['doc_id'][i+1]:
-                    CoNLL.write(u'{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(data['doc_id'][i],
-                                                        data["part_id"][i],
-                                                        data["word_number"][i],
-                                                        data["word"][i],
-                                                        data["part_of_speech"][i],
-                                                        data["parse_bit"][i],
-                                                        data["lemma"][i],
-                                                        data["sense"][i],
-                                                        data["speaker"][i],
-                                                        data["entiti"][i],
-                                                        data["predict"][i],
-                                                        data["coreference"][i]))
-                elif data['part_of_speech'][i] == 'End_of_sentence':
-                    continue
-                else:
-                    CoNLL.write(u'{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(data['doc_id'][i],
-                                                    data["part_id"][i],
-                                                    data["word_number"][i],
-                                                    data["word"][i],
-                                                    data["part_of_speech"][i],
-                                                    data["parse_bit"][i],
-                                                    data["lemma"][i],
-                                                    data["sense"][i],
-                                                    data["speaker"][i],
-                                                    data["entiti"][i],
-                                                    data["predict"][i],
-                                                    data["coreference"][i]))
-                    CoNLL.write('\n')
+        CoNLL.write(data['conll_str'])
         CoNLL.close()
     return None
 

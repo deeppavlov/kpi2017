@@ -22,58 +22,8 @@ import operator
 import copy
 
 def dict2conll(data, predict):
-    #
     with open(predict, 'w') as CoNLL:
-        for i in range(len(data['doc_id'])):
-            if i == 0:
-                CoNLL.write('#begin document ({}); part {}\n'.format(data['doc_id'][i], data["part_id"][i]))
-                CoNLL.write(u'{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(data['doc_id'][i],
-                                                    data["part_id"][i],
-                                                    data["word_number"][i],
-                                                    data["word"][i],
-                                                    data["part_of_speech"][i],
-                                                    data["parse_bit"][i],
-                                                    data["lemma"][i],
-                                                    data["sense"][i],
-                                                    data["speaker"][i],
-                                                    data["entiti"][i],
-                                                    data["predict"][i],
-                                                    data["coreference"][i]))
-            elif i == len(data['doc_id'])-1 and data['part_of_speech'][i] == 'End_of_sentence':
-                CoNLL.write('#end document\n')
-            elif data['part_of_speech'][i] == 'End_of_sentence':
-                continue
-            else:
-                if data['doc_id'][i] == data['doc_id'][i+1]:
-                    CoNLL.write(u'{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(data['doc_id'][i],
-                                                        data["part_id"][i],
-                                                        data["word_number"][i],
-                                                        data["word"][i],
-                                                        data["part_of_speech"][i],
-                                                        data["parse_bit"][i],
-                                                        data["lemma"][i],
-                                                        data["sense"][i],
-                                                        data["speaker"][i],
-                                                        data["entiti"][i],
-                                                        data["predict"][i],
-                                                        data["coreference"][i]))
-                elif data['part_of_speech'][i] == 'End_of_sentence':
-                    continue
-                else:
-                    CoNLL.write(u'{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(data['doc_id'][i],
-                                                    data["part_id"][i],
-                                                    data["word_number"][i],
-                                                    data["word"][i],
-                                                    data["part_of_speech"][i],
-                                                    data["parse_bit"][i],
-                                                    data["lemma"][i],
-                                                    data["sense"][i],
-                                                    data["speaker"][i],
-                                                    data["entiti"][i],
-                                                    data["predict"][i],
-                                                    data["coreference"][i]))
-                    CoNLL.write('\n')
-        CoNLL.close()
+        CoNLL.write(data)
     return None
 
 def normalize(v):
@@ -235,120 +185,121 @@ class CustomLSTMCell(tf.contrib.rnn.RNNCell):
 
 
 class DocumentState(object):
-    def __init__(self):
-        self.doc_key = None
-        self.text = []
-        self.text_speakers = []
-        self.speakers = []
-        self.sentences = []
-        self.clusters = collections.defaultdict(list)
-        self.stacks = collections.defaultdict(list)
+  def __init__(self):
+    self.doc_key = None
+    self.text = []
+    self.text_speakers = []
+    self.speakers = []
+    self.sentences = []
+    self.clusters = collections.defaultdict(list)
+    self.stacks = collections.defaultdict(list)
 
-    def assert_empty(self):
-        assert self.doc_key is None
-        assert len(self.text) == 0
-        assert len(self.text_speakers) == 0
-        assert len(self.sentences) == 0
-        assert len(self.speakers) == 0
-        assert len(self.clusters) == 0
-        assert len(self.stacks) == 0
+  def assert_empty(self):
+    assert self.doc_key is None
+    assert len(self.text) == 0
+    assert len(self.text_speakers) == 0
+    assert len(self.sentences) == 0
+    assert len(self.speakers) == 0
+    assert len(self.clusters) == 0
+    assert len(self.stacks) == 0
 
-    def assert_finalizable(self):
-        assert self.doc_key is not None
-        assert len(self.text) == 0
-        assert len(self.text_speakers) == 0
-        assert len(self.sentences) > 0
-        assert len(self.speakers) > 0
-        assert all(len(s) == 0 for s in self.stacks.values())
+  def assert_finalizable(self):
+    assert self.doc_key is not None
+    assert len(self.text) == 0
+    assert len(self.text_speakers) == 0
+    assert len(self.sentences) > 0
+    assert len(self.speakers) > 0
+    assert all(len(s) == 0 for s in self.stacks.values())
 
-    def finalize(self):
-        merged_clusters = []
-        for c1 in self.clusters.values():
-            existing = None
-            for m in c1:
-                for c2 in merged_clusters:
-                    if m in c2:
-                        existing = c2
-                        break
-                if existing is not None:
-                    break
-            if existing is not None:
-                # print("Merging clusters (shouldn't happen very often.)")
-                existing.update(c1)
-            else:
-                merged_clusters.append(set(c1))
-        merged_clusters = [list(c) for c in merged_clusters]
-        all_mentions = flatten(merged_clusters)
-        # print len(all_mentions), len(set(all_mentions))
+  def finalize(self):
+    merged_clusters = []
+    for c1 in self.clusters.values():
+      existing = None
+      for m in c1:
+        for c2 in merged_clusters:
+          if m in c2:
+            existing = c2
+            break
+        if existing is not None:
+          break
+      if existing is not None:
+#        print("Merging clusters (shouldn't happen very often.)")
+        existing.update(c1)
+      else:
+        merged_clusters.append(set(c1))
+    merged_clusters = [list(c) for c in merged_clusters]
+    all_mentions = util.flatten(merged_clusters)
+    assert len(all_mentions) == len(set(all_mentions))
 
-        if len(all_mentions) != len(set(all_mentions)):
-            c = Counter(all_mentions)
-            for x in c:
-                if c[x] > 1:
-                    z = x
-                    break
-            for i in range(len(all_mentions)):
-                if all_mentions[i] == z:
-                    all_mentions.remove(all_mentions[i])
-                    break
-        assert len(all_mentions) == len(set(all_mentions))
-
-        return {
-            "doc_key": self.doc_key,
-            "sentences": self.sentences,
-            "speakers": self.speakers,
-            "clusters": merged_clusters
-        }
-
+    return {
+      "doc_key": self.doc_key,
+      "sentences": self.sentences,
+      "speakers": self.speakers,
+      "clusters": merged_clusters
+    }
 
 def normalize_word(word):
-    if word == "/." or word == "/?":
-        return word[1:]
-    else:
-        return word
+  if word == "/." or word == "/?":
+    return word[1:]
+  else:
+    return word
 
-
-def conll2modeldata(data):
-    document_state = DocumentState()
+def handle_line(line, document_state):
+  if line.startswith("#begin"):
     document_state.assert_empty()
-    document_state.doc_key = "{}_{}".format(data['doc_id'][0], data['part_id'][0])
-    for i in range(len(data['doc_id'])):
-        word = normalize_word(data['word'][i])
-        coref = data['coreference'][i]
-        speaker = data['speaker'][i]
-        word_index = i + 1
-        document_state.text.append(word)
-        document_state.text_speakers.append(speaker)
-
-        if coref != "-":
-            for segment in coref.split("|"):
-                if segment[0] == "(":
-                    if segment[-1] == ")":
-                        cluster_id = int(segment[1:-1])  # Need Int
-                        document_state.clusters[cluster_id].append((word_index, word_index))
-                    else:
-                        cluster_id = int(segment[1:])
-                        document_state.stacks[cluster_id].append(word_index)
-                else:
-                    cluster_id = int(segment[:-1])
-                    start = document_state.stacks[cluster_id].pop()
-                    document_state.clusters[cluster_id].append((start, word_index))
-        else:
-            if (data['part_of_speech'][i] == 'End_of_sentence'):
-                document_state.sentences.append(tuple(document_state.text))
-                del document_state.text[:]
-                document_state.speakers.append(tuple(document_state.text_speakers))
-                del document_state.text_speakers[:]
-                continue
-            else:
-                continue
-
+    row = line.split()
+    document_state.doc_key = '{0}_{1}'.format(row[2][1:-1],row[-1])
+    return None
+  elif line.startswith("#end document"):
     document_state.assert_finalizable()
     return document_state.finalize()
+  else:
+    row = line.split()
+    if len(row) == 0:
+      document_state.sentences.append(tuple(document_state.text))
+      del document_state.text[:]
+      document_state.speakers.append(tuple(document_state.text_speakers))
+      del document_state.text_speakers[:]
+      return None
+    assert len(row) >= 12
 
-def output_conll(out_file, input_file, predictions):
+    word = normalize_word(row[3])
+    coref = row[-1]
+    doc_key = '{0}_{1}'.format(row[0], row[1])
+    speaker = row[8]
+
+    word_index = len(document_state.text) + sum(len(s) for s in document_state.sentences)
+    document_state.text.append(word)
+    document_state.text_speakers.append(speaker)
+
+    if coref == "-":
+      return None
+
+    for segment in coref.split("|"):
+      if segment[0] == "(":
+        if segment[-1] == ")":
+          cluster_id = int(segment[1:-1])
+          document_state.clusters[cluster_id].append((word_index, word_index))
+        else:
+          cluster_id = int(segment[1:])
+          document_state.stacks[cluster_id].append(word_index)
+      else:
+        cluster_id = int(segment[:-1])
+        start = document_state.stacks[cluster_id].pop()
+        document_state.clusters[cluster_id].append((start, word_index))
+    return None
+
+def conll2modeldata(data):  
+    conll_str = data['conll_str']
+    document_state = DocumentState()
+    for line in conll_str.split('\n'):
+        document = handle_line(line, document_state)
+        if document is not None:
+            model_file = document
+    return model_file
+
+def output_conll(input_file, predictions):
     prediction_map = {}
-    output_file = copy.deepcopy(out_file)
 
     for doc_key, clusters in predictions.items():
         start_map = collections.defaultdict(list)
@@ -366,26 +317,48 @@ def output_conll(out_file, input_file, predictions):
         for k, v in end_map.items():
             end_map[k] = [cluster_id for cluster_id, start in sorted(v, key=operator.itemgetter(1), reverse=True)]
         prediction_map[doc_key] = (start_map, end_map, word_map)
-
+  
     word_index = 0
-    for i in range(len(output_file['doc_id'])):
-        doc_key = '{}_{}'.format(output_file['doc_id'][0], output_file['part_id'][0])
-        start_map, end_map, word_map = prediction_map[doc_key]
-        coref_list = []
-        if word_index in end_map:
-            for cluster_id in end_map[word_index]:
-                coref_list.append("{})".format(cluster_id))
-        if word_index in word_map:
-            for cluster_id in word_map[word_index]:
-                coref_list.append("({})".format(cluster_id))
-        if word_index in start_map:
-            for cluster_id in start_map[word_index]:
-                coref_list.append("({}".format(cluster_id))
-
-        if len(coref_list) == 0:
-            output_file['coreference'][i] = "-"
+    new_conll = ''
+    for line in input_file.split('\n'):
+        if line.startswith("#begin"):
+            new_conll += line + '\n'
+            continue
+        elif line.startswith("#end document"):
+            new_conll += line
+            continue
         else:
-            output_file['coreference'][i] = "|".join(coref_list)
+            row = line.split()
+            if len(row) == 0:
+                new_conll += '\n'
+                continue
+            
+            glen = 0
+            for l in row[:-1]:
+                glen += len(l)
+            glen += len(row[:-1])
+            
+            doc_key = '{}_{}'.format(row[0], row[1])
+            start_map, end_map, word_map = prediction_map[doc_key]
+            coref_list = []
+            if word_index in end_map:
+                for cluster_id in end_map[word_index]:
+                    coref_list.append("{})".format(cluster_id))
+            if word_index in word_map:
+                for cluster_id in word_map[word_index]:
+                    coref_list.append("({})".format(cluster_id))
+            if word_index in start_map:
+                for cluster_id in start_map[word_index]:
+                    coref_list.append("({}".format(cluster_id))
 
-        word_index += 1
-    return output_file
+            if len(coref_list) == 0:
+                row[-1] = "-"
+            else:
+                row[-1] = "|".join(coref_list)
+
+            word_index += 1
+            
+            line = line[:glen] + row[-1]
+            new_conll += line + '\n'
+    
+    return new_conll

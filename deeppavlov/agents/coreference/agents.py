@@ -92,12 +92,13 @@ class CoreferenceAgent(Agent):
             print('[ Initializing model from scratch ]')
 
     def observe(self, observation):
+        print('agent_obs {}'.format(0))
         self.observation = copy.deepcopy(observation)
-        self.start = time.time()
         self.obs_dict = utils.conll2modeldata(self.observation)
         return self.obs_dict
 
     def act(self):
+        print('agent_act {}'.format(0))
         if self.is_shared:
             raise RuntimeError("Parallel act is not supported.")
         if self.observation['mode'] == 'train':
@@ -112,14 +113,18 @@ class CoreferenceAgent(Agent):
             act_dict['iteration'] = self.iterations
             return act_dict
         elif self.observation['mode'] == 'valid':
-            conll = self.model.predict(self.obs_dict, self.observation)
+            conll = dict()
+            conll_str = self.model.predict(self.obs_dict, self.observation)
             conll['conll'] = True
             conll['iter_id'] = self.observation['iter_id']
+            conll['conll_str'] = conll_str
             return conll
         elif self.observation['mode'] == 'test':
-            conll = self.model.predict(self.obs_dict, self.observation)
+            conll = dict()
+            conll_str = self.model.predict(self.obs_dict, self.observation)
             conll['conll'] = True
             conll['iter_id'] = self.observation['iter_id']
+            conll['conll_str'] = conll_str
             return conll
 
     def predict(self):

@@ -31,6 +31,7 @@ class DefaultTeacher(Teacher):
         group.add_argument('--random-seed', default=None)
         group.add_argument('--split', type=float, default=0.2)
         group.add_argument('--language', type=str, default='russian')
+        group.add_argument('--log_root', type=str, default='./build/coreference/')
     
     def __init__(self, opt, shared=None):
         
@@ -75,14 +76,16 @@ class DefaultTeacher(Teacher):
     
     
     def act(self):
+        print('techer_act {}'.format(0))
         datafile = join(self.datapath, self.doc_address[self.doc_id])
         epoch_done = self.doc_id == self.len - 1
-        act_dict = utils.conll2dict(self.iter, datafile, self.id, self.dt, self.doc_address[self.doc_id],
+        act_dict = utils.conll2dict(datafile, self.iter, self.id, self.dt, self.doc_address[self.doc_id],
                                     epoch_done=epoch_done)
    
         return act_dict
             
     def observe(self, observation):
+        print('techer_obs {}'.format(0))
         self.observation = copy.deepcopy(observation)
         if self.observation['epoch_done']:
             self.doc_id = 0
@@ -98,8 +101,9 @@ class DefaultTeacher(Teacher):
                 utils.summary(summary_dict, step, self.writer)
             
         if self.observation['conll']:
-            predict = os.path.join(self.reports_datapath, 'response_files', self.doc_address[int(self.observation['iter_id'])])
-            utils.dict2conll(self.observation, predict)  # predict it is file name
+            predict_path = os.path.join(self.reports_datapath, 'response_files',
+                                   self.doc_address[int(self.observation['iter_id'])])
+            utils.dict2conll(self.observation, predict_path)  # predict it is file name
         return self.observation
 
     def report(self):

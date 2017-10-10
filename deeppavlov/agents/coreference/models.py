@@ -545,6 +545,6 @@ class CorefModel(object):
         predicted_clusters, mention_to_predicted = self.get_predicted_clusters(mention_starts, mention_ends,                predicted_antecedents)
         new_cluters = {}
         new_cluters[batch['doc_key']] = predicted_clusters
-        outconll = utils.output_conll(out_file, batch, new_cluters)
+        outconll = utils.output_conll(out_file, new_cluters)
 
         return outconll
