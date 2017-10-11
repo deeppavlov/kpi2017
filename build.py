@@ -130,7 +130,7 @@ def train_squad(project):
                         '--num-epochs', '-1',
                         '--log-every-n-secs', '60',
                         '--log-every-n-epochs', '-1',
-                        '--validation-every-n-secs', '1800',
+                        '--validation-every-n-secs', '180',
                         '--validation-every-n-epochs', '-1',
                         '--chosen-metrics', 'f1',
                         '--validation-patience', '5',
