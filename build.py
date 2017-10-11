@@ -160,7 +160,7 @@ def train_coreference(project):
                         '-m', 'deeppavlov.agents.coreference.agents:CoreferenceAgent',
                         '-mf', './build/coreference/',
                         '--language', 'russian',
-                        '--name', 'fasttext',
+                        '--name', 'pretrain_model',
                         '--pretrained_model', 'True',
                         '-dt', 'train:ordered',
                         '--batchsize', '1',

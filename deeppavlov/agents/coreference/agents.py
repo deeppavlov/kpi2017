@@ -28,7 +28,7 @@ def bdfa(opt):
     
     embed_url = 'http://share.ipavlov.mipt.ru:8080/repository/embeddings/embeddings_lenta_100.vec'
     vocab_url = 'http://share.ipavlov.mipt.ru:8080/repository/models/coreference/vocabs/char_vocab.russian.txt'
-    pretrain_url = 'http://share.ipavlov.mipt.ru:8080/repository/models/coreference/OpeanAI/fasttext.zip'
+    pretrain_url = 'http://share.ipavlov.mipt.ru:8080/repository/models/coreference/OpeanAI/pretrain_model.zip'
     # get path to data directory and create folders tree
     dpath = join(opt['model_file'])
     # define languages
@@ -51,9 +51,10 @@ def bdfa(opt):
     if not isdir(join(dpath, 'logs', opt['name'])):
         build_data.make_dir(join(dpath, 'logs', opt['name']))
     if not isdir(join(dpath, 'logs', 'pretrain_model')):
-        build_data.make_dir(join(dpath, 'logs', 'pretrain_model'))
-        build_data.download(pretrain_url, join(dpath, 'logs', 'pretrain_model'), 'fasttext.zip')
-        build_data.untar(join(dpath, 'logs', 'pretrain_model'), 'fasttext.zip')
+        print('[Download the pretrain model]...')
+        build_data.download(pretrain_url, join(dpath, 'logs'), 'pretrain_model.zip')
+        build_data.untar(join(dpath, 'logs'), 'pretrain_model.zip')
+        print('[End of download pretrain model]...')
     
     if not isdir(join(dpath, 'reports')):
         build_data.make_dir(join(dpath, 'reports', 'response_files'))
