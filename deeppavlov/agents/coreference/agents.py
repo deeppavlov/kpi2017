@@ -26,8 +26,9 @@ from os.path import join, isdir
 
 def bdfa(opt):
     
-    embed_url = '0B7A8-2DSIVoeelVIT1BMUFVLSnM'
-    vocab_url = '0B7A8-2DSIVoed0FIMXdqU0FlQ3M'
+    embed_url = 'http://share.ipavlov.mipt.ru:8080/repository/embeddings/embeddings_lenta_100.vec'
+    vocab_url = 'http://share.ipavlov.mipt.ru:8080/repository/models/coreference/vocabs/char_vocab.russian.txt'
+    pretrain_url = 'http://share.ipavlov.mipt.ru:8080/repository/models/coreference/OpeanAI/fasttext.zip'
     # get path to data directory and create folders tree
     dpath = join(opt['model_file'])
     # define languages
@@ -38,23 +39,27 @@ def bdfa(opt):
     if not isdir(join(dpath, 'embeddings')):
         build_data.make_dir(join(dpath, 'embeddings'))
         print('[Download the word embeddings]...')
-        build_data.download_from_google_drive(embed_url, join(dpath, 'embeddings', 'embeddings_lenta_100.vec'))
+        build_data.download(embed_url, join(dpath, 'embeddings'), 'embeddings_lenta_100.vec')
         print('[End of download the word embeddings]...')
     
     if not isdir(join(dpath, 'vocab')):
         build_data.make_dir(join(dpath, 'vocab'))
         print('[Download the chars vocalibary]...')
-        build_data.download_from_google_drive(vocab_url, join(dpath, 'vocab', 'char_vocab.{}.txt'.format(language)))
+        build_data.download(vocab_url, join(dpath, 'vocab'), 'char_vocab.russian.txt')
         print('[End of download the chars vocalibary]...')
     
     if not isdir(join(dpath, 'logs', opt['name'])):
         build_data.make_dir(join(dpath, 'logs', opt['name']))
-        
+    if not isdir(join(dpath, 'logs', 'pretrain_model')):
+        build_data.make_dir(join(dpath, 'logs', 'pretrain_model'))
+        build_data.download(pretrain_url, join(dpath, 'logs', 'pretrain_model'), 'fasttext.zip')
+        build_data.untar(join(dpath, 'logs', 'pretrain_model'), 'fasttext.zip')
+    
     if not isdir(join(dpath, 'reports')):
         build_data.make_dir(join(dpath, 'reports', 'response_files'))
         build_data.make_dir(join(dpath, 'reports', 'results'))
         build_data.make_dir(join(dpath, 'reports', 'predictions'))
-    return None 
+    return None
 
 class CoreferenceAgent(Agent):
 
