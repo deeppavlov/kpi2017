@@ -19,7 +19,7 @@ import time
 import os
 from os.path import join, basename
 import json
-from sklearn import cross_validation
+from sklearn.model_selection import ShuffleSplit
 from tqdm import tqdm
 import parlai.core.build_data as build_data
 import tensorflow as tf
@@ -208,23 +208,18 @@ def split_doc(inpath, outpath, language):
     return None
 
 
-def train_test_split(inpath, output, split, random_seed):
+def train_test_split(inpath, train, test, split, random_seed):
+    print('Start train-test splitting ...')
     z = os.listdir(inpath)
-    doc_split = cross_validation.ShuffleSplit(len(z),
-                                              n_iter=1,
-                                              test_size=split,
-                                              random_state=random_seed)
-    train_set = [z[i] for i in sorted(list(doc_split)[0][0])]
-    # test_set = [z[i] for i in sorted(list(doc_split)[0][1])]
-
-    # train_path = os.path.join(output, 'train')
-    # test_path = os.path.join(output, 'test')
-
+    doc_split = ShuffleSplit(1, test_size=split, random_state=random_seed)
+    for train_indeses, test_indeses in doc_split.split(z): 
+        train_set = [z[i] for i in sorted(list(train_indeses))]
+        test_set = [z[i] for i in sorted(list(test_indeses))]
     for x in train_set:
-        build_data.move(os.path.join(inpath, x), os.path.join(output, x))
-    # for x in os.listdir(inpath):
-    #     build_data.move(os.path.join(inpath, x), os.path.join(test_path, x))
-
+        build_data.move(os.path.join(inpath, x), os.path.join(train, x))
+    for x in test_set:
+        build_data.move(os.path.join(inpath, x), os.path.join(test, x))
+    print('End train-test splitts.')
     return None
 
 

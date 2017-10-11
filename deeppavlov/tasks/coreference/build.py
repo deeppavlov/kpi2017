@@ -17,6 +17,7 @@ limitations under the License.
 import parlai.core.build_data as build_data
 import os
 from os.path import join
+from shutil import copytree
 import time
 from . import utils
 
@@ -41,7 +42,6 @@ def build(opt):
         build_data.make_dir(dpath)
         build_data.make_dir(join(dpath, 'scorer'))
         build_data.make_dir(join(dpath, 'train'))
-        build_data.make_dir(join(dpath, 'test'))
         build_data.make_dir(join(dpath, 'valid'))
 
         # urls
@@ -78,12 +78,8 @@ def build(opt):
 
         # create train valid test partitions
         # train_test_split(conlls,dpath,opt['split'],opt['random-seed'])
-        utils.train_test_split(conlls, join(dpath, 'test'), 0.2, None)
-        utils.train_test_split(join(dpath, 'test'), join(dpath, 'train'), 0.3, None)
-        z = os.listdir(conlls)
-        for x in z:
-            build_data.move(join(conlls, x), join(dpath, 'valid', x))
-
+        utils.train_test_split(conlls, join(dpath, 'train'), join(dpath, 'valid'), 0.2, None)
+        copytree(join(dpath, 'valid'), join(dpath, 'test'))
         build_data.remove_dir(conlls)
         build_data.remove_dir(join(dpath, 'rucoref_29.10.2015'))
         print('End of data splitting. Time - {}'.format(time.time()-start))
