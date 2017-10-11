@@ -19,6 +19,8 @@ def create_dir(dir):
 @init
 def set_properties(project):
     import sys
+    project.depends_on_requirements("requirements.txt")
+
     cwd = os.getcwd()
     sys.path.append(cwd)
     os.environ['EMBEDDINGS_URL'] = os.getenv('EMBEDDINGS_URL',
