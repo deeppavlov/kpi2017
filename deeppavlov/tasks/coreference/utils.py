@@ -305,9 +305,10 @@ def score(scorer, keys_path, predicts_path):
     # make sure that all files processed
     time.sleep(1)
 
-    print('score: aggregating results...')
+#    print('score: aggregating results...')
     k = 0
     results = dict()
+    res = dict()
 
     f1=[]
     for metric in ['muc', 'bcub', 'ceafm', 'ceafe']:
@@ -344,15 +345,12 @@ def score(scorer, keys_path, predicts_path):
         
         
         f1.append(f)
-        print('{0} precision: ({1:.3f}/{2}) {3:.3f}\t recall: ({4:.3f}/{5}) {6:.3f}\t F-1: {7:.5f}'.format(metric, p1, p2, p, r1, r2, r, f))
+        res[metric] = '{0} precision: ({1:.3f}/{2}) {3:.3f}\t recall: ({4:.3f}/{5}) {6:.3f}\t F-1: {7:.5f}'.format(metric, p1, p2, p, r1, r2, r, f)
         results[metric] = {'p': p, 'r': r, 'f-1': f}
 
-    print('avg: {0:.5f}'.format(np.mean(f1)))
     # muc bcub ceafe
     conllf1 = np.mean(f1[:2] + f1[-1:]) # wtf
-    print('conll F-1: {0:.5f}'.format(conllf1))
-    print('using {}/{}'.format(k, 4 * len(key_files)))
-    res = dict()
+    res['using'] = 'using {}/{}'.format(k, 4 * len(key_files)) 
     res['avg-F-1'] = np.mean(f1)
     res['conll-F-1'] = conllf1
     json.dump(results, open(join(predicts_path, 'results.json'), 'w'))

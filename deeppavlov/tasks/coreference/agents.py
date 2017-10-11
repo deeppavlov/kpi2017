@@ -108,7 +108,7 @@ class DefaultTeacher(Teacher):
         scorer = self.scorer_path
         predicts_path = os.path.join(self.reports_datapath, 'response_files')
         keys_path = self.datapath
-        results = utils.score(scorer, keys_path, predicts_path)
+        r = utils.score(scorer, keys_path, predicts_path)
         
         resp_list = os.listdir(predicts_path)
         resu_list = os.listdir(os.path.join(self.reports_datapath, 'results'))
@@ -116,8 +116,10 @@ class DefaultTeacher(Teacher):
             os.remove(os.path.join(predicts_path, x))
         for x in resu_list:
             os.remove(os.path.join(self.reports_datapath, 'results', x))
-
-        return results
+        
+        s = '\n{0}\n{1}\n{2}\n{3}\n{4}\navg-F-1: {5}\nconll-F-1: {6}\n'.format(r['muc'],r['bcub'],r['ceafm'],r['ceafe'],
+                                                           r['using'],r['avg-F-1'],r['conll-F-1'])
+        return s
     
     def reset(self):
         self.doc_id = 0 

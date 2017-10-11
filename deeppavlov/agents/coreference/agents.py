@@ -78,12 +78,11 @@ class CoreferenceAgent(Agent):
         self.is_shared = False
         self.obs_dict = None
         self.iterations = 0
-        self.start = None
+        self.start = time.time()
         self.tf_loss = None
         self.rep_iter = opt['rep_iter']
         self.nitr = opt['nitr']
         self.model = CorefModel(opt)
-        
         self.saver = tf.train.Saver()
         if self.opt['pretrained_model']:
             print('[ Initializing model from checkpoint ]')
@@ -94,7 +93,6 @@ class CoreferenceAgent(Agent):
     def observe(self, observation):
         self.observation = copy.deepcopy(observation)
         self.obs_dict = utils.conll2modeldata(self.observation)
-        self.start = time.time()
         return self.obs_dict
 
     def act(self):
@@ -102,7 +100,6 @@ class CoreferenceAgent(Agent):
             raise RuntimeError("Parallel act is not supported.")
         if self.observation['mode'] == 'train':
             self.tf_loss = self.model.train(self.obs_dict)
-            self.remaining_time()
             act_dict = {'iter_id': self.observation['iter_id'], 'Loss': self.tf_loss}
             act_dict['id'] = self.id
             act_dict['epoch_done'] = self.observation['epoch_done']
@@ -149,17 +146,12 @@ class CoreferenceAgent(Agent):
             self.model = None
 
     def report(self):
-        return {'loss': self.tf_loss}
-    
-    def remaining_time(self):
-        if self.observation['iter_id'] % self.rep_iter == 0:
-            self.iterations += self.rep_iter
-            n = self.nitr*100 - self.iterations
-            t = time.time() - self.start
-            r_time = n*(t/self.rep_iter)
-            hours = int(r_time/(60**2))
-            minutes = int(r_time/60 - hours*60)
-            self.start = time.time()
-            if self.iterations != 100:
-                print('iter: {0} | Loss: {1:.3f} | Remaining Time: {2} hours {3} minutes'.format(self.iterations, self.tf_loss, hours, minutes))
-        return None
+        self.iterations += self.rep_iter
+        n = self.nitr*100 - self.iterations
+        t = time.time() - self.start
+        r_time = n*(t/self.rep_iter)
+        hours = int(r_time/(60**2))
+        minutes = int(r_time/60 - hours*60)
+        self.start = time.time()
+        s = '[Loss: {0:.3f} | Remaining Time: {1} hours {2} minutes]'.format(self.tf_loss, hours, minutes)
+        return s
