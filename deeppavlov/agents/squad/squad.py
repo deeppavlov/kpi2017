@@ -224,6 +224,7 @@ class SquadAgent(Agent):
         """Find the start/end token span for all labels in document.
         Return a random one for training.
         """
+        seed(1)
         def _positions(d, l):
             for i in range(len(d)):
                 for j in range(i, min(len(d) - 1, i + len(l))):
