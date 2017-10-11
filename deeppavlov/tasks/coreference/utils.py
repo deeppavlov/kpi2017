@@ -85,7 +85,7 @@ def RuCoref2CoNLL(path, out_path, language='russian'):
                 k = 0
             else:
                 k += 1
-            data['doc_id'].append('bc' + doc_id)
+            data['doc_id'].append(doc_id)
             data['part_id'].append(part_id)
             data['lemma'].append(lemma)
             data['part_of_speech'].append(gram[0:-1])
@@ -197,7 +197,10 @@ def split_doc(inpath, outpath, language):
         cpath = os.path.join(outpath, ".".join([str(i), language, 'v4_conll']))
         with open(cpath, 'w') as c:
             for j in range(set_ends[i][0], set_ends[i][1] + 1):
-                c.write(lines[j])
+                if lines[j] == '#end document\n':
+                    c.write(lines[j][:-1])
+                else:
+                    c.write(lines[j])
             c.close()
 
     del lines

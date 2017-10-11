@@ -249,7 +249,7 @@ def handle_line(line, document_state):
   if line.startswith("#begin"):
     document_state.assert_empty()
     row = line.split()
-    document_state.doc_key = '{0}_{1}'.format(row[2][1:-2],row[-1])
+    document_state.doc_key = 'bc'+'{0}_{1}'.format(row[2][1:-2],row[-1])
     return None
   elif line.startswith("#end document"):
     document_state.assert_finalizable()
@@ -266,7 +266,7 @@ def handle_line(line, document_state):
 
     word = normalize_word(row[3])
     coref = row[-1]
-    doc_key = '{0}_{1}'.format(row[0], row[1])
+    doc_key = 'bc' + '{0}_{1}'.format(row[0], row[1])
     speaker = row[8]
 
     word_index = len(document_state.text) + sum(len(s) for s in document_state.sentences)
@@ -279,13 +279,13 @@ def handle_line(line, document_state):
     for segment in coref.split("|"):
       if segment[0] == "(":
         if segment[-1] == ")":
-          cluster_id = int(segment[1:-1])
+          cluster_id = segment[1:-1]  # here was int
           document_state.clusters[cluster_id].append((word_index, word_index))
         else:
-          cluster_id = int(segment[1:])
+          cluster_id = segment[1:]  # here was int
           document_state.stacks[cluster_id].append(word_index)
       else:
-        cluster_id = int(segment[:-1])
+        cluster_id = segment[:-1]  # here was int
         start = document_state.stacks[cluster_id].pop()
         document_state.clusters[cluster_id].append((start, word_index))
     return None
@@ -294,7 +294,7 @@ def conll2modeldata(data):
     conll_str = data['conll_str']
     document_state = DocumentState()
     line_list = conll_str.split('\n')
-    for line in line_list[:-1]:
+    for line in line_list:
         document = handle_line(line, document_state)
         if document is not None:
             model_file = document
@@ -340,7 +340,7 @@ def output_conll(input_file, predictions):
                 glen += len(l)
             glen += len(row[:-1])
             
-            doc_key = '{}_{}'.format(row[0], row[1])
+            doc_key = 'bc' + '{}_{}'.format(row[0], row[1])
             start_map, end_map, word_map = prediction_map[doc_key]
             coref_list = []
             if word_index in end_map:
