@@ -7,6 +7,7 @@
 import time
 import unicodedata
 import numpy as np
+from numpy.random import seed
 import re
 import string
 from collections import Counter
@@ -43,6 +44,7 @@ def normalize_text(text):
 
 def load_embeddings(opt, word_dict):
     """Initialize embeddings from file of pretrained vectors."""
+    seed(1)
     embeddings = np.random.normal(0.0, 1.0, (len(word_dict), opt['word_embedding_dim']))
 
     # Fill in embeddings
@@ -84,6 +86,7 @@ def build_feature_dict(opt):
 # ------------------------------------------------------------------------------
 
 def embed_word(word, word_dict, embeddings):
+    seed(1)
     try:
         return embeddings[word_dict[word]]
     except:
