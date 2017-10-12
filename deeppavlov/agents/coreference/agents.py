@@ -160,4 +160,6 @@ class CoreferenceAgent(Agent):
         minutes = int(r_time/60 - hours*60)
         self.start = time.time()
         s = '[Loss: {0:.3f} | Remaining Time: {1} hours {2} minutes]'.format(self.tf_loss, hours, minutes)
-        return s
+        rep = dict()
+        rep['info'] = s
+        return rep

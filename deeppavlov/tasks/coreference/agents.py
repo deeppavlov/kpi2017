@@ -119,7 +119,7 @@ class DefaultTeacher(Teacher):
         
         s = '\n{0}\n{1}\n{2}\n{3}\n{4}\navg-F-1: {5}\nconll-F-1: {6}\n'.format(r['muc'],r['bcub'],r['ceafm'],r['ceafe'],
                                                            r['using'],r['avg-F-1'],r['conll-F-1'])
-        return s
+        return r
     
     def reset(self):
         self.doc_id = 0 
