@@ -166,8 +166,8 @@ def train_coreference(project):
                         '--batchsize', '1',
                         '--display-examples', 'False',
                         '--max-train-time', '-1',
-                        '--validation-every-n-epochs', '300',
-                        '--nitr', '300',
+                        '--validation-every-n-epochs', '10',
+                        '--nitr', '10',
                         '--log-every-n-epochs', '1',
                         '--log-every-n-secs', '-1',
                         '--chosen-metric', 'conll-F-1'
