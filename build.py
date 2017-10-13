@@ -90,6 +90,7 @@ def train_ner(project):
 @task
 def train_ner_bilstm(project):
     create_dir('ner_bilstm')
+
     metrics = bu.model(['-t', 'deeppavlov.tasks.ner.agents',
                         '-m', 'deeppavlov.agents.ner_bilstm_crf.ner:NERAgent',
                         '-mf', './build/ner_bilstm/ner',
