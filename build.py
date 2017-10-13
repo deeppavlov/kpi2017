@@ -88,6 +88,24 @@ def train_ner(project):
 
 
 @task
+def train_ner_bilstm(project):
+    create_dir('ner_bilstm')
+    metrics = bu.model(['-t', 'deeppavlov.tasks.ner.agents',
+                        '-m', 'deeppavlov.agents.ner_bilstm_crf.ner:NERAgent',
+                        '-mf', './build/ner_bilstm/ner',
+                        '-dt', 'train:ordered',
+                        '--learning_rate', '0.01',
+                        '--batchsize', '2',
+                        '--display-examples', 'False',
+                        '--validation-every-n-epochs', '5',
+                        '--log-every-n-epochs', '1',
+                        '--log-every-n-secs', '-1',
+                        '--chosen-metrics', 'f1'
+                        ])
+    return metrics
+
+
+@task
 def train_insults(project):
     create_dir('insults')
     metrics = bu.model(['-t', 'deeppavlov.tasks.insults.agents',
