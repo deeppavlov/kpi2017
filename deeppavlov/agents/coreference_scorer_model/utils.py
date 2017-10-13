@@ -287,7 +287,6 @@ class DataLoader():
 
         self.features_size = len(self.mention_features[m])
         self.embeddings = None
-        self.features = None
         print('DataLoader: generating all features finished')
 
     def get_all_mentions_from_doc(self, doc_id):
@@ -310,6 +309,27 @@ class MentionPairsBatchGenerator():
         self.features_size = self.dl.features_size
         random.seed(a=seed)
 
+    def _mention_to_features(self, m):
+        features = self.dl.features[m]
+        res = [
+            features['has_PRP'],
+            features['has_CD'],
+            np.argmax(features['mention_index_ohe']),
+            np.argmax(features['mention_start_ohe']),
+            np.argmax(features['mention_width_ohe'])
+        ]
+        return res
+
+    def _pair_features(self, A, B):
+        AB_f = []
+        for a, b in zip(A, B):
+            a_f = self.dl.features[a]
+            b_f = self.dl.features[b]
+            mention_distance = abs(int(a_f['mention_index'] * a_f['mentions_count']) - int(b_f['mention_index'] * b_f['mentions_count']))
+            words_distance = abs(int(a_f['start_index'] * a_f['tokens_count']) - int(b_f['start_index'] * b_f['tokens_count']))
+            AB_f.append([np.argmax(distance_to_buckets(mention_distance)), np.argmax(distance_to_buckets(words_distance))])
+        return AB_f
+
     def get_batch(self, batch_size=64):
         mentions = []
         while len(mentions) < batch_size * 2:
@@ -328,9 +348,12 @@ class MentionPairsBatchGenerator():
                 B.append(random.choice(mentions))
 
         labels = [1 if self.dl.mentions_to_chain[x] == self.dl.mentions_to_chain[y] else 0 for x, y in zip(A,B)]
+        A_f = [self._mention_to_features(m) for m in A]
+        B_f = [self._mention_to_features(m) for m in B]
+        AB_f = self._pair_features(A, B)
         A = [self.dl.mention_features[m] for m in A]
         B = [self.dl.mention_features[m] for m in B]
-        return np.vstack(A), np.vstack(B), np.stack(labels)
+        return np.vstack(A), np.stack(A_f), np.vstack(B), np.stack(B_f), np.stack(AB_f), np.stack(labels)
 
     def get_document_batch(self, doc_id):
         mentions = self.dl.get_all_mentions_from_doc(doc_id)
@@ -341,9 +364,12 @@ class MentionPairsBatchGenerator():
             for b in mentions:
                 A.append(a)
                 B.append(b)
+        A_f = [self._mention_to_features(m) for m in A]
+        B_f = [self._mention_to_features(m) for m in B]
+        AB_f = self._pair_features(A, B)
         A = [self.dl.mention_features[m] for m in A]
         B = [self.dl.mention_features[m] for m in B]
-        return np.vstack(A), np.vstack(B)
+        return np.vstack(A), np.stack(A_f), np.vstack(B), np.stack(B_f), np.stack(AB_f)
 
 def make_prediction_file(conll_lines, data, path_to_save, chains, write=True):
     '''

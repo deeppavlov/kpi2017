@@ -49,10 +49,10 @@ class CoreferenceAgent(Agent):
         
         group.add_argument('--batch_size', type=int, default=128, help='batch size')
         group.add_argument('--save_model_every', type=int, default=100, help='save model every X iterations')
-        group.add_argument('--inner_epochs', type=int, default=400, help='how many times to learn on full observation')
+        group.add_argument('--inner_epochs', type=int, default=300, help='how many times to learn on full observation')
         group.add_argument('--dense_hidden_size', type=int, default=512, help='dense hidden size')
         group.add_argument('--keep_prob_input', type=float, default=0.5, help='dropout keep_prob parameter on inputs')
-        group.add_argument('--keep_prob_dense', type=float, default=0.8, help='dropout keep_prob parameter between layers')
+        group.add_argument('--keep_prob_dense', type=float, default=0.5, help='dropout keep_prob parameter between layers')
         group.add_argument('--lr', type=float, default=0.0005, help='learning rate')
         group.add_argument('--threshold_steps', type=int, default=50, help='how many steps in threshold selection')
         group.add_argument('--print_train_loss_every', type=int, default=500, help='print train loss every X iterations')
@@ -163,7 +163,7 @@ class CoreferenceAgent(Agent):
                 if self.best_conll_f1 < res['conll-F-1']:
                     self.best_conll_f1 = res['conll-F-1']
                     self.best_threshold = t
-                    
+
             # clean tmp dir
             for root, dirs, files in os.walk(self.tmp_folder, topdown=False):
                 for name in files:
@@ -240,9 +240,9 @@ class CoreferenceAgent(Agent):
         saver = tf.train.Saver(max_to_keep=None)
 
         while self.data_bg.epoch < self.inner_epochs:
-            A, B, C = self.data_bg.get_batch(self.batch_size)
+            A, A_f, B, B_f, AB_f, C = self.data_bg.get_batch(self.batch_size)
 
-            loss, loss_sum, logits = self.model.train_batch(self.session, A, B, C)
+            loss, loss_sum, logits = self.model.train_batch(self.session, A, A_f, B, B_f, AB_f, C)
 
             summary_writer.add_summary(loss_sum, self.global_step)
             
@@ -258,8 +258,8 @@ class CoreferenceAgent(Agent):
                 print('P:', logits[:20])
             
             if self.global_step % self.opt['print_test_loss_every'] == 0:
-                A, B, C = self.valid_bg.get_batch(batch_size=self.batch_size)
-                loss, loss_test_sum, logits, pred = self.model.test_batch(self.session, A, B, C)
+                A, A_f, B, B_f, AB_f, C = self.valid_bg.get_batch(batch_size=self.batch_size)
+                loss, loss_test_sum, logits, pred = self.model.test_batch(self.session, A, A_f, B, B_f, AB_f, C)
                 summary_writer.add_summary(loss_test_sum, self.global_step)
                 logits = np.argmax(logits, axis=1)
                 roc_auc = roc_auc_score(C, pred[:,1])
@@ -282,18 +282,24 @@ class CoreferenceAgent(Agent):
         '''
         predicted_scores = []
         for doc_id in tqdm(range(bg.max_doc_id)):
-            A, B = bg.get_document_batch(doc_id)
+            A, A_f, B, B_f, AB_f = bg.get_document_batch(doc_id)
             if A is None:
                 predicted_scores.append([])
                 continue
             # A, B can be very large so lets split them on batches
-            A_batched = utils.split_on_batches(A, self.batch_size)
-            B_batched = utils.split_on_batches(B, self.batch_size)
+            A_b = utils.split_on_batches(A, self.batch_size)
+            A_f_b = utils.split_on_batches(A_f, self.batch_size)
+            B_b = utils.split_on_batches(B, self.batch_size)
+            B_f_b = utils.split_on_batches(B_f, self.batch_size)
+            AB_f_b = utils.split_on_batches(AB_f, self.batch_size)
             batch_pred = []
-            for a, b in zip(A_batched, B_batched):
+            for a, a_f, b, b_f, ab_f in zip(A_b, A_f_b, B_b, B_f_b, AB_f_b):
                 [pred] = self.session.run([self.model.pred], feed_dict={
                     self.model.A: a,
+                    self.model.A_features: a_f,
                     self.model.B: b,
+                    self.model.B_features: b_f,
+                    self.model.AB_features: ab_f,
                     self.model.keep_prob_input_ph: 1.0,
                     self.model.keep_prob_dense_ph: 1.0
                     })
