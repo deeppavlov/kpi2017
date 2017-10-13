@@ -51,7 +51,7 @@ class CoreferenceAgent(Agent):
         group.add_argument('--save_model_every', type=int, default=100, help='save model every X iterations')
         group.add_argument('--inner_epochs', type=int, default=400, help='how many times to learn on full observation')
         group.add_argument('--dense_hidden_size', type=int, default=512, help='dense hidden size')
-        group.add_argument('--keep_prob_input', type=float, default=0.4, help='dropout keep_prob parameter on inputs')
+        group.add_argument('--keep_prob_input', type=float, default=0.5, help='dropout keep_prob parameter on inputs')
         group.add_argument('--keep_prob_dense', type=float, default=0.8, help='dropout keep_prob parameter between layers')
         group.add_argument('--lr', type=float, default=0.0005, help='learning rate')
         group.add_argument('--threshold_steps', type=int, default=50, help='how many steps in threshold selection')
@@ -163,16 +163,7 @@ class CoreferenceAgent(Agent):
                 if self.best_conll_f1 < res['conll-F-1']:
                     self.best_conll_f1 = res['conll-F-1']
                     self.best_threshold = t
-
-            '''
-            for t in tqdm(np.linspace(min_score, max_score, self.threshold_steps)):
-                output_path = '{}_{:.2f}'.format(os.path.join(self.tmp_folder, 'output'), t)
-                res = coreference_utils.score(self.scorer_path, self.valid_path, output_path)
-                print('tr: {:.2f} conll-F-1: {:.3f}\n'.format(t, res['conll-F-1']))
-                if self.best_conll_f1 < res['conll-F-1']:
-                    self.best_conll_f1 = res['conll-F-1']
-                    self.best_threshold = t
-            '''
+                    
             # clean tmp dir
             for root, dirs, files in os.walk(self.tmp_folder, topdown=False):
                 for name in files:
@@ -295,12 +286,18 @@ class CoreferenceAgent(Agent):
             if A is None:
                 predicted_scores.append([])
                 continue
-            [pred] = self.session.run([self.model.pred], feed_dict={
-                self.model.A: A,
-                self.model.B: B,
-                self.model.keep_prob_input_ph: 1.0,
-                self.model.keep_prob_dense_ph: 1.0
-                })
-            pred = np.reshape(pred[:,0], (int(np.sqrt(len(A))), int(np.sqrt(len(A)))))
-            predicted_scores.append(pred)
+            # A, B can be very large so lets split them on batches
+            A_batched = utils.split_on_batches(A, self.batch_size)
+            B_batched = utils.split_on_batches(B, self.batch_size)
+            batch_pred = []
+            for a, b in zip(A_batched, B_batched):
+                [pred] = self.session.run([self.model.pred], feed_dict={
+                    self.model.A: a,
+                    self.model.B: b,
+                    self.model.keep_prob_input_ph: 1.0,
+                    self.model.keep_prob_dense_ph: 1.0
+                    })
+                batch_pred.append(pred[:,0])
+            predicted_scores.append(np.reshape(np.concatenate(batch_pred), 
+                (int(np.sqrt(len(A))), int(np.sqrt(len(A))))))
         return predicted_scores

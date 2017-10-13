@@ -8,7 +8,6 @@ def score(scorer, keys_path, predicts_path):
     key_files = list(filter(lambda x: x.endswith('conll'), os.listdir(keys_path)))
     pred_files = list(filter(lambda x: x.endswith('conll'), os.listdir(predicts_path)))
     
-    print('score: Files to process: {}'.format(len(pred_files)))
     for file in tqdm(pred_files):
         predict_file = os.path.join(predicts_path, file)
         gold_file = os.path.join(keys_path, file)

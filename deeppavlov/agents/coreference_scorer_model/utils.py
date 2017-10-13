@@ -484,3 +484,15 @@ def make_dendrogram_predictions(dl, clustering, threshold):
         else:
             doc_to_chains[doc_name] = [chains]
     return doc_to_chains
+
+def split_on_batches(data, batch_size):
+    '''
+    splits array data on batches of size batch_size
+    last batch can be with size less then batch_size
+    '''
+    data_batched = []
+    for i in range(data.shape[0] // batch_size):
+        data_batched.append(data[i * batch_size:(i + 1) * batch_size])
+    if data.shape[0] % batch_size > 0:
+        data_batched.append(data[(i + 1) * batch_size:])
+    return data_batched

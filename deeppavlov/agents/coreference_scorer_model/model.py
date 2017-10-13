@@ -19,8 +19,7 @@ class MentionScorerModel():
 
         A_do = tf.nn.dropout(self.A, keep_prob=self.keep_prob_input_ph)
         B_do = tf.nn.dropout(self.B, keep_prob=self.keep_prob_input_ph)
-        #inputs = tf.concat([A_do, B_do, A_do * B_do], axis=1)
-        inputs = tf.concat([A_do, B_do], axis=1)
+        inputs = tf.concat([A_do, B_do, A_do * B_do], axis=1)
         
         dense_1 = tf.layers.dense(inputs, units=hidden_size, activation=tf.nn.tanh, kernel_initializer=tf.contrib.layers.xavier_initializer())
         dense_1_do = tf.nn.dropout(dense_1, keep_prob=self.keep_prob_dense_ph)
