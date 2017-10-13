@@ -24,7 +24,7 @@ import os
 import parlai.core.build_data as build_data
 import shutil
 import tensorflow as tf
-
+import time
 
 def RuCoref2CoNLL(path, out_path, language='ru'):
     data = {"doc_id": [],

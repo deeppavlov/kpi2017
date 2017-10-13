@@ -21,7 +21,6 @@ def score(scorer, keys_path, predicts_path):
     # make sure that all files processed
     time.sleep(1)
 
-    print('score: aggregating results...')
     k = 0
     results = dict()
     res = dict()

@@ -20,6 +20,7 @@ import fasttext
 import numpy as np
 import os
 import tensorflow as tf
+from multiprocessing import Pool
 
 from . import utils
 from .model import MentionScorerModel
@@ -48,14 +49,16 @@ class CoreferenceAgent(Agent):
         
         group.add_argument('--batch_size', type=int, default=128, help='batch size')
         group.add_argument('--save_model_every', type=int, default=100, help='save model every X iterations')
-        group.add_argument('--inner_epochs', type=int, default=1000, help='how many times to learn on full observation')
+        group.add_argument('--inner_epochs', type=int, default=400, help='how many times to learn on full observation')
         group.add_argument('--dense_hidden_size', type=int, default=512, help='dense hidden size')
-        group.add_argument('--keep_prob_input', type=float, default=0.5, help='dropout keep_prob parameter on inputs')
+        group.add_argument('--keep_prob_input', type=float, default=0.4, help='dropout keep_prob parameter on inputs')
         group.add_argument('--keep_prob_dense', type=float, default=0.8, help='dropout keep_prob parameter between layers')
         group.add_argument('--lr', type=float, default=0.0005, help='learning rate')
-        group.add_argument('--threshold_steps', type=int, default=10, help='how many steps in threshold selection')
-        group.add_argument('--print_train_loss_every', type=int, default=100, help='print train loss every X iterations')
-        group.add_argument('--print_test_loss_every', type=int, default=100, help='print test loss every X iterations')
+        group.add_argument('--threshold_steps', type=int, default=50, help='how many steps in threshold selection')
+        group.add_argument('--print_train_loss_every', type=int, default=500, help='print train loss every X iterations')
+        group.add_argument('--print_test_loss_every', type=int, default=500, help='print test loss every X iterations')
+
+        group.add_argument('--scorer_n_threads', type=int, default=25, help='how many threads can CoNLL scorer use')
 
         group.add_argument('--linkage_method', type=str, default='centroid', help='linkage method: single, complete, averaged, ... look at SciPy doc')
 
@@ -117,6 +120,9 @@ class CoreferenceAgent(Agent):
 
         self.global_step = 0
 
+        self.n_threads = opt['scorer_n_threads']
+        assert self.n_threads > 0 or self.n_threads == -1
+
         run_number = len(os.listdir(self.tensorboard_path))
         self.run_path = os.path.join(self.tensorboard_path, 'run_{0}_scorer'.format(run_number))
         print('run_path: {}'.format(self.run_path))
@@ -138,13 +144,27 @@ class CoreferenceAgent(Agent):
             clustering, min_score, max_score = utils.build_clusters(predicted_scores, method=self.linkage_method)
             
             print('Making conll predictions on valid dataset...')
+            pool_args = []
             for t in tqdm(np.linspace(min_score, max_score, self.threshold_steps)):
                 output_path = '{}_{:.2f}'.format(os.path.join(self.tmp_folder, 'output'), t)
                 doc_to_chains = utils.make_dendrogram_predictions(self.valid_bg.dl, clustering, threshold=t)
+                pool_args.append((self.scorer_path, self.valid_path, output_path))
                 for doc in doc_to_chains:
                     utils.make_prediction_file(self.data_valid_conll[doc], self.data_valid[doc], output_path, doc_to_chains[doc])
 
             print('Scoring all conll predicions on valid dataset')
+
+            results = None
+            with Pool(self.n_threads) as pool:
+                results = pool.starmap(coreference_utils.score, pool_args)
+            
+            assert results is not None
+            for t, res in zip(np.linspace(min_score, max_score, self.threshold_steps), results):
+                if self.best_conll_f1 < res['conll-F-1']:
+                    self.best_conll_f1 = res['conll-F-1']
+                    self.best_threshold = t
+
+            '''
             for t in tqdm(np.linspace(min_score, max_score, self.threshold_steps)):
                 output_path = '{}_{:.2f}'.format(os.path.join(self.tmp_folder, 'output'), t)
                 res = coreference_utils.score(self.scorer_path, self.valid_path, output_path)
@@ -152,7 +172,7 @@ class CoreferenceAgent(Agent):
                 if self.best_conll_f1 < res['conll-F-1']:
                     self.best_conll_f1 = res['conll-F-1']
                     self.best_threshold = t
-
+            '''
             # clean tmp dir
             for root, dirs, files in os.walk(self.tmp_folder, topdown=False):
                 for name in files:
