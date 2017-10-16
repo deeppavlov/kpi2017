@@ -218,6 +218,9 @@ def split_doc(inpath, outpath, language):
 
 
 def train_valid_test_split(inpath, train_path, valid_path, test_path, valid_ratio, test_ratio, seed=None):
+    '''
+    split dataset on train/valid/test
+    '''
     assert valid_ratio + test_ratio <= 1.0
     assert valid_ratio > 0 and test_ratio > 0
     source_files = os.listdir(inpath)
@@ -261,133 +264,6 @@ def get_all_texts_from_tokens_file(tokens_path, out_path):
         for doc_id in texts:
             out_file.write(texts[doc_id])
             out_file.write("\n")
-    return None
-
-
-def get_char_vocab(input_filename, output_filename):
-    data = open(input_filename, "r").read()
-    vocab = sorted(list(set(data)))
-
-    with open(output_filename, 'w') as f:
-        for c in vocab:
-            f.write(u"{}\n".format(c))
-    print("[Wrote {} characters to {}] ...".format(len(vocab), output_filename))
-
-def conll2dict(iter_id, conll, agent, mode, doc, epoch_done=False):
-    data = {'doc_id': [],
-            'part_id': [],
-            'word_number': [],
-            'word': [],
-            'part_of_speech': [],
-            'parse_bit': [],
-            'lemma': [],
-            'sense': [],
-            'speaker': [],
-            'entity': [],
-            'predict': [],
-            'coreference': [],
-            'iter_id': iter_id,
-            'id': agent,
-            'epoch_done': epoch_done,
-            'mode': mode,
-            'doc_name': doc}
-
-    with open(conll, 'r') as f:
-        for line in f:
-            row = line.split('\t')
-            if row[0].startswith('#'):
-                continue
-            elif row[0] == '\n':
-                data['doc_id'].append('bc')
-                data['part_id'].append('0')
-                data['word_number'].append('0')
-                data['word'].append('.')
-                data['part_of_speech'].append('End_of_sentence')
-                data['parse_bit'].append('-')
-                data['lemma'].append('-')
-                data['sense'].append('-')
-                data['speaker'].append('spk1')
-                data['entity'].append('-')
-                data['predict'].append('-')
-                data['coreference'].append('-')
-            else:
-                assert len(row) >= 12
-                data['doc_id'].append(row[0])
-                data['part_id'].append(row[1])
-                data['word_number'].append(row[2])
-                data['word'].append(row[3])
-                data['part_of_speech'].append(row[4])
-                data['parse_bit'].append(row[5])
-                data['lemma'].append(row[6])
-                data['sense'].append(row[7])
-                data['speaker'].append(row[8])
-                data['entity'].append(row[9])
-                data['predict'].append(row[10])
-                data['coreference'].append(row[11][0:-1])
-        f.close()
-    return data
-
-def dict2conll(data, predict):
-    #
-    with open(predict, 'w') as CoNLL:
-        for i in range(len(data['doc_id'])):
-            if i == 0:
-                CoNLL.write('#begin document ({}); part {}\n'.format(data['doc_id'][i], data["part_id"][i]))
-                CoNLL.write(u'{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(data['doc_id'][i],
-                                                    data["part_id"][i],
-                                                    data["word_number"][i],
-                                                    data["word"][i],
-                                                    data["part_of_speech"][i],
-                                                    data["parse_bit"][i],
-                                                    data["lemma"][i],
-                                                    data["sense"][i],
-                                                    data["speaker"][i],
-                                                    data["entity"][i],
-                                                    data["predict"][i],
-                                                    data["coreference"][i]))
-            elif i == len(data['doc_id'])-1 and data['part_of_speech'][i] == 'End_of_sentence':
-                CoNLL.write('#end document\n')
-            elif data['part_of_speech'][i] == 'End_of_sentence':
-                continue
-            else:
-                if data['doc_id'][i] == data['doc_id'][i+1]:
-                    CoNLL.write(u'{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(data['doc_id'][i],
-                                                        data["part_id"][i],
-                                                        data["word_number"][i],
-                                                        data["word"][i],
-                                                        data["part_of_speech"][i],
-                                                        data["parse_bit"][i],
-                                                        data["lemma"][i],
-                                                        data["sense"][i],
-                                                        data["speaker"][i],
-                                                        data["entity"][i],
-                                                        data["predict"][i],
-                                                        data["coreference"][i]))
-                elif data['part_of_speech'][i] == 'End_of_sentence':
-                    continue
-                else:
-                    CoNLL.write(u'{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format(data['doc_id'][i],
-                                                    data["part_id"][i],
-                                                    data["word_number"][i],
-                                                    data["word"][i],
-                                                    data["part_of_speech"][i],
-                                                    data["parse_bit"][i],
-                                                    data["lemma"][i],
-                                                    data["sense"][i],
-                                                    data["speaker"][i],
-                                                    data["entity"][i],
-                                                    data["predict"][i],
-                                                    data["coreference"][i]))
-                    CoNLL.write('\n')
-        CoNLL.close()
-    return None
-
-def make_summary(value_dict):
-    return tf.Summary(value=[tf.Summary.Value(tag=k, simple_value=v) for k, v in value_dict.items()])
-
-def summary(value_dict, global_step, writer):
-    summary = tf.Summary(value=[tf.Summary.Value(tag=k, simple_value=v) for k, v in value_dict.items()])
-    writer.add_summary(summary, global_step)
     return None
 
 def save_observations(observation, path_to_save, lang='ru'):

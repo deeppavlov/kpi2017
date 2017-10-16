@@ -1,10 +1,10 @@
-from tqdm import tqdm
 import fasttext
 import numpy as np
 import os
 import random
 import urllib
 import uuid
+from tqdm import tqdm
 
 from scipy.cluster.hierarchy import linkage
 

@@ -59,23 +59,18 @@ def build(opt):
         start = time.time()
 
         print('[Downloading the conll-2012 scorer]...')
-        build_data.download(scorer_url, join(dpath, 'scorer'),
-                            'reference-coreference-scorers.v8.01.tar.gz')
-        build_data.untar(join(dpath, 'scorer'),
-                         'reference-coreference-scorers.v8.01.tar.gz')
+        build_data.download(scorer_url, join(dpath, 'scorer'), 'reference-coreference-scorers.v8.01.tar.gz')
+        build_data.untar(join(dpath, 'scorer'), 'reference-coreference-scorers.v8.01.tar.gz')
         print('[Scorer was downloaded]...')
 
         fname = 'rucoref_29.10.2015.zip'
         if not os.path.isdir(join(dpath, 'rucoref_29.10.2015')):
             print('[Downloading the rucoref dataset]...')
             build_data.make_dir(join(dpath, 'rucoref_29.10.2015'))
-            build_data.download(dataset_url, join(
-                dpath, 'rucoref_29.10.2015'), fname)
+            build_data.download(dataset_url, join(dpath, 'rucoref_29.10.2015'), fname)
             # uncompress it
-            build_data.untar(join(dpath, 'rucoref_29.10.2015'),
-                             'rucoref_29.10.2015.zip')
-            print('End of downloading: took {0:.3f}s'.format(
-                time.time() - start))
+            build_data.untar(join(dpath, 'rucoref_29.10.2015'), 'rucoref_29.10.2015.zip')
+            print('End of downloading: took {0:.3f}s'.format(time.time() - start))
 
         # Convertation rucorpus files in conll files
         conllpath = join(dpath, 'ru_conll')
@@ -92,9 +87,9 @@ def build(opt):
         build_data.remove_dir(conllpath)
 
         # create train valid test partitions
-        # train_test_split(conlls,dpath,opt['split'],opt['random-seed'])
         utils.train_valid_test_split(conlls, join(dpath, 'train'),
-                                     join(dpath, 'valid'), join(dpath, 'test'), valid_ratio=opt['valid_ratio'], test_ratio=opt['test_ratio'])
+                                     join(dpath, 'valid'), join(dpath, 'test'), 
+                                     valid_ratio=opt['valid_ratio'], test_ratio=opt['test_ratio'])
 
         build_data.remove_dir(conlls)
         print('End of data splitting: took {0:.3f}'.format(

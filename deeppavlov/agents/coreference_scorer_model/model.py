@@ -1,7 +1,10 @@
 import tensorflow as tf
 
 class MentionScorerModel():
-    def __init__(self, hidden_size=512, lr=0.0005, keep_prob_input=0.5, keep_prob_dense=0.8, features_size=455):
+    '''
+    model for predicting probability that two mentions are the same entity (belong to one cluster)
+    '''
+    def __init__(self, hidden_size=512, lr=0.0005, keep_prob_input=0.5, keep_prob_dense=0.8, features_size=455, ohe_size=10, emb_dim=10):
         self.keep_prob_input = keep_prob_input
         self.keep_prob_dense = keep_prob_dense
         self.lr = lr
@@ -19,9 +22,7 @@ class MentionScorerModel():
         self.keep_prob_dense_ph = tf.placeholder(dtype=tf.float32, shape=(None), name='keep_prob_dense_ph')
         self.roc_auc = tf.placeholder(dtype=tf.float32, shape=(None), name='roc_auc_ph')
 
-        # TODO: get this from parameters?
-        ohe_size = 10
-        emb_dim = 10
+        # embeddings for one-hot features
         feat_2_embeddings = tf.Variable(tf.random_uniform([ohe_size, emb_dim], -1.0, 1.0, name='embeddings_2'), dtype=tf.float32)
         feat_3_embeddings = tf.Variable(tf.random_uniform([ohe_size, emb_dim], -1.0, 1.0, name='embeddings_3'), dtype=tf.float32)
         feat_4_embeddings = tf.Variable(tf.random_uniform([ohe_size, emb_dim], -1.0, 1.0, name='embeddings_4'), dtype=tf.float32)
@@ -54,6 +55,7 @@ class MentionScorerModel():
         B_encoded = tf.concat([B_do, B_f_emb], axis=1, name='B_encoded')
         inputs = tf.concat([A_encoded, B_encoded, A_encoded * B_encoded, pair_0_f_emb, pair_1_f_emb], axis=1)
 
+        # model is a 2 layer FCNN for binary classification
         dense_1 = tf.layers.dense(inputs, units=hidden_size, activation=tf.nn.tanh, kernel_initializer=tf.contrib.layers.xavier_initializer())
         dense_1_do = tf.nn.dropout(dense_1, keep_prob=self.keep_prob_dense_ph)
         dense_2 = tf.layers.dense(dense_1_do, units=hidden_size//2, activation=tf.nn.tanh, kernel_initializer=tf.contrib.layers.xavier_initializer())

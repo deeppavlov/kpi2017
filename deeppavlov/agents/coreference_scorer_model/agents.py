@@ -13,14 +13,14 @@ limitations under the License.
 
 
 
-from parlai.core.agents import Agent
-from sklearn.metrics import roc_auc_score
-from tqdm import tqdm
 import fasttext
 import numpy as np
 import os
 import tensorflow as tf
 from multiprocessing import Pool
+from parlai.core.agents import Agent
+from sklearn.metrics import roc_auc_score
+from tqdm import tqdm
 
 from . import utils
 from .model import MentionScorerModel
@@ -48,11 +48,11 @@ class CoreferenceAgent(Agent):
         group = argparser.add_argument_group('Coreference Agent')
         
         group.add_argument('--batch_size', type=int, default=128, help='batch size')
-        group.add_argument('--save_model_every', type=int, default=100, help='save model every X iterations')
+        group.add_argument('--save_model_every', type=int, default=10000, help='save model every X iterations')
         group.add_argument('--inner_epochs', type=int, default=300, help='how many times to learn on full observation')
-        group.add_argument('--dense_hidden_size', type=int, default=512, help='dense hidden size')
+        group.add_argument('--dense_hidden_size', type=int, default=256, help='dense hidden size')
         group.add_argument('--keep_prob_input', type=float, default=0.5, help='dropout keep_prob parameter on inputs')
-        group.add_argument('--keep_prob_dense', type=float, default=0.5, help='dropout keep_prob parameter between layers')
+        group.add_argument('--keep_prob_dense', type=float, default=0.8, help='dropout keep_prob parameter between layers')
         group.add_argument('--lr', type=float, default=0.0005, help='learning rate')
         group.add_argument('--threshold_steps', type=int, default=50, help='how many steps in threshold selection')
         group.add_argument('--print_train_loss_every', type=int, default=500, help='print train loss every X iterations')
@@ -272,7 +272,7 @@ class CoreferenceAgent(Agent):
 
             
             if self.global_step % self.opt['save_model_every'] == 0:
-                #saver.save(self.session, os.path.join(self.run_path, 'model') , global_step=self.global_step)
+                saver.save(self.session, os.path.join(self.run_path, 'model') , global_step=self.global_step)
                 pass
             self.global_step += 1
 

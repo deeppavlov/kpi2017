@@ -1,8 +1,8 @@
-import os
-from tqdm import tqdm
-import time
-import numpy as np
 import json
+import numpy as np
+import os
+import time
+from tqdm import tqdm
 
 def score(scorer, keys_path, predicts_path):
     key_files = list(filter(lambda x: x.endswith('conll'), os.listdir(keys_path)))
@@ -69,3 +69,4 @@ def score(scorer, keys_path, predicts_path):
     res['conll-F-1'] = conllf1
     json.dump(results, open(os.path.join(predicts_path, 'results.json'), 'w'))
     return res
+    
