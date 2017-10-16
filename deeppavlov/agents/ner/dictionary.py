@@ -33,7 +33,7 @@ class NERDictionaryAgent(DictionaryAgent):
     def __init__(self, opt, shared=None):
         child_opt = copy.deepcopy(opt)
         # child_opt['model_file'] += '.labels'
-        child_opt['dict_file'] = os.path.splitext(child_opt['dict_file'])[0] + '.labels.dict'
+        child_opt['dict_file'] = child_opt['dict_file'] + '.labels.dict'
         self.labels_dict = DictionaryAgent(child_opt, shared)
         self.char_dict = get_char_dict()
         super().__init__(opt, shared)
@@ -53,7 +53,7 @@ class NERDictionaryAgent(DictionaryAgent):
 
     def save(self, filename=None, append=False, sort=True):
         filename = self.opt['model_file'] if filename is None else filename
-        self.labels_dict.save(os.path.splitext(filename)[0] + '.labels.dict')
+        self.labels_dict.save(filename + '.labels.dict')
         return super().save(filename, append, sort)
 
     def tokenize(self, text, building=False):

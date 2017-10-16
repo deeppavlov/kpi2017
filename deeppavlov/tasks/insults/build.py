@@ -15,17 +15,17 @@ def data_preprocessing(f):
     f = [x.replace("\\xa0", " ") for x in f]
     f = [x.replace("\\xc2", " ") for x in f]
 
-    f = [re.sub('[!!]+', ' !! ', x) for x in f]
+    f = [re.sub('!!+', ' !! ', x) for x in f]
     f = [re.sub('!', ' ! ', x) for x in f]
     f = [re.sub('! !', '!!', x) for x in f]
 
-    f = [re.sub('[\?\?]+', ' ?? ', x) for x in f]
+    f = [re.sub('\?\?+', ' ?? ', x) for x in f]
     f = [re.sub('\?', ' ? ', x) for x in f]
     f = [re.sub('\? \?', '??', x) for x in f]
 
-    f = [re.sub('[\?!]+', ' ?! ', x) for x in f]
+    f = [re.sub('\?!+', ' ?! ', x) for x in f]
 
-    f = [re.sub('[\.\.]+', '..', x) for x in f]
+    f = [re.sub('\.\.+', '..', x) for x in f]
     f = [re.sub('\.', ' . ', x) for x in f]
     f = [re.sub('\.  \.', '..', x) for x in f]
 
@@ -142,22 +142,21 @@ def build(opt):
     # define version if any
     version = '1.0'
 
-    raw_path = os.path.abspath(opt['raw_dataset_path'] or ".")
-    train_file = os.path.join(raw_path, 'train.csv')
-    valid_file = os.path.join(raw_path, 'test_with_solutions.csv')
-    test_file = os.path.join(raw_path, 'impermium_verification_labels.csv')
-    if not os.path.isfile(train_file) or not os.path.isfile(valid_file) or not os.path.isfile(test_file):
+    # check if data had been previously built
+    if not build_data.built(dpath, version_string=version):
+        print('[building data: ' + dpath + ']')
 
-        # check if data had been previously built
-        if not build_data.built(dpath, version_string=version):
-            print('[building data: ' + dpath + ']')
+        # make a clean directory if needed
+        if build_data.built(dpath):
+            # an older version exists, so remove these outdated files.
+            build_data.remove_dir(dpath)
+        build_data.make_dir(dpath)
 
-            # make a clean directory if needed
-            if build_data.built(dpath):
-                # an older version exists, so remove these outdated files.
-                build_data.remove_dir(dpath)
-            build_data.make_dir(dpath)
-
+        raw_path = os.path.abspath(opt['raw_dataset_path'] or ".")
+        train_file = os.path.join(raw_path, 'train.csv')
+        valid_file = os.path.join(raw_path, 'test_with_solutions.csv')
+        test_file = os.path.join(raw_path, 'impermium_verification_labels.csv')
+        if not os.path.isfile(train_file) or not os.path.isfile(valid_file) or not os.path.isfile(test_file):
             ds_path = os.environ.get('DATASETS_URL')
             file_name = 'insults.tar.gz'
             if not ds_path:
@@ -172,48 +171,48 @@ def build(opt):
             opt['raw_dataset_path'] = dpath
             print('Downloaded a insults dataset')
 
-            raw_path = os.path.abspath(dpath)
+            raw_path = os.path.abspath(opt['raw_dataset_path'])
             train_file = os.path.join(raw_path, 'train.csv')
             valid_file = os.path.join(raw_path, 'test_with_solutions.csv')
             test_file = os.path.join(raw_path, 'impermium_verification_labels.csv')
 
-            train_data = pd.read_csv(train_file)
-            train_data = train_data.drop('Date', axis=1)
+        train_data = pd.read_csv(train_file)
+        train_data = train_data.drop('Date', axis=1)
 
-            test_data = pd.read_csv(test_file)
-            test_data = test_data.drop('id', axis=1)
-            test_data = test_data.drop('Usage', axis=1)
-            test_data = test_data.drop('Date', axis=1)
+        test_data = pd.read_csv(test_file)
+        test_data = test_data.drop('id', axis=1)
+        test_data = test_data.drop('Usage', axis=1)
+        test_data = test_data.drop('Date', axis=1)
 
-            valid_data = pd.read_csv(valid_file)
-            valid_data = valid_data.drop('Date', axis=1)
-            valid_data = valid_data.drop('Usage', axis=1)
+        valid_data = pd.read_csv(valid_file)
+        valid_data = valid_data.drop('Date', axis=1)
+        valid_data = valid_data.drop('Usage', axis=1)
 
-            # merge train and valid due to use of cross validation
-            train_data = train_data.append(valid_data)
+        # merge train and valid due to use of cross validation
+        train_data = train_data.append(valid_data)
 
-            if opt.get('balance_train_dataset'):
-                if opt['balance_train_dataset'] == True:
-                    train_data['Comment'],train_data['Insult'] = balance_dataset(train_data['Comment'],
-                                                                                 train_data['Insult'],
-                                                                                 train_data['Comment'],
-                                                                                 train_data['Insult'], ratio=1)
+        if opt.get('balance_train_dataset'):
+            if opt['balance_train_dataset'] == True:
+                train_data['Comment'],train_data['Insult'] = balance_dataset(train_data['Comment'],
+                                                                             train_data['Insult'],
+                                                                             train_data['Comment'],
+                                                                             train_data['Insult'], ratio=1)
 
-            print('Preprocessing train')
-            train_data['Comment'] = data_preprocessing(train_data['Comment'])
-            print('Preprocessing test')
-            test_data['Comment'] = data_preprocessing(test_data['Comment'])
+        print('Preprocessing train')
+        train_data['Comment'] = data_preprocessing(train_data['Comment'])
+        print('Preprocessing test')
+        test_data['Comment'] = data_preprocessing(test_data['Comment'])
 
-            print('Writing input files for fasttext')
-            write_input_fasttext_cls(train_data, os.path.join(dpath, 'train'), 'train')
-            write_input_fasttext_cls(test_data, os.path.join(dpath, 'test'), 'test')
+        print('Writing input files for fasttext')
+        write_input_fasttext_cls(train_data, os.path.join(dpath, 'train'), 'train')
+        write_input_fasttext_cls(test_data, os.path.join(dpath, 'test'), 'test')
 
-            write_input_fasttext_emb(train_data, os.path.join(dpath, 'train'), 'train')
-            write_input_fasttext_emb(test_data, os.path.join(dpath, 'test'), 'test')
+        write_input_fasttext_emb(train_data, os.path.join(dpath, 'train'), 'train')
+        write_input_fasttext_emb(test_data, os.path.join(dpath, 'test'), 'test')
 
-            print('Writing input normalized input files')
-            train_data.to_csv(os.path.join(dpath, 'train.csv'), index=False)
-            test_data.to_csv(os.path.join(dpath, 'test.csv'), index=False)
+        print('Writing input normalized input files')
+        train_data.to_csv(os.path.join(dpath, 'train.csv'), index=False)
+        test_data.to_csv(os.path.join(dpath, 'test.csv'), index=False)
 
-            # mark the data as built
-            build_data.mark_done(dpath, version_string=version)
+        # mark the data as built
+        build_data.mark_done(dpath, version_string=version)

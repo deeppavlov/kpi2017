@@ -28,7 +28,8 @@ def set_properties(project):
     os.environ['DATASETS_URL'] = os.getenv('DATASETS_URL',
                                            default='http://share.ipavlov.mipt.ru:8080/repository/datasets/')
     os.environ['CUDA_VISIBLE_DEVICES'] = os.getenv('CUDA_VISIBLE_DEVICES',
-                                                   default='1')
+                                                   default='7')
+    os.environ['KERAS_BACKEND'] = os.getenv('KERAS_BACKEND', default='tensorflow')
     project.set_property('dir_source_main_python', '.')
     project.set_property('dir_source_unittest_python', 'tests')
 
@@ -114,7 +115,8 @@ def train_insults(project):
                         '--fasttext_embeddings_dict', './build/insults/emb_dict.emb',
                         '--bagging-folds-number', '3',
                         '-ve', '10',
-                        '-vp', '1'
+                        '-vp', '5',
+                        '--chosen-metric', 'auc'
                         ])
     return metrics
 
@@ -134,11 +136,11 @@ def train_squad(project):
                         '--chosen-metrics', 'f1',
                         '--validation-patience', '5',
                         '--type', 'fastqa_default',
-                        '--lr', '0.0001',
+                        '--lr', '0.001',
                         '--lr_drop', '0.3',
-                        '--linear_dropout', '0.0',
+                        '--linear_dropout', '0.25',
                         '--embedding_dropout', '0.5',
-                        '--rnn_dropout', '0.0',
+                        '--rnn_dropout', '0.25',
                         '--recurrent_dropout', '0.0',
                         '--input_dropout', '0.0',
                         '--output_dropout', '0.0',
