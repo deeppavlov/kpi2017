@@ -102,6 +102,25 @@ class TestKPIs(unittest.TestCase):
                         'KPI for SQuAD is not satisfied. \
                         Got {}, expected more than {}'.format(metrics['f1'], expected_KPI))
 
+    def test_coreference_scorer_model(self):
+        expected_KPI = 0.55
+        metrics = bu.model(['-t', 'deeppavlov.tasks.coreference_scorer_model.agents:CoreferenceTeacher',
+                    '-m', 'deeppavlov.agents.coreference_scorer_model.agents:CoreferenceAgent',
+                    '--display-examples', 'False',
+                    '--num-epochs', '-1',
+                    '--log-every-n-secs', '-1',
+                    '--log-every-n-epochs', '1',
+                    '--validation-every-n-epochs', '-1',
+                    '--chosen-metrics', 'f1',
+                    '--datatype', 'test',
+                    '--model-file', './build/coref',
+                    '--pretrained_model', './build/coref',
+                    '--embeddings_path', './build/coref/fasttext_embdgs.bin',
+                    ])
+        self.assertTrue(metrics['f1'] > expected_KPI,
+                        'KPI for Coreference resolution is not satisfied. \
+                        Got {}, expected more than {}'.format(metrics['f1'], expected_KPI))
+
 if __name__ == '__main__':
     unittest.main()
 

@@ -66,6 +66,7 @@ class CoreferenceAgent(Agent):
                            help='folder where to dump conll predictions, scorer will use this folder')
         group.add_argument('--embeddings_url', type=str, default='http://share.ipavlov.mipt.ru:8080/repository/embeddings/ft_0.8.3_nltk_yalen_sg_300.bin')      
         group.add_argument('--embeddings_path', type=str, default='')
+        group.add_argument('--pretrained_model', type=str, default='')
         group.add_argument('--tensorboard', type=str, default='tensorboard_coreference_scorer', help='path to tensorboard logs')
 
 
@@ -213,7 +214,7 @@ class CoreferenceAgent(Agent):
                 keep_prob_input=self.opt['keep_prob_input'], keep_prob_dense=self.opt['keep_prob_dense'], features_size=self.valid_bg.dl.features_size)
             self.session = tf.Session(config=self.tf_config)
             tf.global_variables_initializer().run(session=self.session)
-            if 'pretrained_model' in self.opt:
+            if self.opt['pretrained_model'] != '':
                 checkpoint = tf.train.latest_checkpoint(self.opt['pretrained_model'])
                 print('Initializing model from checkpoint: {}'.format(checkpoint))
                 saver = tf.train.Saver()
