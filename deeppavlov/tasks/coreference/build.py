@@ -83,23 +83,6 @@ def build(opt):
         build_data.remove_dir(conlls)
         build_data.remove_dir(join(dpath, 'rucoref_29.10.2015'))
         print('End of data splitting. Time - {}'.format(time.time()-start))
-        
-        print('Compiling the coref_kernels.cc')
-        cmd = """#!/usr/bin/env bash
-
-                # Build custom kernels.
-                TF_INC=$(python3 -c 'import tensorflow as tf; print(tf.sysconfig.get_include())')
-
-                # Linux (pip)
-                #g++ -std=c++11 -shared ./deeppavlov/agents/coreference/coref_kernels.cc -o ./deeppavlov/agents/coreference/coref_kernels.so -I $TF_INC -fPIC -D_GLIBCXX_USE_CXX11_ABI=0
-
-                # Linux (build from source)
-                g++ -std=c++11 -shared ./deeppavlov/agents/coreference/coref_kernels.cc -o ./deeppavlov/agents/coreference/coref_kernels.so -I $TF_INC -fPIC
-
-                # Mac
-                #g++ -std=c++11 -shared ./deeppavlov/agents/coreference/coref_kernels.cc -o ./deeppavlov/agents/coreference/coref_kernels.so -I $TF_INC -fPIC -D_GLIBCXX_USE_CXX11_ABI=0  -undefined dynamic_lookup"""
-        print('End of compiling the coref_kernels.cc')
-        os.system(cmd)
 
         # mark the data as built
         build_data.mark_done(dpath, version_string=version)
