@@ -43,7 +43,7 @@ def bdfa(opt):
         try:
             build_data.download(embed_url, join(dpath, 'embeddings'), 'embeddings_lenta_100.vec')
         except RuntimeWarning:
-            print('Sorry for the inconvenience. You can use your own embeddings. To do this, just put the file with the extension embeddings_lenta_100.vec in the folder ./build/coreference/<language>/agent/embeddings/')
+            print('Sorry for the inconvenience. You can use your own embeddings. To do this, just put the file  embeddings_lenta_100.vec in the folder ./build/coreference/<language>/agent/embeddings/')
         print('[End of download the word embeddings]...')
     
     if not isdir(join(dpath, 'vocab')):
@@ -52,7 +52,7 @@ def bdfa(opt):
         try:
             build_data.download(vocab_url, join(dpath, 'vocab'), 'char_vocab.russian.txt')
         except RuntimeWarning:
-            print('Sorry for the inconvenience. You can use your own char vocalibary. To do this, just put the file with the extension char_vocab.russian.txt in the folder ./build/coreference/<language>/agent/vocabs/')
+            print('Sorry for the inconvenience. You can use your own char vocalibary. To do this, just put the file  char_vocab.russian.txt in the folder ./build/coreference/<language>/agent/vocabs/')
         print('[End of download the chars vocalibary]...')
     
     if not isdir(join(dpath, 'logs', opt['name'])):

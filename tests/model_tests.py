@@ -123,7 +123,7 @@ class TestKPIs(unittest.TestCase):
                             '--chosen-metric', 'f1'
                             ])
         self.assertTrue(metrics['f1'] > expected_KPI,
-                        'KPI for SQuAD is not satisfied. \
+                        'KPI for Coreference resolution is not satisfied. \
                         Got {}, expected more than {}'.format(metrics['f1'], expected_KPI))
 
 if __name__ == '__main__':
