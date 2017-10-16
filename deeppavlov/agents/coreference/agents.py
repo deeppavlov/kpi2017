@@ -25,6 +25,7 @@ import parlai.core.build_data as build_data
 from os.path import join, isdir, isfile
 import os
 
+
 def bdfa(opt):
     
     embed_url = os.environ['EMBEDDINGS_URL'] + 'embeddings_lenta_100.vec'
@@ -37,12 +38,9 @@ def bdfa(opt):
     dpath = join(dpath, language, 'agent')
     build_data.make_dir(dpath)
     
-    if not isdir(join(dpath, 'embeddings')):
-        build_data.make_dir(join(dpath, 'embeddings'))
-    if not isdir(join(dpath, 'vocab')):
-        build_data.make_dir(join(dpath, 'vocab'))
-    if not isdir(join(dpath, 'logs', opt['name'])):
-        build_data.make_dir(join(dpath, 'logs', opt['name']))
+    build_data.make_dir(join(dpath, 'embeddings'))
+    build_data.make_dir(join(dpath, 'vocab'))
+    build_data.make_dir(join(dpath, 'logs', opt['name']))
     
     if not isfile(join(dpath, 'embeddings', 'embeddings_lenta_100.vec')):     
         print('[Download the word embeddings]...')
@@ -50,8 +48,8 @@ def bdfa(opt):
             build_data.download(embed_url, join(dpath, 'embeddings'), 'embeddings_lenta_100.vec')
             print('[End of download the word embeddings]...')
         except RuntimeWarning:
-            raise('Sorry for the inconvenience. You can use your own embeddings. To do this, just put the file  embeddings_lenta_100.vec in the folder ./build/coreference/<language>/agent/embeddings/')
-    
+            raise('To use your own embeddings, please, put the file embeddings_lenta_100.vec in the folder '
+                  './build/coreference/<language>/agent/embeddings/')
 
     if not isfile(join(dpath, 'vocab', 'char_vocab.russian.txt')):
         print('[Download the chars vocalibary]...')
@@ -59,22 +57,24 @@ def bdfa(opt):
             build_data.download(vocab_url, join(dpath, 'vocab'), 'char_vocab.russian.txt')
             print('[End of download the chars vocalibary]...')
         except RuntimeWarning:
-            raise('Sorry for the inconvenience. You can use your own char vocalibary. To do this, just put the file  char_vocab.russian.txt in the folder ./build/coreference/<language>/agent/vocabs/')
+            raise('To use your own char vocalibary, please, put the file char_vocab.russian.txt in the folder '
+                  './build/coreference/<language>/agent/vocabs/')
     
-    if not isdir(join(dpath, 'logs', 'pretrain_model')):
+    if opt['name'] == 'pretrain_model' and not isdir(join(dpath, 'logs', 'pretrain_model')):
         print('[Download the pretrain model]...')
         try:
             build_data.download(pretrain_url, join(dpath, 'logs'), 'pretrain_model.zip')
             build_data.untar(join(dpath, 'logs'), 'pretrain_model.zip')
             print('[End of download pretrain model]...')
         except RuntimeWarning:
-            print('Sorry for the inconvenience. You can use start train your own model. To do this, just change the variable --name in build.py:train_coreference, or change the variable --pretrained_model to False in the same function.')
+            raise('To train your own model, please, change the variable --name in build.py:train_coreference '
+                  'to anything other than `pretrain_model`')
         
-    if not isdir(join(dpath, 'reports')):
-        build_data.make_dir(join(dpath, 'reports', 'response_files'))
-        build_data.make_dir(join(dpath, 'reports', 'results'))
-        build_data.make_dir(join(dpath, 'reports', 'predictions'))
+    build_data.make_dir(join(dpath, 'reports', 'response_files'))
+    build_data.make_dir(join(dpath, 'reports', 'results'))
+    build_data.make_dir(join(dpath, 'reports', 'predictions'))
     return None
+
 
 class CoreferenceAgent(Agent):
 
