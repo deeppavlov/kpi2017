@@ -65,8 +65,7 @@ class CoreferenceAgent(Agent):
         group.add_argument('--tmp_folder', type=str, default='tmp',
                            help='folder where to dump conll predictions, scorer will use this folder')
         group.add_argument('--embeddings_url', type=str, default='http://share.ipavlov.mipt.ru:8080/repository/embeddings/ft_0.8.3_nltk_yalen_sg_300.bin')      
-        group.add_argument('--embeddings_filename', type=str, default='fasttext_embdgs.bin')
-        
+        group.add_argument('--embeddings_path', type=str, default='')
         group.add_argument('--tensorboard', type=str, default='tensorboard_coreference_scorer', help='path to tensorboard logs')
 
 
@@ -79,7 +78,9 @@ class CoreferenceAgent(Agent):
         
         self.agent_dir = opt['model_file']
         self.datapath = os.path.join(opt['datapath'], 'coreference', opt['language'])
-        self.embeddings_path = os.path.join(self.agent_dir, opt['embeddings_filename'])
+        
+        assert opt['embeddings_path'] != ''
+        self.embeddings_path = opt['embeddings_path']
         self.tensorboard_path = os.path.join(self.agent_dir, opt['tensorboard'])
 
         if not os.path.isdir(self.tensorboard_path):
@@ -178,7 +179,7 @@ class CoreferenceAgent(Agent):
         doc_to_chains = utils.make_dendrogram_predictions(self.valid_bg.dl, clustering, threshold=self.best_threshold)
         pred_conll_lines = [utils.make_prediction_file(self.data_valid_conll[doc], self.data_valid[doc], None, doc_to_chains[doc], write=False) for doc in doc_to_chains]
         self.data_bg, self.valid_bg = None, None
-        return {'id': self.id, 'valid_conll': pred_conll_lines}        
+        return {'id': self.id, 'valid_conll': pred_conll_lines}
 
     def observe(self, observation):
         self.last_observation = observation
