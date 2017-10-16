@@ -23,7 +23,7 @@ import tensorflow as tf
 from . import utils
 from os.path import isdir, join
 
-coref_op_library = tf.load_op_library("./deeppavlov/agents/coreference/coref_kernels.so")
+coref_op_library = tf.load_op_library("./build/coreference/coref_kernels.so")
 spans = coref_op_library.spans
 tf.NotDifferentiable("Spans")
 get_antecedents = coref_op_library.antecedents

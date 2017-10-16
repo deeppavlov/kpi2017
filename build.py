@@ -156,7 +156,7 @@ def train_squad(project):
 
 @task
 def compile_coreference():
-    if not os.path.isfile('./deeppavlov/agents/coreference/coref_kernels.so'):
+    if not os.path.isfile('./build/coreference/coref_kernels.so'):
         print('Compiling the coref_kernels.cc')
         cmd = """#!/usr/bin/env bash
 
@@ -164,13 +164,13 @@ def compile_coreference():
                 TF_INC=$(python3 -c 'import tensorflow as tf; print(tf.sysconfig.get_include())')
 
                 # Linux (pip)
-                #g++ -std=c++11 -shared ./deeppavlov/agents/coreference/coref_kernels.cc -o ./deeppavlov/agents/coreference/coref_kernels.so -I $TF_INC -fPIC -D_GLIBCXX_USE_CXX11_ABI=0
+                g++ -std=c++11 -shared ./deeppavlov/agents/coreference/coref_kernels.cc -o ./build/coreference/coref_kernels.so -I $TF_INC -fPIC -D_GLIBCXX_USE_CXX11_ABI=0
 
                 # Linux (build from source)
-                g++ -std=c++11 -shared ./deeppavlov/agents/coreference/coref_kernels.cc -o ./deeppavlov/agents/coreference/coref_kernels.so -I $TF_INC -fPIC
+                #g++ -std=c++11 -shared ./deeppavlov/agents/coreference/coref_kernels.cc -o ./build/coreference/coref_kernels.so -I $TF_INC -fPIC
 
                 # Mac
-                #g++ -std=c++11 -shared ./deeppavlov/agents/coreference/coref_kernels.cc -o ./deeppavlov/agents/coreference/coref_kernels.so -I $TF_INC -fPIC -D_GLIBCXX_USE_CXX11_ABI=0  -undefined dynamic_lookup"""
+                #g++ -std=c++11 -shared ./deeppavlov/agents/coreference/coref_kernels.cc -o ./build/coreference/coref_kernels.so -I $TF_INC -fPIC -D_GLIBCXX_USE_CXX11_ABI=0  -undefined dynamic_lookup"""
         os.system(cmd)
         print('End of compiling the coref_kernels.cc')
 
