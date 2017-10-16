@@ -27,7 +27,7 @@ class TestKPIs(unittest.TestCase):
                             ])
         self.assertTrue(metrics['f1'] > expected_KPI,
                         'KPI for paraphraser is not satisfied. \
-                        Got {}, expected more than {}'.format(metrics['auc'], expected_KPI))
+                        Got {}, expected more than {}'.format(metrics['f1'], expected_KPI))
 
     def test_ner(self):
         expected_KPI = 70
@@ -88,6 +88,12 @@ class TestKPIs(unittest.TestCase):
                             '--chosen-metrics', 'f1',
                             '--validation-patience', '5',
                             '--type', 'fastqa_default',
+                            '--linear_dropout', '0.0',
+                            '--embedding_dropout', '0.5',
+                            '--rnn_dropout', '0.0',
+                            '--recurrent_dropout', '0.0',
+                            '--input_dropout', '0.0',
+                            '--output_dropout', '0.0',
                             '--context_enc_layers', '1',
                             '--question_enc_layers', '1',
                             '--encoder_hidden_dim', '300',
