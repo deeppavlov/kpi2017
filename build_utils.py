@@ -292,13 +292,13 @@ def __train_single_model(opt):
             if train_dict['new_epoch']:
                 world.reset()
                 train_dict['epochs_done'] += 1
+            world, agent, train_dict = __train_log(opt, world, agent, train_dict)
             if opt['num_epochs'] > 0 and train_dict['parleys'] >= train_dict['max_parleys']:
                 print('[ num_epochs completed: {} ]'.format(opt['num_epochs']))
                 break
             if 0 < opt['max_train_time'] < train_dict['train_time'].time():
                 print('[ max_train_time elapsed: {} ]'.format(train_dict['train_time'].time()))
                 break
-            world, agent, train_dict = __train_log(opt, world, agent, train_dict)
             _, agent, train_dict = __intermediate_validation(opt, world, agent, train_dict)
 
             if train_dict['break']:
