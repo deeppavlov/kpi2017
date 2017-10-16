@@ -39,7 +39,7 @@ def bdfa(opt):
     
     if not isdir(join(dpath, 'embeddings')):
         build_data.make_dir(join(dpath, 'embeddings'))
-    if not isdir(join(dpath, 'vocab'))
+    if not isdir(join(dpath, 'vocab')):
         build_data.make_dir(join(dpath, 'vocab'))
     if not isdir(join(dpath, 'logs', opt['name'])):
         build_data.make_dir(join(dpath, 'logs', opt['name']))
@@ -68,7 +68,7 @@ def bdfa(opt):
             build_data.untar(join(dpath, 'logs'), 'pretrain_model.zip')
             print('[End of download pretrain model]...')
         except RuntimeWarning:
-            raise('Sorry for the inconvenience. You can use start train your own model. To do this, just change the variable --name in build.py:train_coreference, or change the variable --pretrained_model to False in the same function.')
+            print('Sorry for the inconvenience. You can use start train your own model. To do this, just change the variable --name in build.py:train_coreference, or change the variable --pretrained_model to False in the same function.')
         
     if not isdir(join(dpath, 'reports')):
         build_data.make_dir(join(dpath, 'reports', 'response_files'))
