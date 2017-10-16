@@ -25,7 +25,7 @@ import parlai.core.build_data as build_data
 from os.path import join, isdir, isfile
 import os
 
-def bdfa(opt):
+def build_data_for_agent(opt):
     
     embed_url = os.environ['EMBEDDINGS_URL'] + 'embeddings_lenta_100.vec'
     vocab_url = os.environ['MODELS_URL'] + 'coreference/vocabs/char_vocab.russian.txt'
@@ -84,7 +84,7 @@ class CoreferenceAgent(Agent):
         
     def __init__(self, opt, shared=None):
         
-        bdfa(opt)
+        build_data_for_agent(opt)
         
         self.id = 'Coreference_Agent'
         self.episode_done = True
