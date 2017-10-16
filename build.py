@@ -28,7 +28,7 @@ def set_properties(project):
     os.environ['DATASETS_URL'] = os.getenv('DATASETS_URL',
                                            default='http://share.ipavlov.mipt.ru:8080/repository/datasets/')
     os.environ['CUDA_VISIBLE_DEVICES'] = os.getenv('CUDA_VISIBLE_DEVICES',
-                                                   default='1')
+                                                   default='0')
     project.set_property('dir_source_main_python', '.')
     project.set_property('dir_source_unittest_python', 'tests')
 
@@ -160,7 +160,7 @@ def train_coreference(project):
                         '-m', 'deeppavlov.agents.coreference.agents:CoreferenceAgent',
                         '-mf', './build/coreference/',
                         '--language', 'russian',
-                        '--name', 'fasttext',
+                        '--name', 'main',
                         '--pretrained_model', 'True',
                         '-dt', 'train:ordered',
                         '--batchsize', '1',
@@ -170,6 +170,6 @@ def train_coreference(project):
                         '--nitr', '1000',
                         '--log-every-n-epochs', '1',
                         '--log-every-n-secs', '-1',
-                        '--chosen-metric', 'conll-F-1'
+                        '--chosen-metric', 'f1'
                         ])
     return metrics

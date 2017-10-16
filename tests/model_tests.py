@@ -101,6 +101,29 @@ class TestKPIs(unittest.TestCase):
         self.assertTrue(metrics['f1'] > expected_KPI,
                         'KPI for SQuAD is not satisfied. \
                         Got {}, expected more than {}'.format(metrics['f1'], expected_KPI))
+    
+    def test_coreference(project):
+        expected_KPI = 0.55
+        metrics = bu.model(['-t', 'deeppavlov.tasks.coreference.agents',
+                            '-m', 'deeppavlov.agents.coreference.agents:CoreferenceAgent',
+                            '-mf', './build/coreference/',
+                            '-dt', 'valid',
+                            '--language', 'russian',
+                            '--name', 'pretrain_model',
+                            '--pretrained_model', 'True',
+                            '-dt', 'train:ordered',
+                            '--batchsize', '1',
+                            '--display-examples', 'False',
+                            '--max-train-time', '-1',
+                            '--validation-every-n-epochs', '1000',
+                            '--nitr', '1000',
+                            '--log-every-n-epochs', '1',
+                            '--log-every-n-secs', '-1',
+                            '--chosen-metric', 'f1'
+                            ])
+        self.assertTrue(metrics['f1'] > expected_KPI,
+                        'KPI for SQuAD is not satisfied. \
+                        Got {}, expected more than {}'.format(metrics['f1'], expected_KPI))
 
 if __name__ == '__main__':
     unittest.main()

@@ -45,7 +45,6 @@ def load_char_dict(char_vocab_path):
     char_dict.update({c: i for i, c in enumerate(sorted(set(vocab)))})
     return char_dict
 
-
 def load_embedding_dict(embedding_path, embedding_size, embedding_format):
     print("Loading word embeddings from {}...".format(embedding_path))
     default_embedding = np.zeros(embedding_size)

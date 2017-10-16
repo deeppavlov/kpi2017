@@ -23,12 +23,13 @@ from .models import CorefModel
 from . import utils
 import parlai.core.build_data as build_data
 from os.path import join, isdir
+import os
 
 def bdfa(opt):
     
-    embed_url = 'http://share.ipavlov.mipt.ru:8080/repository/embeddings/embeddings_lenta_100.vec'
-    vocab_url = 'http://share.ipavlov.mipt.ru:8080/repository/models/coreference/vocabs/char_vocab.russian.txt'
-    pretrain_url = 'http://share.ipavlov.mipt.ru:8080/repository/models/coreference/OpeanAI/pretrain_model.zip'
+    embed_url = os.environ['EMBEDDINGS_URL'] + 'embeddings_lenta_100.vec'
+    vocab_url = os.environ['MODELS_URL'] + 'coreference/vocabs/char_vocab.russian.txt'
+    pretrain_url = os.environ['MODELS_URL'] + 'coreference/OpeanAI/pretrain_model.zip'
     # get path to data directory and create folders tree
     dpath = join(opt['model_file'])
     # define languages
@@ -39,21 +40,30 @@ def bdfa(opt):
     if not isdir(join(dpath, 'embeddings')):
         build_data.make_dir(join(dpath, 'embeddings'))
         print('[Download the word embeddings]...')
-        build_data.download(embed_url, join(dpath, 'embeddings'), 'embeddings_lenta_100.vec')
+        try:
+            build_data.download(embed_url, join(dpath, 'embeddings'), 'embeddings_lenta_100.vec')
+        except RuntimeWarning:
+            print('Sorry for the inconvenience. You can use your own embeddings. To do this, just put the file with the extension .vec in the folder ./build/coreference/<language>/agent/embeddings/')
         print('[End of download the word embeddings]...')
     
     if not isdir(join(dpath, 'vocab')):
         build_data.make_dir(join(dpath, 'vocab'))
         print('[Download the chars vocalibary]...')
-        build_data.download(vocab_url, join(dpath, 'vocab'), 'char_vocab.russian.txt')
+        try:
+            build_data.download(vocab_url, join(dpath, 'vocab'), 'char_vocab.russian.txt')
+        except RuntimeWarning:
+            print('Sorry for the inconvenience. You can use your own char vocalibary. To do this, just put the file with the extension .txt in the folder ./build/coreference/<language>/agent/vocabs/')
         print('[End of download the chars vocalibary]...')
     
     if not isdir(join(dpath, 'logs', opt['name'])):
         build_data.make_dir(join(dpath, 'logs', opt['name']))
     if not isdir(join(dpath, 'logs', 'pretrain_model')):
         print('[Download the pretrain model]...')
-        build_data.download(pretrain_url, join(dpath, 'logs'), 'pretrain_model.zip')
-        build_data.untar(join(dpath, 'logs'), 'pretrain_model.zip')
+        try:
+            build_data.download(pretrain_url, join(dpath, 'logs'), 'pretrain_model.zip')
+            build_data.untar(join(dpath, 'logs'), 'pretrain_model.zip')
+        except RuntimeWarning:
+            print('Sorry for the inconvenience. You can use start train your own model. To do this, just change the variable --name in build.py:train_coreference, or change the variable --pretrained_model to False in the same function.')
         print('[End of download pretrain model]...')
     
     if not isdir(join(dpath, 'reports')):
@@ -115,15 +125,6 @@ class CoreferenceAgent(Agent):
             act_dict['iteration'] = self.iterations
             return act_dict
         elif self.observation['mode'] == 'valid':
-            conll = dict()
-            conll_str = self.model.predict(self.obs_dict, self.observation)
-            conll['conll'] = True
-            conll['iter_id'] = self.observation['iter_id']
-            conll['iteration'] = self.iterations
-            conll['epoch_done'] = self.observation['epoch_done']
-            conll['conll_str'] = conll_str
-            return conll
-        elif self.observation['mode'] == 'test':
             conll = dict()
             conll_str = self.model.predict(self.obs_dict, self.observation)
             conll['conll'] = True
