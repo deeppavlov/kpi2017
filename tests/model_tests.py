@@ -108,16 +108,16 @@ class TestKPIs(unittest.TestCase):
                         'KPI for SQuAD is not satisfied. \
                         Got {}, expected more than {}'.format(metrics['f1'], expected_KPI))
     
-    def test_coreference(project):
+    def test_coreference(self):
         expected_KPI = 0.55
         metrics = bu.model(['-t', 'deeppavlov.tasks.coreference.agents',
                             '-m', 'deeppavlov.agents.coreference.agents:CoreferenceAgent',
                             '-mf', './build/coreference/',
                             '-dt', 'test',
                             '--language', 'russian',
-                            '--name', 'pretrain_model',
+                            '--name', 'fasttext',
                             '--pretrained_model', 'True',
-                            '-dt', 'train:ordered',
+                            '--datatype', 'test:stream',
                             '--batchsize', '1',
                             '--display-examples', 'False',
                             '--chosen-metric', 'f1'
