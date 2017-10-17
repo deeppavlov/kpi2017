@@ -154,19 +154,66 @@ def train_squad(project):
                         ])
     return metrics
 
+
+def compile_coreference(path):
+    path = path + '/coref_kernels.so'
+    if not os.path.isfile(path):
+        print('Compiling the coref_kernels.cc')
+        cmd = """#!/usr/bin/env bash
+
+                # Build custom kernels.
+                TF_INC=$(python3 -c 'import tensorflow as tf; print(tf.sysconfig.get_include())')
+
+                # Linux (pip)
+                g++ -std=c++11 -shared ./deeppavlov/agents/coreference/coref_kernels.cc -o {0} -I $TF_INC -fPIC -D_GLIBCXX_USE_CXX11_ABI=0
+
+                # Linux (build from source)
+                #g++ -std=c++11 -shared ./deeppavlov/agents/coreference/coref_kernels.cc -o {0} -I $TF_INC -fPIC
+
+                # Mac
+                #g++ -std=c++11 -shared ./deeppavlov/agents/coreference/coref_kernels.cc -o {0} -I $TF_INC -fPIC -D_GLIBCXX_USE_CXX11_ABI=0  -undefined dynamic_lookup"""
+        cmd = cmd.format(path)
+        os.system(cmd)
+        print('End of compiling the coref_kernels.cc')
+
+
+@task
+def train_coreference(project):
+    create_dir('coreference')
+    mf = './build/coreference/'
+    compile_coreference(mf)
+    metrics = bu.model(['-t', 'deeppavlov.tasks.coreference.agents',
+                        '-m', 'deeppavlov.agents.coreference.agents:CoreferenceAgent',
+                        '-mf', mf,
+                        '--language', 'russian',
+                        '--name', 'main',
+                        '--pretrained_model', 'True',
+                        '-dt', 'train:ordered',
+                        '--batchsize', '1',
+                        '--display-examples', 'False',
+                        '--max-train-time', '-1',
+                        '--validation-every-n-epochs', '1000',
+                        '--nitr', '1000',
+                        '--log-every-n-epochs', '1',
+                        '--log-every-n-secs', '-1',
+                        '--chosen-metric', 'f1'
+                        ])
+    return metrics
+
+
 @task
 def train_coreference_scorer_model(project):
     create_dir('coreference')
     metrics = bu.model(['-t', 'deeppavlov.tasks.coreference_scorer_model.agents:CoreferenceTeacher',
-                    '-m', 'deeppavlov.agents.coreference_scorer_model.agents:CoreferenceAgent',
-                    '--display-examples', 'False',
-                    '--num-epochs', '20',
-                    '--log-every-n-secs', '-1',
-                    '--log-every-n-epochs', '1',
-                    '--validation-every-n-epochs', '1',
-                    '--chosen-metrics', 'f1',
-                    '--validation-patience', '20',
-                    '--model-file', './build/coref',
-                    '--embeddings_path', './build/coref/fasttext_embdgs.bin'
-                    ])
+                        '-m', 'deeppavlov.agents.coreference_scorer_model.agents:CoreferenceAgent',
+                        '--display-examples', 'False',
+                        '--num-epochs', '20',
+                        '--log-every-n-secs', '-1',
+                        '--log-every-n-epochs', '1',
+                        '--validation-every-n-epochs', '1',
+                        '--chosen-metrics', 'f1',
+                        '--validation-patience', '20',
+                        '--model-file', './build/coref',
+                        '--embeddings_path', './build/coref/fasttext_embdgs.bin'
+                        ])
     return metrics

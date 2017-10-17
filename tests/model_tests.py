@@ -107,6 +107,24 @@ class TestKPIs(unittest.TestCase):
         self.assertTrue(metrics['f1'] > expected_KPI,
                         'KPI for SQuAD is not satisfied. \
                         Got {}, expected more than {}'.format(metrics['f1'], expected_KPI))
+    
+    def test_coreference(self):
+        expected_KPI = 0.55
+        metrics = bu.model(['-t', 'deeppavlov.tasks.coreference.agents',
+                            '-m', 'deeppavlov.agents.coreference.agents:CoreferenceAgent',
+                            '-mf', './build/coreference/',
+                            '-dt', 'test',
+                            '--language', 'russian',
+                            '--name', 'fasttext',
+                            '--pretrained_model', 'True',
+                            '--datatype', 'test:stream',
+                            '--batchsize', '1',
+                            '--display-examples', 'False',
+                            '--chosen-metric', 'f1'
+                            ])
+        self.assertTrue(metrics['f1'] > expected_KPI,
+                        'KPI for Coreference resolution is not satisfied. \
+                        Got {}, expected more than {}'.format(metrics['f1'], expected_KPI))
 
     def test_coreference_scorer_model(self):
         expected_KPI = 0.55
