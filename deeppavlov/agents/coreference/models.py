@@ -23,22 +23,22 @@ import tensorflow as tf
 from . import utils
 from os.path import isdir, join
 
-coref_op_library = tf.load_op_library("./build/coreference/coref_kernels.so")
-spans = coref_op_library.spans
-tf.NotDifferentiable("Spans")
-get_antecedents = coref_op_library.antecedents
-tf.NotDifferentiable("Antecedents")
-extract_mentions = coref_op_library.extract_mentions
-tf.NotDifferentiable("ExtractMentions")
-distance_bins = coref_op_library.distance_bins
-tf.NotDifferentiable("DistanceBins")
-
 class CorefModel(object):
     def __init__(self, opt):
         self.opt = copy.deepcopy(opt)
         
         config = tf.ConfigProto()
         config.gpu_options.per_process_gpu_memory_fraction = 0.8
+        
+        coref_op_library = tf.load_op_library(join(opt['model_file'], "coref_kernels.so"))
+        spans = coref_op_library.spans
+        tf.NotDifferentiable("Spans")
+        get_antecedents = coref_op_library.antecedents
+        tf.NotDifferentiable("Antecedents")
+        extract_mentions = coref_op_library.extract_mentions
+        tf.NotDifferentiable("ExtractMentions")
+        distance_bins = coref_op_library.distance_bins
+        tf.NotDifferentiable("DistanceBins")
         
         dpath = join(self.opt['model_file'], self.opt['language'], 'agent')
         self.char_vocab_path = join(dpath, 'vocab', 'char_vocab.russian.txt')

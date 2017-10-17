@@ -49,7 +49,7 @@ def build_data_for_agent(opt):
             print('[End of download the word embeddings]...')
         except RuntimeWarning:
             raise('To use your own embeddings, please, put the file embeddings_lenta_100.vec in the folder '
-                  './build/coreference/<language>/agent/embeddings/')
+                  '{0}/<language>/agent/embeddings/'.format(opt['model_file']))
 
     if not isfile(join(dpath, 'vocab', 'char_vocab.russian.txt')):
         print('[Download the chars vocalibary]...')
@@ -58,7 +58,7 @@ def build_data_for_agent(opt):
             print('[End of download the chars vocalibary]...')
         except RuntimeWarning:
             raise('To use your own char vocalibary, please, put the file char_vocab.russian.txt in the folder '
-                  './build/coreference/<language>/agent/vocabs/')
+                  '{0}<language>/agent/vocabs/'.format(opt['model_file'])
     
     if opt['name'] == 'pretrain_model' and not isdir(join(dpath, 'logs', 'pretrain_model')):
         print('[Download the pretrain model]...')
