@@ -195,3 +195,20 @@ def train_coreference(project):
                         '--chosen-metric', 'f1'
                         ])
     return metrics
+
+@task
+def train_coreference_scorer_model(project):
+    create_dir('coreference')
+    metrics = bu.model(['-t', 'deeppavlov.tasks.coreference_scorer_model.agents:CoreferenceTeacher',
+                    '-m', 'deeppavlov.agents.coreference_scorer_model.agents:CoreferenceAgent',
+                    '--display-examples', 'False',
+                    '--num-epochs', '20',
+                    '--log-every-n-secs', '-1',
+                    '--log-every-n-epochs', '1',
+                    '--validation-every-n-epochs', '1',
+                    '--chosen-metrics', 'f1',
+                    '--validation-patience', '20',
+                    '--model-file', './build/coref',
+                    '--embeddings_path', './build/coref/fasttext_embdgs.bin'
+                    ])
+    return metrics
