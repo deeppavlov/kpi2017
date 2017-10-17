@@ -23,6 +23,11 @@ import tensorflow as tf
 from . import utils
 from os.path import isdir, join
 
+tf.NotDifferentiable("Spans")
+tf.NotDifferentiable("Antecedents")
+tf.NotDifferentiable("ExtractMentions")
+tf.NotDifferentiable("DistanceBins")
+
 class CorefModel(object):
     def __init__(self, opt):
         self.opt = copy.deepcopy(opt)
@@ -31,14 +36,10 @@ class CorefModel(object):
         config.gpu_options.per_process_gpu_memory_fraction = 0.8
         
         coref_op_library = tf.load_op_library(join(opt['model_file'], "coref_kernels.so"))
-        spans = coref_op_library.spans
-        tf.NotDifferentiable("Spans")
-        get_antecedents = coref_op_library.antecedents
-        tf.NotDifferentiable("Antecedents")
-        extract_mentions = coref_op_library.extract_mentions
-        tf.NotDifferentiable("ExtractMentions")
-        distance_bins = coref_op_library.distance_bins
-        tf.NotDifferentiable("DistanceBins")
+        self.spans = coref_op_library.spans
+        self.distance_bins = coref_op_library.distance_bins
+        self.extract_mentions = coref_op_library.extract_mentions
+        self.get_antecedents = coref_op_library.antecedents
         
         dpath = join(self.opt['model_file'], self.opt['language'], 'agent')
         self.char_vocab_path = join(dpath, 'vocab', 'char_vocab.russian.txt')
@@ -275,7 +276,7 @@ class CorefModel(object):
         if self.opt["use_features"]:
             target_indices = tf.range(num_mentions)  # [num_mentions]
             mention_distance = tf.expand_dims(target_indices, 1) - antecedents  # [num_mentions, max_ant]
-            mention_distance_bins = distance_bins(mention_distance)  # [num_mentions, max_ant]
+            mention_distance_bins = self.distance_bins(mention_distance)  # [num_mentions, max_ant]
             mention_distance_bins.set_shape([None, None])
             mention_distance_emb = tf.gather(tf.get_variable("mention_distance_emb", [10, self.opt["feature_size"]]),
                                              mention_distance_bins)  # [num_mentions, max_ant]
@@ -416,7 +417,7 @@ class CorefModel(object):
         flattened_sentence_indices = self.flatten_emb_by_sentence(sentence_indices, text_len_mask)  # [num_words]
         flattened_text_emb = self.flatten_emb_by_sentence(text_emb, text_len_mask)  # [num_words]
 
-        candidate_starts, candidate_ends = spans(
+        candidate_starts, candidate_ends = self.spans(
             sentence_indices=flattened_sentence_indices,
             max_width=self.max_mention_width)
         candidate_starts.set_shape([None])
@@ -428,7 +429,7 @@ class CorefModel(object):
         candidate_mention_scores = tf.squeeze(candidate_mention_scores, 1)  # [num_mentions]
 
         k = tf.to_int32(tf.floor(tf.to_float(tf.shape(text_outputs)[0]) * self.opt["mention_ratio"]))
-        predicted_mention_indices = extract_mentions(candidate_mention_scores, candidate_starts,
+        predicted_mention_indices = self.extract_mentions(candidate_mention_scores, candidate_starts,
                                                                candidate_ends, k)  # ([k], [k])
         predicted_mention_indices.set_shape([None])
 
@@ -442,7 +443,7 @@ class CorefModel(object):
         mention_speaker_ids = tf.gather(speaker_ids, mention_starts)  # [num_mentions]
 
         max_antecedents = self.opt["max_antecedents"]
-        antecedents, antecedent_labels, antecedents_len = get_antecedents(mention_starts, mention_ends,
+        antecedents, antecedent_labels, antecedents_len = self.get_antecedents(mention_starts, mention_ends,
                                                                                 gold_starts, gold_ends, cluster_ids,
                                                                                 max_antecedents)  # ([num_mentions, max_ant], [num_mentions, max_ant + 1], [num_mentions]
         antecedents.set_shape([None, None])
