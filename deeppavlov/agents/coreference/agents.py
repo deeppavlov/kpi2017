@@ -28,9 +28,6 @@ import os
 
 def build_data_for_agent(opt):
     
-    embed_url = os.environ['EMBEDDINGS_URL'] + 'embeddings_lenta_100.vec'
-    vocab_url = os.environ['MODELS_URL'] + 'coreference/vocabs/char_vocab.russian.txt'
-    pretrain_url = os.environ['MODELS_URL'] + 'coreference/OpeanAI/pretrain_model.zip'
     # get path to data directory and create folders tree
     dpath = join(opt['model_file'])
     # define languages
@@ -45,6 +42,7 @@ def build_data_for_agent(opt):
     if not isfile(join(dpath, 'embeddings', 'embeddings_lenta_100.vec')):     
         print('[Download the word embeddings]...')
         try:
+            embed_url = os.environ['EMBEDDINGS_URL'] + 'embeddings_lenta_100.vec'
             build_data.download(embed_url, join(dpath, 'embeddings'), 'embeddings_lenta_100.vec')
             print('[End of download the word embeddings]...')
         except RuntimeWarning:
@@ -54,6 +52,7 @@ def build_data_for_agent(opt):
     if not isfile(join(dpath, 'vocab', 'char_vocab.russian.txt')):
         print('[Download the chars vocalibary]...')
         try:
+            vocab_url = os.environ['MODELS_URL'] + 'coreference/vocabs/char_vocab.russian.txt'
             build_data.download(vocab_url, join(dpath, 'vocab'), 'char_vocab.russian.txt')
             print('[End of download the chars vocalibary]...')
         except RuntimeWarning:
@@ -63,6 +62,7 @@ def build_data_for_agent(opt):
     if opt['name'] == 'pretrain_model' and not isdir(join(dpath, 'logs', 'pretrain_model')):
         print('[Download the pretrain model]...')
         try:
+            pretrain_url = os.environ['MODELS_URL'] + 'coreference/OpeanAI/pretrain_model.zip'
             build_data.download(pretrain_url, join(dpath, 'logs'), 'pretrain_model.zip')
             build_data.untar(join(dpath, 'logs'), 'pretrain_model.zip')
             print('[End of download pretrain model]...')
