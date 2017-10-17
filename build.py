@@ -1,6 +1,3 @@
-# to run model training type 'pyb train_<task>' replacing <task> with the model name
-# to test all the models type 'pyb run_unit_tests'
-
 from pybuilder.core import use_plugin, init, task
 import os
 import build_utils as bu
