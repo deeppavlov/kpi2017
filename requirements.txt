@@ -13,3 +13,4 @@ scikit-learn==0.19.0
 -e git+https://github.com/facebookresearch/ParlAI.git@7b979b43e06c482ebe5139ae977691b9213484e5#egg=parlai
 scipy==0.19.1
 xmlrunner==1.7.7
+tqdm==4.15.0

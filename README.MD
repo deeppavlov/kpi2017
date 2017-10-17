@@ -1,8 +1,3 @@
-Install from internal PyPi server
-```sh
-pip install --extra-index-url http://{host}:{port}/ --trusted-host {host} deeppavlov
-```
-
 Install from git
 ```sh
 git clone https://github.com/deepmipt/deeppavlov
@@ -23,3 +18,7 @@ pyb run_unit_tests -v
 After that, detailed report could be found in target/reports.
 
 Works on Ubuntu 16.04.
+
+Install from internal iPavlov PyPi server as dependency for your project
+```sh
+pip install --extra-index-url http://{host of internal iPavlov PyPi server}:{port}/ --trusted-host {host of internal iPavlov PyPi server} deeppavlov```
