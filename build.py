@@ -154,8 +154,9 @@ def train_squad(project):
                         ])
     return metrics
 
+
 @task
-def compile_coreference():
+def compile_coreference(project):
     if not os.path.isfile('./build/coreference/coref_kernels.so'):
         print('Compiling the coref_kernels.cc')
         cmd = """#!/usr/bin/env bash
@@ -173,6 +174,7 @@ def compile_coreference():
                 #g++ -std=c++11 -shared ./deeppavlov/agents/coreference/coref_kernels.cc -o ./build/coreference/coref_kernels.so -I $TF_INC -fPIC -D_GLIBCXX_USE_CXX11_ABI=0  -undefined dynamic_lookup"""
         os.system(cmd)
         print('End of compiling the coref_kernels.cc')
+
 
 @task
 def train_coreference(project):
@@ -196,19 +198,20 @@ def train_coreference(project):
                         ])
     return metrics
 
+
 @task
 def train_coreference_scorer_model(project):
     create_dir('coreference')
     metrics = bu.model(['-t', 'deeppavlov.tasks.coreference_scorer_model.agents:CoreferenceTeacher',
-                    '-m', 'deeppavlov.agents.coreference_scorer_model.agents:CoreferenceAgent',
-                    '--display-examples', 'False',
-                    '--num-epochs', '20',
-                    '--log-every-n-secs', '-1',
-                    '--log-every-n-epochs', '1',
-                    '--validation-every-n-epochs', '1',
-                    '--chosen-metrics', 'f1',
-                    '--validation-patience', '20',
-                    '--model-file', './build/coref',
-                    '--embeddings_path', './build/coref/fasttext_embdgs.bin'
-                    ])
+                        '-m', 'deeppavlov.agents.coreference_scorer_model.agents:CoreferenceAgent',
+                        '--display-examples', 'False',
+                        '--num-epochs', '20',
+                        '--log-every-n-secs', '-1',
+                        '--log-every-n-epochs', '1',
+                        '--validation-every-n-epochs', '1',
+                        '--chosen-metrics', 'f1',
+                        '--validation-patience', '20',
+                        '--model-file', './build/coref',
+                        '--embeddings_path', './build/coref/fasttext_embdgs.bin'
+                        ])
     return metrics
