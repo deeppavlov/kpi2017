@@ -155,9 +155,9 @@ def train_squad(project):
     return metrics
 
 
-@task
-def compile_coreference(project):
-    if not os.path.isfile('./build/coreference/coref_kernels.so'):
+def compile_coreference(path):
+    path = path + '/coref_kernels.so'
+    if not os.path.isfile(path):
         print('Compiling the coref_kernels.cc')
         cmd = """#!/usr/bin/env bash
 
@@ -165,13 +165,14 @@ def compile_coreference(project):
                 TF_INC=$(python3 -c 'import tensorflow as tf; print(tf.sysconfig.get_include())')
 
                 # Linux (pip)
-                g++ -std=c++11 -shared ./deeppavlov/agents/coreference/coref_kernels.cc -o ./build/coreference/coref_kernels.so -I $TF_INC -fPIC -D_GLIBCXX_USE_CXX11_ABI=0
+                g++ -std=c++11 -shared ./deeppavlov/agents/coreference/coref_kernels.cc -o {0} -I $TF_INC -fPIC -D_GLIBCXX_USE_CXX11_ABI=0
 
                 # Linux (build from source)
-                #g++ -std=c++11 -shared ./deeppavlov/agents/coreference/coref_kernels.cc -o ./build/coreference/coref_kernels.so -I $TF_INC -fPIC
+                #g++ -std=c++11 -shared ./deeppavlov/agents/coreference/coref_kernels.cc -o {0} -I $TF_INC -fPIC
 
                 # Mac
-                #g++ -std=c++11 -shared ./deeppavlov/agents/coreference/coref_kernels.cc -o ./build/coreference/coref_kernels.so -I $TF_INC -fPIC -D_GLIBCXX_USE_CXX11_ABI=0  -undefined dynamic_lookup"""
+                #g++ -std=c++11 -shared ./deeppavlov/agents/coreference/coref_kernels.cc -o {0} -I $TF_INC -fPIC -D_GLIBCXX_USE_CXX11_ABI=0  -undefined dynamic_lookup"""
+        cmd = cmd.format(path)
         os.system(cmd)
         print('End of compiling the coref_kernels.cc')
 
@@ -179,10 +180,11 @@ def compile_coreference(project):
 @task
 def train_coreference(project):
     create_dir('coreference')
-    compile_coreference()
+    mf = './build/coreference/'
+    compile_coreference(mf)
     metrics = bu.model(['-t', 'deeppavlov.tasks.coreference.agents',
                         '-m', 'deeppavlov.agents.coreference.agents:CoreferenceAgent',
-                        '-mf', './build/coreference/',
+                        '-mf', mf,
                         '--language', 'russian',
                         '--name', 'main',
                         '--pretrained_model', 'True',
