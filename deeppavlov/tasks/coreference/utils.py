@@ -102,6 +102,7 @@ def RuCoref2CoNLL(path, out_path, language='russian'):
             if doc_id != doc_name:
                 doc_name = doc_id
                 w = watcher()
+                k = 0
                 
             data['word'].append(token)    
             data['doc_id'].append(doc_id)
