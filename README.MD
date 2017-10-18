@@ -24,6 +24,6 @@ To test all the models use
 ```sh
 pyb run_unit_tests -v
 ```
-After that, detailed report could be found in target/reports.
+After that, test metrics could be found within ./build/<model_name>/test_metrics file and detailed output could be found in target/reports.
 
 Works on Ubuntu 16.04.
