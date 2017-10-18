@@ -108,7 +108,6 @@ def RuCoref2CoNLL(path, out_path, language='russian'):
             data['doc_id'].append(doc_id)
             data['part_id'].append(part_id)
             data['lemma'].append(lemma)
-            data['part_of_speech'].append(gram)
             data['sense'].append(sense)
             data['speaker'].append(speaker)
             data['entiti'].append(entiti)
