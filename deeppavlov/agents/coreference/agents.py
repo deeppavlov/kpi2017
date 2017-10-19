@@ -105,7 +105,8 @@ class CoreferenceAgent(Agent):
         self.model = CorefModel(opt)
         self.saver = tf.train.Saver()
         if self.opt['pretrained_model']:
-            print('[ Initializing model from checkpoint ]')
+            print('[ Initializing model from checkpoint {0}]'.format(join(opt['model_file'],
+                                                                          opt['language'],'agent/logs',opt['name'])))
             self.model.init_from_saved(self.saver)
         else:
             print('[ Initializing model from scratch ]')
