@@ -59,7 +59,7 @@ def build_data_for_agent(opt):
             raise('To use your own char vocalibary, please, put the file char_vocab.russian.txt in the folder '
                   '{0}'.format(join(dpath,'vocabs')))
     
-    if opt['name'] == 'pretrain_model' and not isdir(join(dpath, 'logs', 'pretrain_model')):
+    if opt['name'] == 'pretrained_model' and not isdir(join(dpath, 'logs', 'pretrain_model')):
         print('[Download the pretrain model]...')
         try:
             pretrain_url = os.environ['MODELS_URL'] + 'coreference/OpeanAI/pretrain_model.zip'

@@ -28,7 +28,7 @@ def set_properties(project):
     os.environ['DATASETS_URL'] = os.getenv('DATASETS_URL',
                                            default='http://share.ipavlov.mipt.ru:8080/repository/datasets/')
     os.environ['CUDA_VISIBLE_DEVICES'] = os.getenv('CUDA_VISIBLE_DEVICES',
-                                                   default='1')
+                                                   default='6')
     os.environ['KERAS_BACKEND'] = os.getenv('KERAS_BACKEND', default='tensorflow')
     project.set_property('dir_source_main_python', '.')
     project.set_property('dir_source_unittest_python', 'tests')
@@ -186,14 +186,14 @@ def train_coreference(project):
                         '-m', 'deeppavlov.agents.coreference.agents:CoreferenceAgent',
                         '-mf', mf,
                         '--language', 'russian',
-                        '--name', 'pretrain_model',
-                        '--pretrained_model', 'True',
+                        '--name', 'fasttext',
+                        '--pretrained_model', 'False',
                         '-dt', 'train:ordered',
                         '--batchsize', '1',
                         '--display-examples', 'False',
-                        '--max-train-time', '-1',
-                        '--validation-every-n-epochs', '1000',
-                        '--nitr', '1000',
+                        '--num-epochs', '1500',
+                        '--validation-every-n-epochs', '50',
+                        '--nitr', '1500',
                         '--log-every-n-epochs', '1',
                         '--log-every-n-secs', '-1',
                         '--chosen-metric', 'f1'

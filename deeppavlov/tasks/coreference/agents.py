@@ -109,6 +109,9 @@ class DefaultTeacher(Teacher):
         predicts_path = os.path.join(self.reports_datapath, 'response_files')
         keys_path = self.datapath
         r = utils.score(scorer, keys_path, predicts_path)
+        step = self.observation['iteration']
+        summary_dict = {'f1': r['f1'], 'avg-F-1': r['avg-F-1']}
+        utils.summary(summary_dict, step, self.writer)
         
         resp_list = os.listdir(predicts_path)
         resu_list = os.listdir(os.path.join(self.reports_datapath, 'results'))
