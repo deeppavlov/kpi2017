@@ -28,7 +28,7 @@ def set_properties(project):
     os.environ['DATASETS_URL'] = os.getenv('DATASETS_URL',
                                            default='http://share.ipavlov.mipt.ru:8080/repository/datasets/')
     os.environ['CUDA_VISIBLE_DEVICES'] = os.getenv('CUDA_VISIBLE_DEVICES',
-                                                   default='6')
+                                                   default='1')
     os.environ['KERAS_BACKEND'] = os.getenv('KERAS_BACKEND', default='tensorflow')
     project.set_property('dir_source_main_python', '.')
     project.set_property('dir_source_unittest_python', 'tests')

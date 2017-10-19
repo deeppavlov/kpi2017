@@ -22,6 +22,7 @@ from parlai.core.agents import Teacher
 from .build import build
 from . import utils
 import tensorflow as tf
+from ...utils import coreference_utils
 
 class DefaultTeacher(Teacher):
     
@@ -108,9 +109,9 @@ class DefaultTeacher(Teacher):
         scorer = self.scorer_path
         predicts_path = os.path.join(self.reports_datapath, 'response_files')
         keys_path = self.datapath
-        r = utils.score(scorer, keys_path, predicts_path)
+        r = coreference_utils.score(scorer, keys_path, predicts_path)
         step = self.observation['iteration']
-        summary_dict = {'f1': r['f1'], 'avg-F-1': r['avg-F-1']}
+        summary_dict = {'f1': r['conll-F-1'], 'avg-F-1': r['avg-F-1']}
         utils.summary(summary_dict, step, self.writer)
         
         resp_list = os.listdir(predicts_path)
@@ -121,7 +122,7 @@ class DefaultTeacher(Teacher):
             os.remove(os.path.join(self.reports_datapath, 'results', x))
         
         s = '\n {0}\n {1}\n {2}\n {3}\n {4}\n avg-F-1: {5}\n f1: {6}\n'.format(r['muc'],r['bcub'],r['ceafm'],r['ceafe'],
-                                                           r['using'],r['avg-F-1'],r['f1'])
+                                                           r['using'],r['avg-F-1'],r['conll-F-1'])
         return r
     
     def reset(self):
