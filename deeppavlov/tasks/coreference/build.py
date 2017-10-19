@@ -25,7 +25,7 @@ def build(opt):
     # get path to data directory and create folders tree
     dpath = join(opt['datapath'])
     # define version if any, and languages
-    version = '1.2'
+    version = '1.3'
     language = opt['language']
     dpath = join(dpath, 'coreference', language)
     build_data.make_dir(dpath)
