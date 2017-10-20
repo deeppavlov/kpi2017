@@ -186,7 +186,7 @@ def train_coreference(project):
                         '-m', 'deeppavlov.agents.coreference.agents:CoreferenceAgent',
                         '-mf', mf,
                         '--language', 'russian',
-                        '--name', 'fasttext',
+                        '--name', 'main',
                         '--pretrained_model', 'False',
                         '-dt', 'train:ordered',
                         '--batchsize', '1',
@@ -196,7 +196,8 @@ def train_coreference(project):
                         '--nitr', '1500',
                         '--log-every-n-epochs', '1',
                         '--log-every-n-secs', '-1',
-                        '--chosen-metric', 'f1'
+                        '--chosen-metric', 'conll-F-1',
+                        '--validation-patience', '20'
                         ])
     return metrics
 
