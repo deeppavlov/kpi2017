@@ -19,6 +19,7 @@ import os
 from os.path import join
 import time
 from . import utils
+from ...utils import coreference_utils
 
 
 def build(opt):
@@ -27,7 +28,7 @@ def build(opt):
     # define version if any, and languages
     version = '1.0'
     language = opt['language']
-    dpath = join(dpath, 'coreference', language)
+    dpath = join(dpath, 'coreference_scorer_model', language)
     build_data.make_dir(dpath)
     build_data.make_dir(join(dpath, opt['predictions_folder'], 'train'))
     build_data.make_dir(join(dpath, opt['predictions_folder'], 'test'))
@@ -49,7 +50,6 @@ def build(opt):
         build_data.make_dir(join(dpath, 'train'))
         build_data.make_dir(join(dpath, 'test'))
         build_data.make_dir(join(dpath, 'valid'))
-
 
         # urls
         dataset_url = 'http://rucoref.maimbava.net/files/rucoref_29.10.2015.zip'
@@ -75,21 +75,22 @@ def build(opt):
         # Convertation rucorpus files in conll files
         conllpath = join(dpath, 'ru_conll')
         build_data.make_dir(conllpath)
-        utils.RuCoref2CoNLL(
+        coreference_utils.RuCoref2CoNLL(
             join(dpath, 'rucoref_29.10.2015'), conllpath, language)
 
         # splits conll files
         start = time.time()
         conlls = join(dpath, 'ru_conlls')
         build_data.make_dir(conlls)
-        utils.split_doc(join(conllpath, language +
-                             '.v4_conll'), conlls, language)
+        coreference_utils.split_doc(join(conllpath, language +
+                                         '.v4_conll'), conlls, language)
         build_data.remove_dir(conllpath)
 
         # create train valid test partitions
         utils.train_valid_test_split(conlls, join(dpath, 'train'),
-                                     join(dpath, 'valid'), join(dpath, 'test'), 
-                                     valid_ratio=opt['valid_ratio'], test_ratio=opt['test_ratio'])
+                                     join(dpath, 'valid'), join(dpath, 'test'),
+                                     valid_ratio=opt['valid_ratio'], test_ratio=opt['test_ratio'],
+                                     seed=opt['teacher_seed'])
 
         build_data.remove_dir(conlls)
         print('End of data splitting: took {0:.3f}'.format(

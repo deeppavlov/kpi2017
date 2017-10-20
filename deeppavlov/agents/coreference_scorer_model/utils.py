@@ -455,7 +455,7 @@ def make_prediction_file(conll_lines, data, path_to_save, chains, write=True):
             os.makedirs(path_to_save)
 
         # load conll file and change last column
-        output_file = os.path.join(path_to_save, data['doc_name'] + '.ru.conll')
+        output_file = os.path.join(path_to_save, data['doc_name'] + '.ru.v4_conll')
         with open(output_file, 'w', encoding='utf8') as fout:
             for line in lines_to_write:
                 fout.write(line)

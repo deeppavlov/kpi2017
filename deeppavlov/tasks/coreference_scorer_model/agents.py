@@ -32,11 +32,14 @@ class CoreferenceTeacher(Teacher):
                            default=0.2, help='valid_set ratio')
         group.add_argument('--test_ratio', type=float,
                            default=0.2, help='test_set ratio')
+        group.add_argument('--teacher_seed', type=int, default=42, help='seed')
 
     def __init__(self, opt, shared=None):
         super().__init__(opt, shared)
         self.last_observation = None
         self.id = 'two-step-coref'
+
+        self.seed = opt['teacher_seed']
         
         if shared:
             raise RuntimeError('Additional batching is not supported')
@@ -44,7 +47,7 @@ class CoreferenceTeacher(Teacher):
         build(opt)
         
         self.dt = opt['datatype'].split(':')[0]
-        self.datapath = os.path.join(opt['datapath'], 'coreference', opt['language'])
+        self.datapath = os.path.join(opt['datapath'], 'coreference_scorer_model', opt['language'])
         self.valid_path = None
         self.train_path = None
         self.predictions_folder = os.path.join(self.datapath, opt['predictions_folder'], self.dt)
