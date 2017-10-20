@@ -10,6 +10,8 @@ class KPIException(Exception):
 class TestKPIs(unittest.TestCase):
     """Class for tests of different KPIs"""
 
+    report_string = 'Metrics for {} test is {}. Expected value of KPI is more than {}.\n'
+    report_file = './build/KPI_scores'
 
     def test_paraphraser(self):
         expected_KPI = 0.8
@@ -25,6 +27,9 @@ class TestKPIs(unittest.TestCase):
                             '--bagging-folds-number', '5',
                             '--chosen-metrics', 'f1'
                             ])
+        with open(report_file, 'a+') as f:
+            f.write(report_string.format('paraphraser', metrics['f1'], expected_KPI))
+        print(report_string.format('paraphraser', metrics['f1'], expected_KPI))
         self.assertTrue(metrics['f1'] > expected_KPI,
                         'KPI for paraphraser is not satisfied. \
                         Got {}, expected more than {}'.format(metrics['f1'], expected_KPI))
@@ -43,6 +48,9 @@ class TestKPIs(unittest.TestCase):
                             '--pretrained-model', './build/ner/ner',
                             '--chosen-metrics', 'f1'
                             ])
+        with open(report_file, 'a+') as f:
+            f.write(report_string.format('NER', metrics['f1'], expected_KPI))
+        print(report_string.format('NER', metrics['f1'], expected_KPI))
         self.assertTrue(metrics['f1'] > expected_KPI,
                         'KPI for NER is not satisfied. \
                         Got {}, expected more than {}'.format(metrics['f1'], expected_KPI))
@@ -70,6 +78,9 @@ class TestKPIs(unittest.TestCase):
                             '--dense_dim', '100',
                             '--fasttext_model', './build/insults/reddit_fasttext_model.bin'
                             ])
+        with open(report_file, 'a+') as f:
+            f.write(report_string.format('insults', metrics['auc'], expected_KPI))
+        print(report_string.format('insults', metrics['auc'], expected_KPI))
         self.assertTrue(metrics['auc'] > expected_KPI,
                         'KPI for insults is not satisfied. \
                         Got {}, expected more than {}'.format(metrics['auc'], expected_KPI))
@@ -104,6 +115,9 @@ class TestKPIs(unittest.TestCase):
                             '--pretrained_model', './build/squad/squad1',
                             '--datatype', 'test'
                             ])
+        with open(report_file, 'a+') as f:
+            f.write(report_string.format('SQuAD', metrics['f1'], expected_KPI))
+        print(report_string.format('SQuAD', metrics['f1'], expected_KPI))
         self.assertTrue(metrics['f1'] > expected_KPI,
                         'KPI for SQuAD is not satisfied. \
                         Got {}, expected more than {}'.format(metrics['f1'], expected_KPI))
