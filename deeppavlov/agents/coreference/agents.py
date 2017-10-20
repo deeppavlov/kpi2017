@@ -59,7 +59,7 @@ def build_data_for_agent(opt):
             raise('To use your own char vocalibary, please, put the file char_vocab.russian.txt in the folder '
                   '{0}'.format(join(dpath,'vocabs')))
     
-    if opt['name'] == 'pretrain_model' and not isdir(join(dpath, 'logs', 'pretrain_model')):
+    if opt['name'] == 'pretrained_model' and not isdir(join(dpath, 'logs', 'pretrain_model')):
         print('[Download the pretrain model]...')
         try:
             pretrain_url = os.environ['MODELS_URL'] + 'coreference/OpeanAI/pretrain_model.zip'
@@ -105,7 +105,8 @@ class CoreferenceAgent(Agent):
         self.model = CorefModel(opt)
         self.saver = tf.train.Saver()
         if self.opt['pretrained_model']:
-            print('[ Initializing model from checkpoint ]')
+            print('[ Initializing model from checkpoint {0}]'.format(join(opt['model_file'],
+                                                                          opt['language'],'agent/logs',opt['name'])))
             self.model.init_from_saved(self.saver)
         else:
             print('[ Initializing model from scratch ]')
@@ -119,7 +120,7 @@ class CoreferenceAgent(Agent):
         if self.is_shared:
             raise RuntimeError("Parallel act is not supported.")
         if self.observation['mode'] == 'train':
-            self.tf_loss = self.model.train(self.obs_dict)
+            self.tf_loss, tf_step = self.model.train(self.obs_dict)
             act_dict = {'iter_id': self.observation['iter_id'], 'Loss': self.tf_loss}
             act_dict['id'] = self.id
             act_dict['epoch_done'] = self.observation['epoch_done']
@@ -127,6 +128,7 @@ class CoreferenceAgent(Agent):
             act_dict['conll'] = False
             act_dict['loss'] = self.tf_loss
             act_dict['iteration'] = self.iterations
+            act_dict['tf_step'] = tf_step
             return act_dict
         elif self.observation['mode'] == 'valid' or self.observation['mode'] == 'test':
             conll = dict()

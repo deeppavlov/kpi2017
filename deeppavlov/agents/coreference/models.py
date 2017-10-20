@@ -518,7 +518,7 @@ class CorefModel(object):
     def train(self, batch):
         self.start_enqueue_thread(batch, True)
         self.tf_loss, tf_global_step, _ = self.sess.run([self.loss, self.global_step, self.train_op])
-        return self.tf_loss
+        return self.tf_loss, tf_global_step
 
     def predict(self, batch, out_file):        
         self.start_enqueue_thread(batch, False)        
