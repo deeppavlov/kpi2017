@@ -120,7 +120,7 @@ class CoreferenceAgent(Agent):
         if self.is_shared:
             raise RuntimeError("Parallel act is not supported.")
         if self.observation['mode'] == 'train':
-            self.tf_loss = self.model.train(self.obs_dict)
+            self.tf_loss, tf_step = self.model.train(self.obs_dict)
             act_dict = {'iter_id': self.observation['iter_id'], 'Loss': self.tf_loss}
             act_dict['id'] = self.id
             act_dict['epoch_done'] = self.observation['epoch_done']
@@ -128,6 +128,7 @@ class CoreferenceAgent(Agent):
             act_dict['conll'] = False
             act_dict['loss'] = self.tf_loss
             act_dict['iteration'] = self.iterations
+            act_dict['tf_step'] = tf_step
             return act_dict
         elif self.observation['mode'] == 'valid' or self.observation['mode'] == 'test':
             conll = dict()

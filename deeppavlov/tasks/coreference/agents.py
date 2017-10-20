@@ -96,7 +96,7 @@ class DefaultTeacher(Teacher):
             self.iter += 1
             if self.dt == 'train':
                 summary_dict = {'Loss': self.observation['loss']}
-                step = self.observation['iteration']
+                step = self.observation['tf_step']
                 utils.summary(summary_dict, step, self.writer)
             
         if self.observation['conll']:
