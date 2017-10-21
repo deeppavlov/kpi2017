@@ -11,12 +11,12 @@ class KPIException(Exception):
 class TestKPIs(unittest.TestCase):
     """Class for tests of different KPIs"""
 
-    report_string = 'Metrics for {} test is {}. Expected value of KPI is more than {}.\n'
-    report_file = './kpi_score_report_{:%Y_%m_%d_%H_%M}'.format(datetime.datetime.now())
+    report_string = '{:%Y/%m/%d %H:%M} {}: actual {}, expected {}\n'
+    report_file = './build/kpi_score_reports'
 
     @classmethod
     def report_score(cls, kpi, actual, expected):
-        report = cls.report_string.format(kpi, actual, expected)
+        report = cls.report_string.format(datetime.datetime.now(), kpi, actual, expected)
         print(report)
         with open(cls.report_file, 'a+') as f:
             f.write(report)
