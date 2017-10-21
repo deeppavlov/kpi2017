@@ -11,11 +11,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import os
+from multiprocessing import Pool
+
 import fasttext
 import numpy as np
-import os
 import tensorflow as tf
-from multiprocessing import Pool
 from parlai.core.agents import Agent
 from sklearn.metrics import roc_auc_score
 from tqdm import tqdm
@@ -57,7 +58,6 @@ class CoreferenceAgent(Agent):
         group.add_argument('--print_train_loss_every', type=int, default=500,
                            help='print train loss every X iterations')
         group.add_argument('--print_test_loss_every', type=int, default=500, help='print test loss every X iterations')
-        group.add_argument('--agent_seed', type=int, default=42, help='seed')
 
         group.add_argument('--scorer_n_threads', type=int, default=25, help='how many threads can CoNLL scorer use')
 
@@ -101,7 +101,6 @@ class CoreferenceAgent(Agent):
 
         self.batch_size = opt['batch_size']
         self.inner_epochs = opt['inner_epochs']
-        self.seed = opt['agent_seed']
 
         self.linkage_method = opt['linkage_method']
         self.threshold_steps = opt['threshold_steps']
@@ -118,7 +117,6 @@ class CoreferenceAgent(Agent):
         self.session = None
         self.tf_config = tf.ConfigProto()
         self.tf_config.gpu_options.allow_growth = True
-        tf.set_random_seed(seed=self.seed)
         self.data_bg = None
         self.valid_bg = None
 
@@ -142,6 +140,7 @@ class CoreferenceAgent(Agent):
         # if data is not None -> train model on data and make prediction
         # if data is None -> make prediction
 
+        predicted_scores = None
         if self.data is not None and len(self.data) > 0:
             self.best_conll_f1 = 0
 
@@ -179,9 +178,10 @@ class CoreferenceAgent(Agent):
                 for name in dirs:
                     os.rmdir(os.path.join(root, name))
 
-        print('Making scorer predictions on dataset...')
-        predicted_scores = self._get_scorer_predictions(self.valid_bg)
-        clustering, min_score, max_score = utils.build_clusters(predicted_scores, method=self.linkage_method)
+        if predicted_scores is None:
+            print('Making scorer predictions on dataset...')
+            predicted_scores = self._get_scorer_predictions(self.valid_bg)
+            clustering, min_score, max_score = utils.build_clusters(predicted_scores, method=self.linkage_method)
         print('Making conll predictions on dataset with threshold: {:.2f} and conll-F-1: {:.3f} on valid'.format(
             self.best_threshold, self.best_conll_f1))
         doc_to_chains = utils.make_dendrogram_predictions(self.valid_bg.dl, clustering, threshold=self.best_threshold)
@@ -214,13 +214,12 @@ class CoreferenceAgent(Agent):
         print('Preprocessing finished')
         # create batch generators
         if self.data is not None and len(self.data) > 0:
-            self.data_bg = utils.MentionPairsBatchGenerator(self.data, self.data_emb, self.data_smpl, seed=self.seed)
+            self.data_bg = utils.MentionPairsBatchGenerator(self.data, self.data_emb, self.data_smpl)
         else:
             self.data_bg = None
 
         if self.data_valid is not None and len(self.data_valid) > 0:
-            self.valid_bg = utils.MentionPairsBatchGenerator(self.data_valid, self.data_valid_emb, self.data_valid_smpl,
-                                                             seed=self.seed)
+            self.valid_bg = utils.MentionPairsBatchGenerator(self.data_valid, self.data_valid_emb, self.data_valid_smpl)
 
         # create model
         if self.model is None:
