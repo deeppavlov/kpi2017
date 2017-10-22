@@ -144,11 +144,11 @@ class TestKPIs(unittest.TestCase):
                             '--chosen-metric', 'f1'
                             ])
 
-        TestKPIs.report_score("Coreference", metrics["f1"], expected_score)
+        TestKPIs.report_score("Coreference", metrics["conll-F-1"], expected_score)
 
-        self.assertTrue(metrics['f1'] > expected_score,
+        self.assertTrue(metrics['conll-F-1'] > expected_score,
                         'KPI for Coreference resolution is not satisfied. \
-                        Got {}, expected more than {}'.format(metrics['f1'], expected_score))
+                        Got {}, expected more than {}'.format(metrics['conll-F-1'], expected_score))
 
     def test_coref_scorer_model(self):
         expected_score = 0.55
