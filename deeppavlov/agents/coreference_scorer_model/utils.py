@@ -1,12 +1,12 @@
-import fasttext
-import numpy as np
 import os
 import random
 import urllib
 import uuid
+
+import numpy as np
+from scipy.cluster.hierarchy import linkage
 from tqdm import tqdm
 
-from scipy.cluster.hierarchy import linkage
 
 def download_embeddings(url, embeddings_path):
     print('Loading embeddings: {}'.format(embeddings_path))
@@ -24,10 +24,10 @@ def extract_data_from_conll(conll_lines):
     conll_lines: list of lines in conll file (result of .readlines())
     returns dict representation of conll
     '''
-    
+
     # filename, parts: [{text: [sentence, ...], chains}, ...]
     data = {'doc_name': None, 'parts': dict()}
-    
+
     current_sentence = []
     current_sentence_pos = []
     sentence_id = 0
@@ -67,7 +67,7 @@ def extract_data_from_conll(conll_lines):
             doc_name, part_id, word_id, word, ref = line[0], int(line[1]), int(line[2]), line[3], line[-1]
             pos, = line[4],
             current_sentence_pos.append(pos)
-            
+
             if data['doc_name'] is None:
                 data['doc_name'] = doc_name
 
@@ -82,7 +82,7 @@ def extract_data_from_conll(conll_lines):
                             opened_labels[ref_id].append((word_id, line_id))
                         else:
                             opened_labels[ref_id] = [(word_id, line_id)]
-                    
+
                     if ref[i][-1] == ')':
                         assert ref_id in opened_labels
                         start_id, start_line_id = opened_labels[ref_id].pop()
@@ -92,7 +92,7 @@ def extract_data_from_conll(conll_lines):
                                 'chain_id': str(uuid.uuid4()),
                                 'mentions': [],
                             }
-                    
+
                         chains[ref_id]['mentions'].append({
                             'sentence_id': sentence_id,
                             'start_id': start_id,
@@ -120,7 +120,7 @@ def generate_simple_features(data, window_size=5):
                 mention_id = mention['mention_id']
                 mention_index = mention['mention_index']
                 POS = mention['POS']
-                
+
                 features[mention_id] = {
                     'mention_index': (mention_index + 1) / (mentions_count + 1),
                     'start_index': (start_id + 1) / (tokens_count + 1),
@@ -151,7 +151,7 @@ def generate_emb_features(data, ft_model, window_size=5):
                 if len(embs) == 0:
                     # TODO it is a bug in dataset, wrong tokenization and wrong split on sentences
                     embs = [zeros]
-                
+
                 emb_mean = np.mean(embs, axis=0)
                 assert len(part['text']) > sentence_id, print(filename, part_id, sentence_id)
                 sentence = part['text'][sentence_id].split()
@@ -159,7 +159,7 @@ def generate_emb_features(data, ft_model, window_size=5):
                 next_embs = np.array([ft_model[word.lower()] for word in sentence[end_id+1:end_id + window_size + 1]])
                 prev_embs_mean = np.mean(prev_embs, axis=0) if len(prev_embs) > 0 else zeros
                 next_embs_mean = np.mean(next_embs, axis=0) if len(next_embs) > 0 else zeros
-            
+
                 embeddings_features[mention_id] = {
                     'mean': emb_mean,
                     'first': embs[0],
@@ -254,11 +254,11 @@ class DataLoader():
                 self.mentions_pos.update(mentions_pos)
                 self.mentions_to_chain.update({
                         m['mention_id']: chain['chain_id'] for chain in part['chains'].values() for m in chain['mentions']
-                    })      
+                    })
                 self.chain_to_document.update({c: len(self.documents) - 1 for c in chains})
                 self.documents_text.append(part['text'])
 
-    
+
         print('DataLoader: loading embedding features')
         for data_emb in tqdm(self.data_embs.values()):
             self.embeddings.update(data_emb)
@@ -298,7 +298,7 @@ class DataLoader():
         return np.concatenate((emb.flatten(), f.flatten()))
 
 class MentionPairsBatchGenerator():
-    def __init__(self, datas, data_embs, data_smpls, seed=None):        
+    def __init__(self, datas, data_embs, data_smpls):
         # batch iterator index
         self.current_doc_id = 0
         self.epoch = 0
@@ -307,7 +307,6 @@ class MentionPairsBatchGenerator():
 
         self.max_doc_id = len(self.dl.documents)
         self.features_size = self.dl.features_size
-        random.seed(a=seed)
 
     def _mention_to_features(self, m):
         features = self.dl.features[m]
@@ -385,7 +384,7 @@ def make_prediction_file(conll_lines, data, path_to_save, chains, write=True):
         for chain in part['chains'].values():
             for m in chain['mentions']:
                 mentions[m['mention_id']] = m
-    
+
     # chain labels in document lines
     # start_pos
     # end_pos
@@ -395,17 +394,17 @@ def make_prediction_file(conll_lines, data, path_to_save, chains, write=True):
     uno_labels = dict()
 
     chain_id = -1
-    
+
     # filter chains with only one mention
     chains = [c for p in chains for c in p if len(c) > 1]
-    
+
     for chain in chains:
         chain_id += 1
         for m_id in chain:
             m = mentions[m_id]
             start = m['start_line_id']
             end = m['end_line_id']
-            
+
             if start != end:
                 if start not in start_labels:
                     start_labels[start] = [chain_id]
@@ -437,7 +436,7 @@ def make_prediction_file(conll_lines, data, path_to_save, chains, write=True):
                 lines_to_write.append(line[:last_space + 1] + '-\n')
         else:
             opens = start_labels[line_id] if line_id in start_labels else []
-            ends = end_labels[line_id] if line_id in end_labels else [] 
+            ends = end_labels[line_id] if line_id in end_labels else []
             unos = uno_labels[line_id] if line_id in uno_labels else []
             s = []
             s += ['({})'.format(el) for el in unos]
@@ -447,8 +446,8 @@ def make_prediction_file(conll_lines, data, path_to_save, chains, write=True):
             try:
                 last_space = line.rindex(' ')
             except:
-                last_space = line.rindex('\t')  
-            lines_to_write.append(line[:last_space + 1] + '{}\n'.format(s))    
+                last_space = line.rindex('\t')
+            lines_to_write.append(line[:last_space + 1] + '{}\n'.format(s))
 
     if write:
         if not os.path.isdir(path_to_save):
@@ -461,7 +460,7 @@ def make_prediction_file(conll_lines, data, path_to_save, chains, write=True):
                 fout.write(line)
 
     return lines_to_write
-        
+
 
 
 def build_clusters(predicted_scores, method='centroid'):

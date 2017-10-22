@@ -33,7 +33,7 @@ def train_valid_test_split(inpath, train_path, valid_path, test_path, valid_rati
     '''
     assert valid_ratio + test_ratio <= 1.0
     assert valid_ratio > 0 and test_ratio > 0
-    source_files = os.listdir(inpath)
+    source_files = list(sorted(os.listdir(inpath)))
 
     train_valid, test = train_test_split(source_files, test_size=test_ratio, random_state=seed)
     train, valid = train_test_split(train_valid, test_size=valid_ratio / (1 - test_ratio), random_state=seed)
