@@ -50,8 +50,8 @@ class CoreferenceAgent(Agent):
         group.add_argument('--save_model_every', type=int, default=10000, help='save model every X iterations')
         group.add_argument('--inner_epochs', type=int, default=300, help='how many times to learn on full observation')
         group.add_argument('--dense_hidden_size', type=int, default=256, help='dense hidden size')
-        group.add_argument('--keep_prob_input', type=float, default=0.5, help='dropout keep_prob parameter on inputs')
-        group.add_argument('--keep_prob_dense', type=float, default=0.8,
+        group.add_argument('--keep_prob_input', type=float, default=0.3, help='dropout keep_prob parameter on inputs')
+        group.add_argument('--keep_prob_dense', type=float, default=0.7,
                            help='dropout keep_prob parameter between layers')
         group.add_argument('--lr', type=float, default=0.0005, help='learning rate')
         group.add_argument('--threshold_steps', type=int, default=50, help='how many steps in threshold selection')
