@@ -70,8 +70,9 @@ def train_ner(project):
     create_dir('ner')
     metrics = bu.model(['-t', 'deeppavlov.tasks.ner.agents',
                         '-m', 'deeppavlov.agents.ner.ner:NERAgent',
-                        '-mf', './build/ner/ner',
+                        '-mf', './build/ner',
                         '-dt', 'train:ordered',
+                        '--dict-file', './build/ner/dict',
                         '--learning_rate', '0.01',
                         '--batchsize', '2',
                         '--display-examples', 'False',
