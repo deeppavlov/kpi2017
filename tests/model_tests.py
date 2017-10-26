@@ -45,7 +45,7 @@ class TestKPIs(unittest.TestCase):
         expected_score = 70
         metrics = bu.model(['-t', 'deeppavlov.tasks.ner.agents',
                             '-m', 'deeppavlov.agents.ner.ner:NERAgent',
-                            '-mf', './build/ner/ner',
+                            '-mf', './build/ner',
                             '-dt', 'test',
                             '--batchsize', '2',
                             '--display-examples', 'False',
