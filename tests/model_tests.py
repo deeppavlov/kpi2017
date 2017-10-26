@@ -52,7 +52,7 @@ class TestKPIs(unittest.TestCase):
                             '--validation-every-n-epochs', '5',
                             '--log-every-n-epochs', '1',
                             '--log-every-n-secs', '-1',
-                            '--pretrained-model', './build/ner/ner',
+                            '--pretrained-model', './build/ner',
                             '--chosen-metrics', 'f1'
                             ])
 
