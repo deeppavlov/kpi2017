@@ -1,6 +1,3 @@
-# to run model training type 'pyb train_<task>' replacing <task> with the model name
-# to test all the models type 'pyb run_unit_tests'
-
 from pybuilder.core import use_plugin, init, task
 import os
 import build_utils as bu
@@ -27,8 +24,6 @@ def set_properties(project):
                                          default='http://share.ipavlov.mipt.ru:8080/repository/models/')
     os.environ['DATASETS_URL'] = os.getenv('DATASETS_URL',
                                            default='http://share.ipavlov.mipt.ru:8080/repository/datasets/')
-    os.environ['CUDA_VISIBLE_DEVICES'] = os.getenv('CUDA_VISIBLE_DEVICES',
-                                                   default='7')
     os.environ['KERAS_BACKEND'] = os.getenv('KERAS_BACKEND', default='tensorflow')
     project.set_property('dir_source_main_python', '.')
     project.set_property('dir_source_unittest_python', 'tests')
@@ -42,7 +37,7 @@ def build(project):
 @task
 def clean(project):
     import shutil
-    shutil.rmtree('./build')
+    shutil.rmtree('./build', ignore_errors=True)
 
 
 @task
@@ -75,8 +70,9 @@ def train_ner(project):
     create_dir('ner')
     metrics = bu.model(['-t', 'deeppavlov.tasks.ner.agents',
                         '-m', 'deeppavlov.agents.ner.ner:NERAgent',
-                        '-mf', './build/ner/ner',
+                        '-mf', './build/ner',
                         '-dt', 'train:ordered',
+                        '--dict-file', './build/ner/dict',
                         '--learning_rate', '0.01',
                         '--batchsize', '2',
                         '--display-examples', 'False',
@@ -204,7 +200,7 @@ def train_coreference(project):
 
 @task
 def train_coreference_scorer_model(project):
-    create_dir('coreference')
+    create_dir('coref')
     metrics = bu.model(['-t', 'deeppavlov.tasks.coreference_scorer_model.agents:CoreferenceTeacher',
                         '-m', 'deeppavlov.agents.coreference_scorer_model.agents:CoreferenceAgent',
                         '--display-examples', 'False',
@@ -213,7 +209,7 @@ def train_coreference_scorer_model(project):
                         '--log-every-n-epochs', '1',
                         '--validation-every-n-epochs', '1',
                         '--chosen-metrics', 'f1',
-                        '--validation-patience', '20',
+                        '--validation-patience', '5',
                         '--model-file', './build/coref',
                         '--embeddings_path', './build/coref/fasttext_embdgs.bin'
                         ])

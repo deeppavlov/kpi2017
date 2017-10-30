@@ -1,12 +1,12 @@
-import fasttext
-import numpy as np
 import os
 import random
 import urllib
 import uuid
+
+import numpy as np
+from scipy.cluster.hierarchy import linkage
 from tqdm import tqdm
 
-from scipy.cluster.hierarchy import linkage
 
 def download_embeddings(url, embeddings_path):
     print('Loading embeddings: {}'.format(embeddings_path))
@@ -24,10 +24,10 @@ def extract_data_from_conll(conll_lines):
     conll_lines: list of lines in conll file (result of .readlines())
     returns dict representation of conll
     '''
-    
+
     # filename, parts: [{text: [sentence, ...], chains}, ...]
     data = {'doc_name': None, 'parts': dict()}
-    
+
     current_sentence = []
     current_sentence_pos = []
     sentence_id = 0
@@ -67,7 +67,7 @@ def extract_data_from_conll(conll_lines):
             doc_name, part_id, word_id, word, ref = line[0], int(line[1]), int(line[2]), line[3], line[-1]
             pos, = line[4],
             current_sentence_pos.append(pos)
-            
+
             if data['doc_name'] is None:
                 data['doc_name'] = doc_name
 
@@ -82,7 +82,7 @@ def extract_data_from_conll(conll_lines):
                             opened_labels[ref_id].append((word_id, line_id))
                         else:
                             opened_labels[ref_id] = [(word_id, line_id)]
-                    
+
                     if ref[i][-1] == ')':
                         assert ref_id in opened_labels
                         start_id, start_line_id = opened_labels[ref_id].pop()
@@ -92,27 +92,29 @@ def extract_data_from_conll(conll_lines):
                                 'chain_id': str(uuid.uuid4()),
                                 'mentions': [],
                             }
-                    
+
                         chains[ref_id]['mentions'].append({
                             'sentence_id': sentence_id,
                             'start_id': start_id,
                             'end_id': word_id,
                             'start_line_id': start_line_id,
                             'end_line_id': line_id,
-                            'mention': ' '.join(current_sentence[start_id:word_id+1]),
-                            'POS': current_sentence_pos[start_id:word_id+1],
+                            'mention': ' '.join(current_sentence[start_id:word_id + 1]),
+                            'POS': current_sentence_pos[start_id:word_id + 1],
                             'mention_id': str(uuid.uuid4()),
                             'mention_index': mention_index,
-                            })
+                        })
                         mention_index += 1
     return data
+
 
 def generate_simple_features(data, window_size=5):
     features = dict()
     for part_id, part in data['parts'].items():
         mentions_count = sum(map(lambda x: len(x), part['chains'].values()))
         tokens_count = sum(map(lambda x: len(x.split()), part['text']))
-        for chain in list(part['chains'].values()):
+        for chain_id in sorted(part['chains'].keys()):
+            chain = part['chains'][chain_id]
             for mention in chain['mentions']:
                 sentence_id = mention['sentence_id']
                 start_id = mention['start_id']
@@ -120,7 +122,7 @@ def generate_simple_features(data, window_size=5):
                 mention_id = mention['mention_id']
                 mention_index = mention['mention_index']
                 POS = mention['POS']
-                
+
                 features[mention_id] = {
                     'mention_index': (mention_index + 1) / (mentions_count + 1),
                     'start_index': (start_id + 1) / (tokens_count + 1),
@@ -136,30 +138,34 @@ def generate_simple_features(data, window_size=5):
 
     return features
 
+
 def generate_emb_features(data, ft_model, window_size=5):
     embeddings_features = dict()
     # TODO get embeddings dim
     zeros = np.zeros_like(ft_model['тест'])
     for part_id, part in data['parts'].items():
-        for chain in list(part['chains'].values()):
+        for chain_id in sorted(part['chains'].keys()):
+            chain = part['chains'][chain_id]
             for mention in chain['mentions']:
                 sentence_id = mention['sentence_id']
                 start_id = mention['start_id']
                 end_id = mention['end_id']
                 mention_id = mention['mention_id']
-                embs = np.array([ft_model[word.lower()] / np.linalg.norm(ft_model[word.lower()]) for word in mention['mention'].split()])
+                embs = np.array([ft_model[word.lower()] / np.linalg.norm(ft_model[word.lower()]) for word in
+                                 mention['mention'].split()])
                 if len(embs) == 0:
                     # TODO it is a bug in dataset, wrong tokenization and wrong split on sentences
                     embs = [zeros]
-                
+
                 emb_mean = np.mean(embs, axis=0)
-                assert len(part['text']) > sentence_id, print(filename, part_id, sentence_id)
+                assert len(part['text']) > sentence_id, (data['doc_name'], part_id, sentence_id)
                 sentence = part['text'][sentence_id].split()
-                prev_embs = np.array([ft_model[word.lower()] for word in sentence[max(0, start_id-window_size):start_id]])
-                next_embs = np.array([ft_model[word.lower()] for word in sentence[end_id+1:end_id + window_size + 1]])
+                prev_embs = np.array(
+                    [ft_model[word.lower()] for word in sentence[max(0, start_id - window_size):start_id]])
+                next_embs = np.array([ft_model[word.lower()] for word in sentence[end_id + 1:end_id + window_size + 1]])
                 prev_embs_mean = np.mean(prev_embs, axis=0) if len(prev_embs) > 0 else zeros
                 next_embs_mean = np.mean(next_embs, axis=0) if len(next_embs) > 0 else zeros
-            
+
                 embeddings_features[mention_id] = {
                     'mean': emb_mean,
                     'first': embs[0],
@@ -172,8 +178,10 @@ def generate_emb_features(data, ft_model, window_size=5):
                     'next_1': next_embs[1] if next_embs.shape[0] > 1 else zeros,
                 }
 
-    embeddings_features = {m: {f: embeddings_features[m][f].tolist() for f in embeddings_features[m]} for m in embeddings_features}
+    embeddings_features = {m: {f: embeddings_features[m][f].tolist() for f in embeddings_features[m]} for m in
+                           embeddings_features}
     return embeddings_features
+
 
 def distance_to_buckets(d):
     ohe = [0] * 10
@@ -200,6 +208,7 @@ def distance_to_buckets(d):
         ohe[9] = 1
     assert sum(ohe) == 1, (d, ohe)
     return ohe
+
 
 class DataLoader():
     def __init__(self, datas, data_embs, data_smpls):
@@ -240,10 +249,12 @@ class DataLoader():
     def _load_all_data(self):
         # document == part in terms of conll files
         print('DataLoader: loading documents from data')
-        for data in tqdm(self.datas.values()):
+        for data_key in tqdm(list(sorted(self.datas.keys()))):
+            data = self.datas[data_key]
             for part in data['parts'].values():
                 chains = {chain['chain_id']: [m['mention_id'] for m in chain['mentions']] for chain in part['chains'].values()}
-                mentions = [(m['mention_id'], m['mention_index']) for chain in part['chains'].values() for m in chain['mentions']]
+                mentions = [(m['mention_id'], m['mention_index']) for chain_id in sorted(part['chains'].keys())
+                            for m in part['chains'][chain_id]['mentions']]
                 mentions_sentid = {m['mention_id']: m['sentence_id'] for chain in part['chains'].values() for m in chain['mentions']}
                 mentions_pos = {m['mention_id']: (m['start_id'], m['end_id']) for chain in part['chains'].values() for m in chain['mentions']}
                 self.document_mentions.append(list(map(lambda x: x[0], sorted(mentions, key=lambda x: x[1]))))
@@ -253,12 +264,11 @@ class DataLoader():
                 self.mentions_sentid.update(mentions_sentid)
                 self.mentions_pos.update(mentions_pos)
                 self.mentions_to_chain.update({
-                        m['mention_id']: chain['chain_id'] for chain in part['chains'].values() for m in chain['mentions']
-                    })      
+                    m['mention_id']: chain['chain_id'] for chain in part['chains'].values() for m in chain['mentions']
+                })
                 self.chain_to_document.update({c: len(self.documents) - 1 for c in chains})
                 self.documents_text.append(part['text'])
 
-    
         print('DataLoader: loading embedding features')
         for data_emb in tqdm(self.data_embs.values()):
             self.embeddings.update(data_emb)
@@ -277,7 +287,7 @@ class DataLoader():
 
         '''
         print('DataLoader: generating all features')
-        #self.mention_features = {m: self._make_mention_features(m) for ms in self.document_mentions for m in ms}
+        # self.mention_features = {m: self._make_mention_features(m) for ms in self.document_mentions for m in ms}
         assert self.embeddings is not None
         assert self.features is not None
 
@@ -293,12 +303,14 @@ class DataLoader():
         return self.document_mentions[doc_id]
 
     def _make_mention_features(self, m):
-        emb = np.vstack(list(self.embeddings[m].values()))
-        f = np.vstack(list([self.features[m][f] for f in ['mention_index','start_index','end_index','has_PRP','has_CD']]))
+        emb = np.vstack([self.embeddings[m][k] for k in sorted(self.embeddings[m].keys())])
+        f = np.vstack(
+            list([self.features[m][f] for f in ['mention_index', 'start_index', 'end_index', 'has_PRP', 'has_CD']]))
         return np.concatenate((emb.flatten(), f.flatten()))
 
+
 class MentionPairsBatchGenerator():
-    def __init__(self, datas, data_embs, data_smpls, seed=None):        
+    def __init__(self, datas, data_embs, data_smpls):
         # batch iterator index
         self.current_doc_id = 0
         self.epoch = 0
@@ -307,7 +319,6 @@ class MentionPairsBatchGenerator():
 
         self.max_doc_id = len(self.dl.documents)
         self.features_size = self.dl.features_size
-        random.seed(a=seed)
 
     def _mention_to_features(self, m):
         features = self.dl.features[m]
@@ -325,9 +336,12 @@ class MentionPairsBatchGenerator():
         for a, b in zip(A, B):
             a_f = self.dl.features[a]
             b_f = self.dl.features[b]
-            mention_distance = abs(int(a_f['mention_index'] * a_f['mentions_count']) - int(b_f['mention_index'] * b_f['mentions_count']))
-            words_distance = abs(int(a_f['start_index'] * a_f['tokens_count']) - int(b_f['start_index'] * b_f['tokens_count']))
-            AB_f.append([np.argmax(distance_to_buckets(mention_distance)), np.argmax(distance_to_buckets(words_distance))])
+            mention_distance = abs(
+                int(a_f['mention_index'] * a_f['mentions_count']) - int(b_f['mention_index'] * b_f['mentions_count']))
+            words_distance = abs(
+                int(a_f['start_index'] * a_f['tokens_count']) - int(b_f['start_index'] * b_f['tokens_count']))
+            AB_f.append(
+                [np.argmax(distance_to_buckets(mention_distance)), np.argmax(distance_to_buckets(words_distance))])
         return AB_f
 
     def get_batch(self, batch_size=64):
@@ -337,7 +351,6 @@ class MentionPairsBatchGenerator():
             self.current_doc_id = (self.current_doc_id + 1) % self.max_doc_id
             if self.current_doc_id == 0:
                 self.epoch += 1
-
         A = random.sample(mentions, batch_size)
         B = []
         for a in A:
@@ -347,7 +360,7 @@ class MentionPairsBatchGenerator():
             else:
                 B.append(random.choice(mentions))
 
-        labels = [1 if self.dl.mentions_to_chain[x] == self.dl.mentions_to_chain[y] else 0 for x, y in zip(A,B)]
+        labels = [1 if self.dl.mentions_to_chain[x] == self.dl.mentions_to_chain[y] else 0 for x, y in zip(A, B)]
         A_f = [self._mention_to_features(m) for m in A]
         B_f = [self._mention_to_features(m) for m in B]
         AB_f = self._pair_features(A, B)
@@ -371,6 +384,7 @@ class MentionPairsBatchGenerator():
         B = [self.dl.mention_features[m] for m in B]
         return np.vstack(A), np.stack(A_f), np.vstack(B), np.stack(B_f), np.stack(AB_f)
 
+
 def make_prediction_file(conll_lines, data, path_to_save, chains, write=True):
     '''
     makes prediction file based on source conll file
@@ -385,7 +399,7 @@ def make_prediction_file(conll_lines, data, path_to_save, chains, write=True):
         for chain in part['chains'].values():
             for m in chain['mentions']:
                 mentions[m['mention_id']] = m
-    
+
     # chain labels in document lines
     # start_pos
     # end_pos
@@ -395,17 +409,17 @@ def make_prediction_file(conll_lines, data, path_to_save, chains, write=True):
     uno_labels = dict()
 
     chain_id = -1
-    
+
     # filter chains with only one mention
     chains = [c for p in chains for c in p if len(c) > 1]
-    
+
     for chain in chains:
         chain_id += 1
         for m_id in chain:
             m = mentions[m_id]
             start = m['start_line_id']
             end = m['end_line_id']
-            
+
             if start != end:
                 if start not in start_labels:
                     start_labels[start] = [chain_id]
@@ -422,7 +436,6 @@ def make_prediction_file(conll_lines, data, path_to_save, chains, write=True):
                 else:
                     uno_labels[start].append(chain_id)
 
-
     for line_id, line in enumerate(conll_lines):
         line = line.rstrip()
         if line_id not in start_labels and line_id not in end_labels and line_id not in uno_labels:
@@ -437,7 +450,7 @@ def make_prediction_file(conll_lines, data, path_to_save, chains, write=True):
                 lines_to_write.append(line[:last_space + 1] + '-\n')
         else:
             opens = start_labels[line_id] if line_id in start_labels else []
-            ends = end_labels[line_id] if line_id in end_labels else [] 
+            ends = end_labels[line_id] if line_id in end_labels else []
             unos = uno_labels[line_id] if line_id in uno_labels else []
             s = []
             s += ['({})'.format(el) for el in unos]
@@ -447,21 +460,20 @@ def make_prediction_file(conll_lines, data, path_to_save, chains, write=True):
             try:
                 last_space = line.rindex(' ')
             except:
-                last_space = line.rindex('\t')  
-            lines_to_write.append(line[:last_space + 1] + '{}\n'.format(s))    
+                last_space = line.rindex('\t')
+            lines_to_write.append(line[:last_space + 1] + '{}\n'.format(s))
 
     if write:
         if not os.path.isdir(path_to_save):
             os.makedirs(path_to_save)
 
         # load conll file and change last column
-        output_file = os.path.join(path_to_save, data['doc_name'] + '.ru.conll')
+        output_file = os.path.join(path_to_save, data['doc_name'] + '.ru.v4_conll')
         with open(output_file, 'w', encoding='utf8') as fout:
             for line in lines_to_write:
                 fout.write(line)
 
     return lines_to_write
-        
 
 
 def build_clusters(predicted_scores, method='centroid'):
@@ -475,11 +487,11 @@ def build_clusters(predicted_scores, method='centroid'):
             distances = []
             for i in range(len(scores)):
                 for j in range(i + 1, len(scores)):
-                    distances.append((scores[i,j] + scores[j,i]) / 2)
+                    distances.append((scores[i, j] + scores[j, i]) / 2)
             c = linkage(distances, method=method)
             clustrering.append(c)
-            min_score = min(min(c[:,2]), min_score)
-            max_score = max(max(c[:,2]), max_score)
+            min_score = min(min(c[:, 2]), min_score)
+            max_score = max(max(c[:, 2]), max_score)
     print('clusters are built: min_score: {} max_score: {}'.format(min_score, max_score))
     return clustrering, min_score, max_score
 
@@ -489,14 +501,15 @@ def build_chains(clustering, mentions, threshold=1.0):
     for i in range(len(clustering)):
         if clustering[i, 2] > threshold:
             break
-        chains.append(list(set(chains[int(clustering[i,0])] + chains[int(clustering[i,1])])))
+        chains.append(list(set(chains[int(clustering[i, 0])] + chains[int(clustering[i, 1])])))
         for j in [0, 1]:
-            chains[int(clustering[i,j])] = None
+            chains[int(clustering[i, j])] = None
     chains = list(filter(lambda x: x is not None, chains))
     return chains
 
+
 def make_dendrogram_predictions(dl, clustering, threshold):
-    #print('Making dendrogram predictions: {}'.format(output_path))
+    # print('Making dendrogram predictions: {}'.format(output_path))
     doc_to_chains = dict()
     for doc_id, ms in enumerate(dl.document_mentions):
         # one document
@@ -510,6 +523,7 @@ def make_dendrogram_predictions(dl, clustering, threshold):
         else:
             doc_to_chains[doc_name] = [chains]
     return doc_to_chains
+
 
 def split_on_batches(data, batch_size):
     '''

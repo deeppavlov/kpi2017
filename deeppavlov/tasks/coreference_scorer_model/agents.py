@@ -12,14 +12,18 @@ limitations under the License.
 """
 
 import os
+import random
 
+import numpy as np
+import tensorflow as tf
 from parlai.core.agents import Teacher
-from .build import build
+
 from . import utils
+from .build import build
 from ...utils import coreference_utils
 
-class CoreferenceTeacher(Teacher):
 
+class CoreferenceTeacher(Teacher):
     @staticmethod
     def add_cmdline_args(argparser):
         group = argparser.add_argument_group('Coreference Teacher')
@@ -32,19 +36,25 @@ class CoreferenceTeacher(Teacher):
                            default=0.2, help='valid_set ratio')
         group.add_argument('--test_ratio', type=float,
                            default=0.2, help='test_set ratio')
+        group.add_argument('--teacher_seed', type=int, default=42, help='seed')
 
     def __init__(self, opt, shared=None):
         super().__init__(opt, shared)
         self.last_observation = None
         self.id = 'two-step-coref'
-        
+
+        self.seed = opt['teacher_seed']
+        np.random.seed(seed=self.seed)
+        random.seed(a=self.seed)
+        tf.set_random_seed(seed=self.seed)
+
         if shared:
             raise RuntimeError('Additional batching is not supported')
 
         build(opt)
-        
+
         self.dt = opt['datatype'].split(':')[0]
-        self.datapath = os.path.join(opt['datapath'], 'coreference', opt['language'])
+        self.datapath = os.path.join(opt['datapath'], 'coreference_scorer_model', opt['language'])
         self.valid_path = None
         self.train_path = None
         self.predictions_folder = os.path.join(self.datapath, opt['predictions_folder'], self.dt)
@@ -61,8 +71,8 @@ class CoreferenceTeacher(Teacher):
         else:
             raise ValueError('Unknown mode: {}. Available modes: train, test, valid.'.format(self.dt))
 
-        self.train_documents = [] if self.train_path is None else os.listdir(self.train_path)
-        self.valid_documents = [] if self.valid_path is None else os.listdir(self.valid_path)
+        self.train_documents = [] if self.train_path is None else list(sorted(os.listdir(self.train_path)))
+        self.valid_documents = [] if self.valid_path is None else list(sorted(os.listdir(self.valid_path)))
         self.len = 1
         self.epoch = 0
         self._epoch_done = False

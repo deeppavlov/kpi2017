@@ -3,18 +3,20 @@ import numpy as np
 import os
 import time
 from tqdm import tqdm
+from collections import defaultdict
+
 
 def score(scorer, keys_path, predicts_path):
     key_files = list(filter(lambda x: x.endswith('conll'), os.listdir(keys_path)))
     pred_files = list(filter(lambda x: x.endswith('conll'), os.listdir(predicts_path)))
-    
+
     for file in tqdm(pred_files):
         predict_file = os.path.join(predicts_path, file)
         gold_file = os.path.join(keys_path, file)
         for metric in ['muc', 'bcub', 'ceafm', 'ceafe']:
             out_pred_score = '{0}.{1}'.format(predict_file, metric)
             cmd = '{0} {1} {2} {3} none > {4}'.format(scorer, metric, gold_file, predict_file, out_pred_score)
-            #print(cmd)
+            # print(cmd)
             os.system(cmd)
 
     # make sure that all files processed
@@ -24,7 +26,7 @@ def score(scorer, keys_path, predicts_path):
     results = dict()
     res = dict()
 
-    f1=[]
+    f1 = []
     for metric in ['muc', 'bcub', 'ceafm', 'ceafe']:
         recall = []
         precision = []
@@ -51,41 +53,42 @@ def score(scorer, keys_path, predicts_path):
         r2 = sum(map(lambda x: x[1], recall))
         p1 = sum(map(lambda x: x[0], precision))
         p2 = sum(map(lambda x: x[1], precision))
-        
-        
+
         r = 0 if r2 == 0 else r1 / float(r2)
-        p = 0 if p2 ==0 else p1 / float(p2)
-        f = 0 if (p+r) == 0 else (2 * p * r) / (p + r)
-        
-        
+        p = 0 if p2 == 0 else p1 / float(p2)
+        f = 0 if (p + r) == 0 else (2 * p * r) / (p + r)
+
         f1.append(f)
-        res[metric] = '{0} precision: ({1:.3f}/{2}) {3:.3f}\t recall: ({4:.3f}/{5}) {6:.3f}\t F-1: {7:.5f}'.format(metric, p1, p2, p, r1, r2, r, f)
+        res[metric] = '{0} precision: ({1:.3f}/{2}) {3:.3f}\t recall: ({4:.3f}/{5}) {6:.3f}\t F-1: {7:.5f}'.format(
+            metric, p1, p2, p, r1, r2, r, f)
         results[metric] = {'p': p, 'r': r, 'f-1': f}
 
     # muc bcub ceafe
-    conllf1 = np.mean(f1[:2] + f1[-1:]) # wtf
-    res['using'] = 'using {}/{}'.format(k, 4 * len(key_files)) 
+    conllf1 = np.mean(f1[:2] + f1[-1:])  # wtf
+    res['using'] = 'using {}/{}'.format(k, 4 * len(key_files))
     res['avg-F-1'] = np.mean(f1)
     res['conll-F-1'] = conllf1
     json.dump(results, open(os.path.join(predicts_path, 'results.json'), 'w'))
     return res
 
+
 class watcher():
     def __init__(self):
         self.mentions = 0
-    
-    def mentions_closed(self,s):
+
+    def mentions_closed(self, s):
         s = s.split('|')
         for x in s:
             if x[0] == '(' and x[-1] != ')':
                 self.mentions += 1
             elif x[0] != '(' and x[-1] == ')':
                 self.mentions -= 1
-                
+
         if self.mentions != 0:
             return False
         else:
             return True
+
 
 def RuCoref2CoNLL(path, out_path, language='russian'):
     data = {"doc_id": [],
@@ -120,7 +123,8 @@ def RuCoref2CoNLL(path, out_path, language='russian'):
     with open(groups_path, "r") as groups_file:
         for line in groups_file:
             doc_id, variant, group_id, chain_id, link, shift, lens, content, tk_shifts, attributes, head, hd_shifts = line[
-                                                                                                                      :-1].split('\t')
+                                                                                                                      :-1].split(
+                '\t')
 
             if doc_id not in coref_dict:
                 coref_dict[doc_id] = {'unos': defaultdict(list), 'starts': defaultdict(list), 'ends': defaultdict(list)}
@@ -139,16 +143,16 @@ def RuCoref2CoNLL(path, out_path, language='russian'):
         doc_name = '0'
         for line in tokens_file:
             doc_id, shift, length, token, lemma, gram = line[:-1].split('\t')
-            
+
             if doc_id == 'doc_id':
                 continue
-            
+
             if doc_id != doc_name:
                 doc_name = doc_id
                 w = watcher()
                 k = 0
-                
-            data['word'].append(token)    
+
+            data['word'].append(token)
             data['doc_id'].append(doc_id)
             data['part_id'].append(part_id)
             data['lemma'].append(lemma)
@@ -171,13 +175,13 @@ def RuCoref2CoNLL(path, out_path, language='russian'):
                 data['coref'].append(s)
             else:
                 data['coref'].append(s)
-            
+
             closed = w.mentions_closed(s)
             if gram == 'SENT' and not closed:
                 data['part_of_speech'].append('.')
                 data['word_number'].append(k)
-                k += 1 
-                
+                k += 1
+
             elif gram == 'SENT' and closed:
                 data['part_of_speech'].append(gram)
                 data['word_number'].append(k)
@@ -186,10 +190,9 @@ def RuCoref2CoNLL(path, out_path, language='russian'):
                 data['part_of_speech'].append(gram)
                 data['word_number'].append(k)
                 k += 1
-       
+
         tokens_file.close()
-        
-    
+
     # Write conll structure in file
     conll = os.path.join(out_path, ".".join([language, 'v4_conll']))
     with open(conll, 'w') as CoNLL:
@@ -262,7 +265,7 @@ def RuCoref2CoNLL(path, out_path, language='russian'):
 
 def split_doc(inpath, outpath, language='russian'):
     # split massive conll file to many little
-    
+
     print('Start of splitting ...')
     with open(inpath, 'r+') as f:
         lines = f.readlines()
@@ -292,4 +295,3 @@ def split_doc(inpath, outpath, language='russian'):
     del k
 
     return None
-    

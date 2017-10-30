@@ -9,13 +9,17 @@ Run model training
 ```sh
 pyb train_<model_name>
 ```
+Run model testing
+```sh
+pyb run_unit_tests -P unittest_test_method_prefix="test_<model_name>"
+```
 where <model_name> should be replaced with the name of the model from the library: ner, paraphraser, insults, squad.
 
 To test all the models use
 ```sh
 pyb run_unit_tests -v
 ```
-After that, detailed report could be found in target/reports.
+After that, test metrics could be found within ./build/KPI_scores file and detailed output could be found in target/reports.
 
 Works on Ubuntu 16.04.
 
