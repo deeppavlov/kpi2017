@@ -88,7 +88,7 @@ def score(scorer, keys_path, predicts_path):
         results[metric] = {'p': p, 'r': r, 'f-1': f}
 
     # muc bcub ceafe
-    conllf1 = np.mean([f1[0], f[1], f1[-1]])
+    conllf1 = np.mean([f1[0], f1[1], f1[-1]])
     res['using'] = 'using {}/{}'.format(k, 4 * len(key_files))
     res['avg-F-1'] = np.mean(f1)
     res['conll-F-1'] = conllf1
