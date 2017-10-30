@@ -246,6 +246,7 @@ def generate_emb_features(data, ft_model, window_size=5):
 
 
 def distance_to_buckets(d):
+    """converts distance to one-hot vector"""
     ohe = [0] * 10
     if d == 0:
         ohe[0] = 1
@@ -271,7 +272,7 @@ def distance_to_buckets(d):
     return ohe
 
 
-class DataLoader():
+class DataLoader:
     """Help class to load and preprocess conll datafiles"""
 
     def __init__(self, datas, data_embs, data_smpls):
