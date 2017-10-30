@@ -23,6 +23,8 @@ from ...utils import coreference_utils
 
 
 def build(opt):
+    """prepares datasets and other dependencies for CoreferenceTeacher"""
+
     # get path to data directory and create folders tree
     dpath = join(opt['datapath'])
     # define version if any, and languages

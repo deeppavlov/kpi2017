@@ -24,8 +24,11 @@ from ...utils import coreference_utils
 
 
 class CoreferenceTeacher(Teacher):
+    """Teacher for coreference resolution task"""
+
     @staticmethod
     def add_cmdline_args(argparser):
+        """Parameters of agent and default values"""
         group = argparser.add_argument_group('Coreference Teacher')
         group.add_argument('--language', type=str, default='ru')
         group.add_argument('--predictions_folder', type=str, default='predicts',
@@ -39,6 +42,7 @@ class CoreferenceTeacher(Teacher):
         group.add_argument('--teacher_seed', type=int, default=42, help='seed')
 
     def __init__(self, opt, shared=None):
+        """Initialize the parameters for CoreferenceTeacher"""
         super().__init__(opt, shared)
         self.last_observation = None
         self.id = 'two-step-coref'
@@ -78,16 +82,19 @@ class CoreferenceTeacher(Teacher):
         self._epoch_done = False
 
     def act(self):
+        """reads all documents and returns them"""
         self._epoch_done = True
         train_conll = [open(os.path.join(self.train_path, file), 'r').readlines() for file in self.train_documents]
         valid_conll = [open(os.path.join(self.valid_path, file), 'r').readlines() for file in self.valid_documents]
         return {'id': self.id, 'conll': train_conll, 'valid_conll': valid_conll}
 
     def observe(self, observation):
+        """saves observation"""
         self.last_observation = observation
         self.epoch += 1
 
     def report(self):
+        """calls scorer on last observation and reports result"""
         utils.save_observations(self.last_observation['valid_conll'], self.predictions_folder)
         res = coreference_utils.score(self.scorer_path, self.valid_path, self.predictions_folder)
         return {'f1': res['conll-F-1']}
