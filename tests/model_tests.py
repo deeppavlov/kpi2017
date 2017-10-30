@@ -47,6 +47,7 @@ class TestKPIs(unittest.TestCase):
                             '-m', 'deeppavlov.agents.ner.ner:NERAgent',
                             '-mf', './build/ner',
                             '-dt', 'test',
+                            '--dict-file', './build/ner/dict',
                             '--batchsize', '2',
                             '--display-examples', 'False',
                             '--validation-every-n-epochs', '5',
