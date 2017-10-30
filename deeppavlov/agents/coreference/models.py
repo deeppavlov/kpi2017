@@ -78,6 +78,11 @@ class CorefModel(object):
         learning_rate = tf.train.exponential_decay(self.opt["learning_rate"], self.global_step,
                                                    self.opt["decay_frequency"], self.opt["decay_rate"],
                                                    staircase=True)
+        
+        learning_rate = tf.cond(learning_rate < opt['final_rate'],
+                                lambda: tf.Variable(opt['final_rate'], tf.float32),
+                                lambda: learning_rate)
+        
         trainable_params = tf.trainable_variables()
         gradients = tf.gradients(self.loss, trainable_params)
         gradients, _ = tf.clip_by_global_norm(gradients, self.opt["max_gradient_norm"])
@@ -521,29 +526,14 @@ class CorefModel(object):
         return self.tf_loss, tf_global_step
 
     def predict(self, batch, out_file):        
-        self.start_enqueue_thread(batch, False)        
+        _, _, _, _, _, _, gold_starts, gold_ends, _ = self.start_enqueue_thread(batch, False, returning=True)        
         candidate_starts, candidate_ends, mention_scores, mention_starts, mention_ends, antecedents, antecedent_scores = self.sess.run(self.predictions)
-        
-        
-        tensorise = lambda example: self.tensorize_example(example, is_training=False)
-        _, _, _, _, _, _, gold_starts, gold_ends, _ = tensorise(batch)
-        gold_spans = set(zip(gold_starts, gold_ends))
-
-        if len(candidate_starts) > 0:
-          sorted_starts, sorted_ends, _ = zip(*sorted(zip(candidate_starts, candidate_ends, mention_scores)))
-        else:
-          sorted_starts = []
-          sorted_ends = []
-
-        num_predictions = len(gold_spans)
-        predicted_starts = sorted_starts[:num_predictions]
-        predicted_ends = sorted_ends[:num_predictions]
-        # predicted_spans = set(zip(predicted_starts, predicted_ends))
+        assert len(gold_starts) == len(gold_ends)
 
         predicted_antecedents = self.get_predicted_antecedents(antecedents, antecedent_scores)
-
-        # predicted_clusters, mention_to_predicted = self.get_predicted_clusters(mention_starts, mention_ends,                                                                               predicted_antecedents)
-        predicted_clusters, mention_to_predicted = self.get_predicted_clusters(mention_starts, mention_ends,                predicted_antecedents)
+        
+        predicted_clusters, mention_to_predicted = self.get_predicted_clusters(mention_starts, mention_ends, predicted_antecedents)
+        
         new_cluters = dict()
         new_cluters[batch['doc_key']] = predicted_clusters
         outconll = utils.output_conll(out_file, new_cluters)
