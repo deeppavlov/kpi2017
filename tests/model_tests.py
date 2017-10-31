@@ -12,7 +12,7 @@ class TestKPIs(unittest.TestCase):
     """Class for tests of different KPIs"""
 
     report_string = '{:%Y/%m/%d %H:%M} {}: actual {}, expected {}\n'
-    report_file = './kpi_score_reports'
+    report_file = './build/kpi_score_reports.txt'
 
     @classmethod
     def report_score(cls, kpi, actual, expected):
@@ -148,9 +148,9 @@ class TestKPIs(unittest.TestCase):
 
         TestKPIs.report_score("Coreference", metrics["conll-F-1"], expected_score)        
 
-        self.assertTrue(metrics['conll-F-1'] > expected_KPI,
+        self.assertTrue(metrics['conll-F-1'] > expected_score,
                         'KPI for Coreference resolution is not satisfied. \
-                        Got {}, expected more than {}'.format(metrics['conll-F-1'], expected_KPI))
+                        Got {}, expected more than {}'.format(metrics['conll-F-1'], expected_score))
 
     
     def test_coreference_scorer_model(self):
