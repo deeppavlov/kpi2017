@@ -1,6 +1,3 @@
-# to run model training type 'pyb train_<task>' replacing <task> with the model name
-# to test all the models type 'pyb run_unit_tests'
-
 from pybuilder.core import use_plugin, init, task
 import os
 import build_utils as bu
@@ -27,8 +24,6 @@ def set_properties(project):
                                          default='http://share.ipavlov.mipt.ru:8080/repository/models/')
     os.environ['DATASETS_URL'] = os.getenv('DATASETS_URL',
                                            default='http://share.ipavlov.mipt.ru:8080/repository/datasets/')
-    os.environ['CUDA_VISIBLE_DEVICES'] = os.getenv('CUDA_VISIBLE_DEVICES',
-                                                   default='7')
     os.environ['KERAS_BACKEND'] = os.getenv('KERAS_BACKEND', default='tensorflow')
     project.set_property('dir_source_main_python', '.')
     project.set_property('dir_source_unittest_python', 'tests')
@@ -42,7 +37,7 @@ def build(project):
 @task
 def clean(project):
     import shutil
-    shutil.rmtree('./build')
+    shutil.rmtree('./build', ignore_errors=True)
 
 
 @task
@@ -151,5 +146,70 @@ def train_squad(project):
                         '--pointer_dim', '300',
                         '--model-file', './build/squad/squad1',
                         '--embedding_file', './build/squad/glove.840B.300d.txt'
+                        ])
+    return metrics
+
+
+def compile_coreference(path):
+    path = path + '/coref_kernels.so'
+    if not os.path.isfile(path):
+        print('Compiling the coref_kernels.cc')
+        cmd = """#!/usr/bin/env bash
+
+                # Build custom kernels.
+                TF_INC=$(python3 -c 'import tensorflow as tf; print(tf.sysconfig.get_include())')
+
+                # Linux (pip)
+                g++ -std=c++11 -shared ./deeppavlov/agents/coreference/coref_kernels.cc -o {0} -I $TF_INC -fPIC -D_GLIBCXX_USE_CXX11_ABI=0
+
+                # Linux (build from source)
+                #g++ -std=c++11 -shared ./deeppavlov/agents/coreference/coref_kernels.cc -o {0} -I $TF_INC -fPIC
+
+                # Mac
+                #g++ -std=c++11 -shared ./deeppavlov/agents/coreference/coref_kernels.cc -o {0} -I $TF_INC -fPIC -D_GLIBCXX_USE_CXX11_ABI=0  -undefined dynamic_lookup"""
+        cmd = cmd.format(path)
+        os.system(cmd)
+        print('End of compiling the coref_kernels.cc')
+
+
+@task
+def train_coreference(project):
+    create_dir('coreference')
+    mf = './build/coreference/'
+    compile_coreference(mf)
+    metrics = bu.model(['-t', 'deeppavlov.tasks.coreference.agents',
+                        '-m', 'deeppavlov.agents.coreference.agents:CoreferenceAgent',
+                        '-mf', mf,
+                        '--language', 'russian',
+                        '--name', 'main',
+                        '--pretrained_model', 'False',
+                        '-dt', 'train:ordered',
+                        '--batchsize', '1',
+                        '--display-examples', 'False',
+                        '--num-epochs', '1500',
+                        '--validation-every-n-epochs', '50',
+                        '--nitr', '1500',
+                        '--log-every-n-epochs', '1',
+                        '--log-every-n-secs', '-1',
+                        '--chosen-metric', 'conll-F-1',
+                        '--validation-patience', '10'
+                        ])
+    return metrics
+
+
+@task
+def train_coreference_scorer_model(project):
+    create_dir('coref')
+    metrics = bu.model(['-t', 'deeppavlov.tasks.coreference_scorer_model.agents:CoreferenceTeacher',
+                        '-m', 'deeppavlov.agents.coreference_scorer_model.agents:CoreferenceAgent',
+                        '--display-examples', 'False',
+                        '--num-epochs', '20',
+                        '--log-every-n-secs', '-1',
+                        '--log-every-n-epochs', '1',
+                        '--validation-every-n-epochs', '1',
+                        '--chosen-metrics', 'f1',
+                        '--validation-patience', '5',
+                        '--model-file', './build/coref',
+                        '--embeddings_path', './build/coref/fasttext_embdgs.bin'
                         ])
     return metrics
