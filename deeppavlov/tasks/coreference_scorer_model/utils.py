@@ -21,16 +21,30 @@ from sklearn.model_selection import train_test_split
 
 
 def get_doc_name(line):
-    '''
-    returns doc_name from #begin line
-    '''
+    """
+    Returns: doc_name from #begin line
+    """
     return line.split('(')[1].split(')')[0]
 
 
 def train_valid_test_split(inpath, train_path, valid_path, test_path, valid_ratio, test_ratio, seed=None):
-    '''
-    split dataset on train/valid/test
-    '''
+    """split dataset on train/valid/test
+
+    splits dataset and moves datafiles to train/valid/test folders
+
+    Args:
+        inpath: all datafiles
+        train_path: path to save train datafiles
+        valid_path: path to save valid datafiles
+        test_path: path to save test datafiles
+        valid_ratio: len(valid) / len(all_datafiles)
+        test_ratio: len(test) / len(all_datafiles)
+        seed: random seed
+
+    Returns:
+        nothing
+    """
+
     assert valid_ratio + test_ratio <= 1.0
     assert valid_ratio > 0 and test_ratio > 0
     source_files = list(sorted(os.listdir(inpath)))
@@ -46,6 +60,7 @@ def train_valid_test_split(inpath, train_path, valid_path, test_path, valid_rati
 
 
 def save_observations(observation, path_to_save, lang='ru'):
+    """saves observations to files"""
     for lines in observation:
         doc_name = get_doc_name(lines[0])
         with open(os.path.join(path_to_save, doc_name + '.{}.v4_conll'.format(lang)), 'w') as fout:

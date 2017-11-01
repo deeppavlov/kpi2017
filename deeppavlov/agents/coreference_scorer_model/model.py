@@ -1,13 +1,29 @@
+"""
+Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
 import tensorflow as tf
 
 
-class MentionScorerModel():
-    '''
-    model for predicting probability that two mentions are the same entity (belong to one cluster)
-    '''
+class MentionScorerModel:
+    """MentionScorerModel
+
+    model for scoring pair of mentions
+    score is a probability that two mentions represent same entity
+    """
 
     def __init__(self, hidden_size=512, lr=0.0005, keep_prob_input=0.5, keep_prob_dense=0.8, features_size=455,
                  ohe_size=10, emb_dim=10):
+        """Initialize the parameters for an MentionScorerModel"""
         self.keep_prob_input = keep_prob_input
         self.keep_prob_dense = keep_prob_dense
         self.lr = lr
@@ -89,6 +105,21 @@ class MentionScorerModel():
                                                         learning_rate=self.lr, optimizer='Adam')
 
     def train_batch(self, session, A, A_f, B, B_f, AB_f, labels):
+        """method for training on one batch
+        train_op is called
+        score(A, B)
+
+        Args:
+            A: embedding features for left mentions (a)
+            A_f: additional features for left mentions
+            B:
+            B_f:
+            AB_f: features for pair of mentions (a, b)
+            labels: 1 if mention a and b represent one entity else 0
+
+        Returns:
+            loss, tensorflow loss_summary, logits
+        """
         feed_dict = {
             self.A: A,
             self.A_features: A_f,
@@ -105,6 +136,21 @@ class MentionScorerModel():
         return loss, loss_sum, logits
 
     def test_batch(self, session, A, A_f, B, B_f, AB_f, labels):
+        """method for testing on one batch
+        train_op is not called
+        score(A, B)
+
+        Args:
+            A: embedding features for left mentions (a)
+            A_f: additional features for left mentions
+            B:
+            B_f:
+            AB_f: features for pair of mentions (a, b)
+            labels: 1 if mention a and b represent one entity else 0
+
+        Returns:
+            loss, tensorflow loss_summary, logits and predictions
+        """
         feed_dict = {
             self.A: A,
             self.A_features: A_f,

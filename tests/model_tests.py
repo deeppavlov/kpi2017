@@ -12,7 +12,7 @@ class TestKPIs(unittest.TestCase):
     """Class for tests of different KPIs"""
 
     report_string = '{:%Y/%m/%d %H:%M} {}: actual {}, expected {}\n'
-    report_file = './build/kpi_score_reports'
+    report_file = './kpi_score_reports'
 
     @classmethod
     def report_score(cls, kpi, actual, expected):
@@ -45,14 +45,14 @@ class TestKPIs(unittest.TestCase):
         expected_score = 70
         metrics = bu.model(['-t', 'deeppavlov.tasks.ner.agents',
                             '-m', 'deeppavlov.agents.ner.ner:NERAgent',
-                            '-mf', './build/ner/ner',
+                            '-mf', './build/ner',
                             '-dt', 'test',
                             '--batchsize', '2',
                             '--display-examples', 'False',
                             '--validation-every-n-epochs', '5',
                             '--log-every-n-epochs', '1',
                             '--log-every-n-secs', '-1',
-                            '--pretrained-model', './build/ner/ner',
+                            '--pretrained-model', './build/ner',
                             '--chosen-metrics', 'f1'
                             ])
 
@@ -129,6 +129,7 @@ class TestKPIs(unittest.TestCase):
                         'KPI for SQuAD is not satisfied. \
                         Got {}, expected more than {}'.format(metrics['f1'], expected_score))
     
+    """
     def test_coreference(self):
         expected_score = 0.55
         metrics = bu.model(['-t', 'deeppavlov.tasks.coreference.agents',
@@ -149,7 +150,8 @@ class TestKPIs(unittest.TestCase):
         self.assertTrue(metrics['f1'] > expected_score,
                         'KPI for Coreference resolution is not satisfied. \
                         Got {}, expected more than {}'.format(metrics['f1'], expected_score))
-
+    """
+    
     def test_coreference_scorer_model(self):
         expected_score = 0.55
 

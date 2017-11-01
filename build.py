@@ -24,8 +24,6 @@ def set_properties(project):
                                          default='http://share.ipavlov.mipt.ru:8080/repository/models/')
     os.environ['DATASETS_URL'] = os.getenv('DATASETS_URL',
                                            default='http://share.ipavlov.mipt.ru:8080/repository/datasets/')
-    os.environ['CUDA_VISIBLE_DEVICES'] = os.getenv('CUDA_VISIBLE_DEVICES',
-                                                   default='7')
     os.environ['KERAS_BACKEND'] = os.getenv('KERAS_BACKEND', default='tensorflow')
     project.set_property('dir_source_main_python', '.')
     project.set_property('dir_source_unittest_python', 'tests')
@@ -39,7 +37,7 @@ def build(project):
 @task
 def clean(project):
     import shutil
-    shutil.rmtree('./build')
+    shutil.rmtree('./build', ignore_errors=True)
 
 
 @task
@@ -72,8 +70,9 @@ def train_ner(project):
     create_dir('ner')
     metrics = bu.model(['-t', 'deeppavlov.tasks.ner.agents',
                         '-m', 'deeppavlov.agents.ner.ner:NERAgent',
-                        '-mf', './build/ner/ner',
+                        '-mf', './build/ner',
                         '-dt', 'train:ordered',
+                        '--dict-file', './build/ner/dict',
                         '--learning_rate', '0.01',
                         '--batchsize', '2',
                         '--display-examples', 'False',
