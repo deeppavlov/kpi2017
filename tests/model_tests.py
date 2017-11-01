@@ -137,7 +137,7 @@ class TestKPIs(unittest.TestCase):
                             '-mf', './build/coreference/',
                             '-dt', 'test',
                             '--language', 'russian',
-                            '--name', 'main',
+                            '--name', 'gold_main',
                             '--pretrained_model', 'True',
                             '--datatype', 'test:stream',
                             '--batchsize', '1',
