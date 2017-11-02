@@ -19,7 +19,7 @@ To test all the models use
 ```sh
 pyb run_unit_tests -v
 ```
-After that, test metrics could be found within ./build/KPI_scores file and detailed output could be found in target/reports.
+After that, test metrics could be found within ./build/kpi_score_reports.txt file and detailed output could be found in target/reports.
 
 Works on Ubuntu 16.04.
 
