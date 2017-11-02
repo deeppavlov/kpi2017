@@ -473,6 +473,10 @@ class MentionPairsBatchGenerator():
         B = [self.dl.mention_features[m] for m in B]
         return np.vstack(A), np.stack(A_f), np.vstack(B), np.stack(B_f), np.stack(AB_f)
 
+    def reset(self):
+        self.current_doc_id = 0
+        self.epoch = 0
+
 
 def make_prediction_file(conll_lines, data, path_to_save, chains, write=True):
     """makes prediction file based on source conll file

@@ -28,8 +28,8 @@ class MentionScorerModel:
         self.keep_prob_dense = keep_prob_dense
         self.lr = lr
 
-        self.A = tf.placeholder(dtype=tf.float32, shape=(None, features_size), name='A')
-        self.B = tf.placeholder(dtype=tf.float32, shape=(None, features_size), name='B')
+        self.A = tf.placeholder(dtype=tf.float64, shape=(None, features_size), name='A')
+        self.B = tf.placeholder(dtype=tf.float64, shape=(None, features_size), name='B')
 
         self.A_features = tf.placeholder(dtype=tf.int32, shape=(None, 5), name='A_features')
         self.B_features = tf.placeholder(dtype=tf.int32, shape=(None, 5), name='B_features')
@@ -37,21 +37,21 @@ class MentionScorerModel:
         self.AB_features = tf.placeholder(dtype=tf.int32, shape=(None, 2), name='AB_features')
 
         self.labels = tf.placeholder(dtype=tf.int32, shape=(None,), name='labels')
-        self.keep_prob_input_ph = tf.placeholder(dtype=tf.float32, shape=(None), name='keep_prob_input_ph')
-        self.keep_prob_dense_ph = tf.placeholder(dtype=tf.float32, shape=(None), name='keep_prob_dense_ph')
+        self.keep_prob_input_ph = tf.placeholder(dtype=tf.float64, shape=(None), name='keep_prob_input_ph')
+        self.keep_prob_dense_ph = tf.placeholder(dtype=tf.float64, shape=(None), name='keep_prob_dense_ph')
         self.roc_auc = tf.placeholder(dtype=tf.float32, shape=(None), name='roc_auc_ph')
 
         # embeddings for one-hot features
-        feat_2_embeddings = tf.Variable(tf.random_uniform([ohe_size, emb_dim], -1.0, 1.0, name='embeddings_2'),
-                                        dtype=tf.float32)
-        feat_3_embeddings = tf.Variable(tf.random_uniform([ohe_size, emb_dim], -1.0, 1.0, name='embeddings_3'),
-                                        dtype=tf.float32)
-        feat_4_embeddings = tf.Variable(tf.random_uniform([ohe_size, emb_dim], -1.0, 1.0, name='embeddings_4'),
-                                        dtype=tf.float32)
-        pair_0_embeddings = tf.Variable(tf.random_uniform([ohe_size, emb_dim], -1.0, 1.0, name='pair_0_embeddings'),
-                                        dtype=tf.float32)
-        pair_1_embeddings = tf.Variable(tf.random_uniform([ohe_size, emb_dim], -1.0, 1.0, name='pair_1_embeddings'),
-                                        dtype=tf.float32)
+        feat_2_embeddings = tf.Variable(tf.random_uniform([ohe_size, emb_dim], -1.0, 1.0, name='embeddings_2', dtype=tf.float64),
+                                        dtype=tf.float64)
+        feat_3_embeddings = tf.Variable(tf.random_uniform([ohe_size, emb_dim], -1.0, 1.0, name='embeddings_3', dtype=tf.float64),
+                                        dtype=tf.float64)
+        feat_4_embeddings = tf.Variable(tf.random_uniform([ohe_size, emb_dim], -1.0, 1.0, name='embeddings_4', dtype=tf.float64),
+                                        dtype=tf.float64)
+        pair_0_embeddings = tf.Variable(tf.random_uniform([ohe_size, emb_dim], -1.0, 1.0, name='pair_0_embeddings', dtype=tf.float64),
+                                        dtype=tf.float64)
+        pair_1_embeddings = tf.Variable(tf.random_uniform([ohe_size, emb_dim], -1.0, 1.0, name='pair_1_embeddings', dtype=tf.float64),
+                                        dtype=tf.float64)
 
         # we have to unstack them, because 2,3,4 features are not binary and would have learnable embdgs
         A_f_0, A_f_1, A_f_2, A_f_3, A_f_4 = tf.unstack(self.A_features, axis=1)
@@ -71,10 +71,10 @@ class MentionScorerModel:
                                      keep_prob=self.keep_prob_input)
 
         A_f_emb = tf.concat(
-            [tf.cast(tf.expand_dims(A_f_0, axis=1), tf.float32), tf.cast(tf.expand_dims(A_f_1, axis=1), tf.float32),
+            [tf.cast(tf.expand_dims(A_f_0, axis=1), tf.float64), tf.cast(tf.expand_dims(A_f_1, axis=1), tf.float64),
              A_f_2_emb, A_f_3_emb, A_f_4_emb], axis=1, name='A_f_emb')
         B_f_emb = tf.concat(
-            [tf.cast(tf.expand_dims(B_f_0, axis=1), tf.float32), tf.cast(tf.expand_dims(B_f_1, axis=1), tf.float32),
+            [tf.cast(tf.expand_dims(B_f_0, axis=1), tf.float64), tf.cast(tf.expand_dims(B_f_1, axis=1), tf.float64),
              B_f_2_emb, B_f_3_emb, B_f_4_emb], axis=1, name='B_f_emb')
 
         A_do = tf.nn.dropout(self.A, keep_prob=self.keep_prob_input_ph)
@@ -130,6 +130,7 @@ class MentionScorerModel:
             self.keep_prob_input_ph: self.keep_prob_input,
             self.keep_prob_dense_ph: self.keep_prob_dense,
         }
+
         loss, loss_sum, logits, _ = session.run(
             [self.loss, self.loss_summary, self.logits, self.train_op],
             feed_dict=feed_dict)
