@@ -1,8 +1,25 @@
+"""
+Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
 import os
 import copy
 import numpy as np
 import urllib.request
-import fasttext
+from gensim.models.wrappers import FastText
+import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
 
 
@@ -13,21 +30,24 @@ class EmbeddingsDict(object):
         self.opt = copy.deepcopy(opt)
         self.load_items()
 
+        nltk.download('punkt')
+
         if not self.opt.get('fasttext_model'):
             raise RuntimeError('No pretrained fasttext model provided')
         self.fasttext_model_file = self.opt.get('fasttext_model')
         if not os.path.isfile(self.fasttext_model_file):
-            ftppath = os.environ.get('IPAVLOV_FTP')
-            if not ftppath:
+            emb_path = os.environ.get('EMBEDDINGS_URL')
+            if not emb_path:
                 raise RuntimeError('No pretrained fasttext model provided')
             fname = os.path.basename(self.fasttext_model_file)
             try:
-                print('Trying to download a pretrained fasttext model from the ftp server')
-                urllib.request.urlretrieve(ftppath + '/paraphraser_data/' + fname, self.fasttext_model_file)
+                print('Trying to download a pretrained fasttext model from the repository')
+                url = urllib.parse.urljoin(emb_path, fname)
+                urllib.request.urlretrieve(url, self.fasttext_model_file)
                 print('Downloaded a fasttext model')
-            except:
-                raise RuntimeError('Looks like the `IPAVLOV_FTP` variable is set incorrectly')
-        self.fasttext_model = fasttext.load_model(self.fasttext_model_file)
+            except Exception as e:
+                raise RuntimeError('Looks like the `EMBEDDINGS_URL` variable is set incorrectly', e)
+        self.fasttext_model = FastText.load_fasttext_format(self.fasttext_model_file)
 
     def add_items(self, sentence_li):
         for sen in sentence_li:
@@ -37,7 +57,10 @@ class EmbeddingsDict(object):
             tokens = [el for el in tokens if el != '']
             for tok in tokens:
                 if self.tok2emb.get(tok) is None:
-                    self.tok2emb[tok] = self.fasttext_model[tok]
+                    try:
+                        self.tok2emb[tok] = self.fasttext_model[tok]
+                    except:
+                        self.tok2emb[tok] = np.zeros(self.embedding_dim)
 
     def save_items(self, fname):
         if self.opt.get('fasttext_embeddings_dict') is not None:
