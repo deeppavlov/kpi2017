@@ -154,7 +154,7 @@ class TestKPIs(unittest.TestCase):
                         Got {}, expected more than {}'.format(metrics['conll-F-1'], expected_score))
 
     
-    def test_coreference_scorer_model(self):
+    def test_coref_scorer_model(self):
         expected_score = 0.55
 
         metrics = bu.model(['-t', 'deeppavlov.tasks.coreference_scorer_model.agents:CoreferenceTeacher',
