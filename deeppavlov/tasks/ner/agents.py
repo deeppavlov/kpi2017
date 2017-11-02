@@ -31,7 +31,10 @@ def _path(opt):
 
 
 class DefaultTeacher(DialogTeacher):
+    """The Teacher for Named Entity Recognition task"""
+
     def __init__(self, opt, shared=None):
+        """Initialize the parameters of the DefaultTeacher"""
         assert opt['train_part'] + opt['test_part'] + opt['valid_part'] == 1
         self.parts = [opt['train_part'], opt['valid_part'], opt['test_part']]
         # store datatype
@@ -57,6 +60,7 @@ class DefaultTeacher(DialogTeacher):
 
     @staticmethod
     def add_cmdline_args(argparser):
+        """Parameters of agent and default values"""
         group = argparser.add_argument_group('NER Teacher')
         group.add_argument('--raw-dataset-path', default=None,
                            help='path to Gareev dataset')
@@ -67,6 +71,16 @@ class DefaultTeacher(DialogTeacher):
 
     @staticmethod
     def split_sentences(x, y):
+        """Split entire text into sentences
+
+        Args:
+            x: sentences list
+            y: tags list
+
+        Returns:
+            sentences: list of sentences
+            tags: list of tags corresponding to sentences
+        """
         sentences = []
         tags = []
         tmp_sentence = []
@@ -86,6 +100,16 @@ class DefaultTeacher(DialogTeacher):
         return sentences, tags
 
     def setup_data(self, path):
+        """
+
+        Args:
+            path: path to the heap file
+
+        Returns:
+            generator of pairs (questions[i], y[i]), episode_done
+            where question[i] is a list of tokens and y[i] is a
+            corresponding list of tags
+        """
         print('loading: ' + path)
 
         questions = []
@@ -139,6 +163,7 @@ class DefaultTeacher(DialogTeacher):
             yield (questions[i], y[i]), episode_done
 
     def reset(self):
+        """Reset Teacher random states"""
         random_state = random.getstate()
         random.setstate(self.random_state)
         random.shuffle(self.data.data)

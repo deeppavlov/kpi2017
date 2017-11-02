@@ -20,12 +20,30 @@ import urllib
 
 
 def is_end_of_sentence(prev_token, current_token):
+    """Determine whether there is an end of the sentence
+
+    Args:
+        prev_token: hypothetical end of the sentence
+        current_token: hypothetical beginning of the sentence
+
+    Returns:
+        None
+    """
     is_capital = current_token[0].isupper()
     is_punctuation = prev_token in ('!', '?', '.')
     return is_capital and is_punctuation
 
 
 def create_heap_file(dpath, heap_filename='heap.txt'):
+    """Merge separate data files into one big heap file
+
+    Args:
+        dpath: path to dataset folder
+        heap_filename: filename of heap file
+
+    Returns:
+        None
+    """
     if not os.path.exists(dpath):
         os.mkdir(dpath)
 
@@ -45,6 +63,7 @@ def create_heap_file(dpath, heap_filename='heap.txt'):
 
 
 def build(opt):
+    """Prepares datasets and other dependencies for NERTeacher"""
     version = '1.1'
     dpath = os.path.join(opt['datapath'], 'ner')
 
