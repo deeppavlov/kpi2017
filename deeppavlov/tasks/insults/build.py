@@ -23,8 +23,11 @@ import urllib
 def data_preprocessing(f):
     """Preprocess the data.
 
-    Keyword arguments:
-        f -- list of text samples
+    Args:
+        f: list of text samples
+
+    Returns:
+        preprocessed list of text samples
     """
     f = [x.lower() for x in f]
     f = [x[1:-1] for x in f]
@@ -123,10 +126,13 @@ def data_preprocessing(f):
 def write_input_fasttext_cls(data, path, data_name):
     """Write down input files for fasttext classificator.
 
-    Keyword arguments:
-        data -- array of text samples
-        path -- path to folder to put the files
-        data_name -- mode of writing files "train" or "test"
+    Args:
+        data: array of text samples
+        path: path to folder to put the files
+        data_name: mode of writing files "train" or "test"
+
+    Returns:
+        nothing
     """
     f = open(path + '_fasttext_cls.txt', 'w')
     for i in range(data.shape[0]):
@@ -142,10 +148,13 @@ def write_input_fasttext_cls(data, path, data_name):
 def write_input_fasttext_emb(data, path, data_name):
     """Write down input files for fasttext embedding.
 
-    Keyword arguments:
-        data -- array of text samples
-        path -- path to folder to put the files
-        data_name -- mode of writing files "train" or "test"
+    Args:
+        data: array of text samples
+        path: path to folder to put the files
+        data_name: mode of writing files "train" or "test"
+
+    Returns:
+        nothing
     """
     f = open(path + '_fasttext_emb.txt', 'w')
     for i in range(data.shape[0]):
@@ -159,12 +168,15 @@ def write_input_fasttext_emb(data, path, data_name):
 def balance_dataset(dataset_0, labels_0, dataset_1, labels_1, ratio=1):
     """Balance the dataset_0 with samples from dataset_1 up to given ratio.
 
-    Keyword arguments:
-        dataset_0 -- array of text samples
-        labels_0 -- array of labels for dataset_0
-        dataset_1 -- array of text samples
-        labels_1 -- array of labels for dataset_1
-        ratio -- ratio of samples of class 1 to samples of class 0 (default 1.0)
+    Args:
+        dataset_0: array of text samples
+        labels_0: array of labels for dataset_0
+        dataset_1: array of text samples
+        labels_1: array of labels for dataset_1
+        ratio: ratio of samples of class 1 to samples of class 0 (default 1.0)
+
+    Returns:
+        balanced array of text samples, corresponding array of labels
     """
     initial_train_size = dataset_0.shape[0]
     insult_inds = np.nonzero(labels_1)[0]
@@ -181,8 +193,11 @@ def build(opt):
     """Read and preprocess data, save preprocessed data, balance data,
     create input files for fasttext classifier and embeddings.
 
-    Keyword arguments:
-        opt -- given parameters
+    Args:
+        opt: given parameters
+
+    Returns:
+        nothing
     """
     # get path to data directory
     dpath = os.path.join(opt['datapath'], 'insults')
@@ -239,7 +254,7 @@ def build(opt):
         train_data = train_data.append(valid_data)
 
         if opt.get('balance_train_dataset'):
-            if opt['balance_train_dataset'] == True:
+            if opt['balance_train_dataset']:
                 train_data['Comment'],train_data['Insult'] = balance_dataset(train_data['Comment'],
                                                                              train_data['Insult'],
                                                                              train_data['Comment'],

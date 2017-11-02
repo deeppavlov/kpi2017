@@ -22,10 +22,13 @@ import random
 
 
 def _path(opt):
-    """Return full datafile name
+    """Function to create full data path.
 
-    Keyword arguments:
-        opt -- given arguments
+    Args:
+        opt: given arguments
+
+    Returns:
+        full datafile name
     """
     # ensure data is built
     build(opt)
@@ -194,6 +197,7 @@ class DefaultTeacher(DialogTeacher):
         self.random_state = random.getstate()
         random.setstate(random_state)
 
+
 class FullTeacher(DefaultTeacher):
     """DefaultTeacher
 
@@ -239,4 +243,3 @@ class FullTeacher(DefaultTeacher):
             # get current label, both as a digit and as a text
             # yield tuple with information and episode_done? flag
             yield (questions[i], y[i]), episode_done
-
