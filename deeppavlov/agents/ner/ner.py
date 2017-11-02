@@ -8,7 +8,7 @@ from .ner_tagger import NERTagger
 from .dictionary import get_char_dict
 
 
-char_dict = get_char_dict()
+CHAR_DICT = get_char_dict()
 
 
 class NERAgent(Agent):
@@ -98,7 +98,7 @@ class NERAgent(Agent):
         # Handle the case of incomplete batch in the end of the dataset
         current_batch_size = len(x_list)
         x = np.ones([current_batch_size, max_len]) * self.word_dict[self.word_dict.null_token]
-        xc = np.ones([current_batch_size, max_len, max_len_char]) * char_dict['<PAD>']
+        xc = np.ones([current_batch_size, max_len, max_len_char]) * CHAR_DICT['<PAD>']
         y = np.ones([current_batch_size, max_len]) * self.word_dict.labels_dict[self.word_dict.labels_dict.null_token]
 
         for n, (x_item, x_char, y_item) in enumerate(zip(x_list, x_char_list, y_list)):

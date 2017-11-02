@@ -11,14 +11,12 @@ class NERTagger:
     def __init__(self,
                  opt,
                  word_dict,
-                 state_dict=None,
                  token_emb_dim=100,
                  char_emb_dim=25,
                  n_char_cnn_filters=25,
-                 n_layers_per_block=4,
-                 dilated_filter_width=3,
-                 n_blocks=1,
-                 learning_rate=1e-3):
+                 filter_width=3,
+                 learning_rate=1e-3,
+                 n_layers=3):
         tf.reset_default_graph()
         seed = opt.get('random_seed')
         np.random.seed(seed)
@@ -65,7 +63,7 @@ class NERTagger:
         # units = tf.layers.dense(wc_features, 50, kernel_initializer=xavier_initializer())
         units = wc_features
 
-        units, auxilary_outputs = self.dense_network(units, n_layers_per_block, dilated_filter_width)
+        units, auxilary_outputs = self.cnn_network(units, n_layers, filter_width)
 
         logits = tf.layers.dense(units, tag_vocab_size, name='Dense')
         ground_truth_labels = tf.one_hot(y_t, tag_vocab_size, name='one_hot_tag_indxs')
@@ -88,9 +86,9 @@ class NERTagger:
         else:
             self.sess.run(tf.global_variables_initializer())
 
-    def dense_network(self, units, n_layers, filter_width):
+    def cnn_network(self, units, n_layers, filter_width):
         n_filters = units.get_shape().as_list()[-1]
-        auxilary_outputs = []
+        auxiliary_outputs = []
         for n_layer in range(n_layers):
             units = tf.layers.conv1d(units,
                                      n_filters,
@@ -99,12 +97,9 @@ class NERTagger:
                                      name='Layer_' + str(n_layer),
                                      activation=None,
                                      kernel_initializer=xavier_initializer())
-            auxilary_outputs.append(units)
+            auxiliary_outputs.append(units)
             units = tf.nn.relu(units)
-        return units, auxilary_outputs
-
-    def character_embedding_network(self, x_char, n_filters, filter_width):
-        pass
+        return units, auxiliary_outputs
 
     def train_on_batch(self, x, xc, y):
         loss, _ = self.sess.run([self.loss, self.train_op], feed_dict={self.x: x, self.xc: xc, self.y_ground_truth: y})
