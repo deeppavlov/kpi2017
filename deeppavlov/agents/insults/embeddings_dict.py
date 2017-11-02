@@ -20,6 +20,7 @@ import numpy as np
 import urllib.request
 import fasttext
 
+
 class EmbeddingsDict(object):
     """EmbeddingsDict
 

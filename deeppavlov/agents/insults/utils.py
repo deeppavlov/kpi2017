@@ -18,13 +18,15 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_selection import SelectKBest, chi2
 import scipy.sparse as sp
 
+
 def load_embeddings(opt, word_dict):
     """Initialize embeddings from file of pretrained vectors.
 
-    Keyword arguments:
-        opt -- dictionary of given parameters
-        word_dict -- dictionary of words
-    Return:
+    Args:
+        opt: dictionary of given parameters
+        word_dict: dictionary of words
+
+    Returns:
         embedding matrix
     """
     embeddings_index = {}
@@ -61,14 +63,17 @@ def ngrams_selection(train_data, train_labels, ind, model_file,
                      analyzer_type='word'):
     """Create and save vectorizers and feature selectors on given train data.
 
-    Keyword arguments:
-        train_data -- list of train text samples
-        train_labels -- list of train labels
-        ind -- index of vectorizer/selector to save file
-        model_file -- model filename
-        ngram_range_ -- range of n-grams
-        max_num_features -- maximum number of features to select
-        analyzer_type -- analyzer type for TfidfVectorizer 'word' or 'char'
+    Args:
+        train_data: list of train text samples
+        train_labels: list of train labels
+        ind: index of vectorizer/selector to save file
+        model_file: model filename
+        ngram_range_: range of n-grams
+        max_num_features: maximum number of features to select
+        analyzer_type: analyzer type for TfidfVectorizer 'word' or 'char'
+
+    Returns:
+        nothing
     """
     vectorizer = TfidfVectorizer(ngram_range=ngram_range_, sublinear_tf=True, analyzer=analyzer_type)
 
@@ -88,11 +93,15 @@ def ngrams_selection(train_data, train_labels, ind, model_file,
             pickle.dump(data_struct, f)
     return
 
+
 def ngrams_you_are(data):
     """Extract special features from data corresponding to "you are" experssion.
 
-    Keywords arguments:
-        data -- list of text samples
+    Args:
+        data: list of text samples
+
+    Returns:
+        list of special expressions
     """
     g = [x.lower()
          .replace("you are", " SSS ")
@@ -115,18 +124,22 @@ def ngrams_you_are(data):
         f.append(fts)
     return f
 
+
 def create_vectorizer_selector(train_data, train_labels, model_file,
-                               ngram_list=[1], max_num_features_list=[100], analyzer_type_list=['word']):
+                               ngram_list=[1], max_num_features_list=[100],
+                               analyzer_type_list=['word']):
     """Call creation and save of vectorizers and selectors including special cases.
 
-    Keyword arguments:
-        train_data -- list of train text samples
-        train_labels -- list of train labels
-        model_file -- model filename
-        ind -- index of vectorizer/selector to save file
-        ngram_list -- list of ranges of n-grams
-        max_num_features -- list of maximum number of features to select
-        analyzer_type_list -- list of analyzer types for TfidfVectorizer 'word' or 'char'
+    Args:
+        train_data: list of train text samples
+        train_labels:  list of train labels
+        model_file: model filename
+        ngram_list: list of ranges of n-grams
+        max_num_features_list: list of maximum number of features to select
+        analyzer_type_list: list of analyzer types for TfidfVectorizer 'word' or 'char'
+
+    Returns:
+        nothing
     """
     for i in range(len(ngram_list)):
         ngrams_selection(train_data, train_labels, 'general_' + str(i), model_file,
@@ -138,12 +151,16 @@ def create_vectorizer_selector(train_data, train_labels, model_file,
                      ngram_range_=(1,1), max_num_features=100)
     return
 
+
 def get_vectorizer_selector(model_file, num_ngrams):
     """Read vectorizers and selectors from file.
 
-    Keyword arguments:
-        model_file -- model filename
-        num_ngrams -- number of different n-grams considered
+    Args:
+        model_file: model filename
+        num_ngrams: number of different n-grams considered
+
+    Returns:
+        list of vectorizers, list of selectors
     """
     vectorizers = []
     selectors = []
@@ -167,30 +184,33 @@ def get_vectorizer_selector(model_file, num_ngrams):
             selectors.append(None)
     return vectorizers, selectors
 
+
 def vectorize_select_from_data(data, vectorizers, selectors):
     """Vectorize data and select features.
 
-    Keyword arguments:
-        data -- list of text train samples
-        vectorizers -- list of vectorizers
-        selectors -- list of selectors
+    Args:
+        data: list of text train samples
+        vectorizers: list of vectorizers
+        selectors: list of selectors
+
+    Returns:
+        features extracted from data using vectorizers and selectors lists
     """
     num_ngrams = len(vectorizers) - 1
-    X = None
+    x = None
 
     for i in range(num_ngrams):
-        X_i = vectorizers[i].transform(data)
+        x_i = vectorizers[i].transform(data)
         if selectors[i] is not None:
-            X_i = selectors[i].transform(X_i)
+            x_i = selectors[i].transform(x_i)
         if i == 0:
-            X = X_i
+            x = x_i
         else:
-            X = sp.hstack([X, X_i])
+            x = sp.hstack([x, x_i])
 
     data_special = ngrams_you_are(data)
-    X_i = vectorizers[-1].transform(data_special)
+    x_i = vectorizers[-1].transform(data_special)
     if selectors[-1] is not None:
-        X_i = selectors[-1].transform(X_i)
-    X = sp.hstack([X, X_i])
-
-    return X
+        x_i = selectors[-1].transform(x_i)
+    x = sp.hstack([x, x_i])
+    return x

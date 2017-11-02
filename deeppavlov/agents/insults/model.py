@@ -49,6 +49,7 @@ SEED = 23
 np.random.seed(SEED)
 tf.set_random_seed(SEED)
 
+
 class InsultsModel(object):
     """InsultsModel
 
@@ -132,7 +133,6 @@ class InsultsModel(object):
         self.val_loss = 0.0
         self.val_acc = 0.0
         self.val_auc = 0.0
-
 
     def _init_from_scratch(self):
         if self.model_name == 'log_reg':
@@ -320,7 +320,6 @@ class InsultsModel(object):
         model = Model(inputs=embed_input, outputs=act_output)
         return model
 
-
     def lstm_word_model(self):
         embed_input = Input(shape=(self.opt['max_sequence_length'], self.opt['embedding_dim'],))
 
@@ -340,5 +339,3 @@ class InsultsModel(object):
         act_output = Activation('sigmoid')(output)
         model = Model(inputs=embed_input, outputs=act_output)
         return model
-
-

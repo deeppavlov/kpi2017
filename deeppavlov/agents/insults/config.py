@@ -11,8 +11,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+
 def add_cmdline_args(parser):
-    """Add parameters from command line."""
+    """Add parameters from command line.
+
+    Args:
+        parser: parameters parser
+
+    Returns:
+        nothing
+    """
     # Runtime environment
     agent = parser.add_argument_group('Insults Arguments')
     agent.add_argument('--no_cuda', type='bool', default=False)
@@ -58,6 +66,3 @@ def add_cmdline_args(parser):
                        help='fasttext trained model file name')
     agent.add_argument('-fed', '--fasttext_embeddings_dict', type=str, default=None,
                        help='saved fasttext embeddings dict')
-
-
-
