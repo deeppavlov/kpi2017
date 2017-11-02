@@ -1,3 +1,16 @@
+"""
+Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
 config = tf.ConfigProto()
@@ -37,6 +50,31 @@ np.random.seed(SEED)
 tf.set_random_seed(SEED)
 
 class InsultsModel(object):
+    """InsultsModel
+
+    Class defines models to train and theirs methods.
+    Attributes:
+        model_name: name of chosen model
+        word_index: dictionary of words
+        embedding_dict: dictionary of embeddings
+        opt: given parameters
+        kernel_sizes: list of kernel sizes (for nn models)
+        pool_sizes: list of pool sizes (for nn models)
+        model_type: tye of model ('nn' for neural models, 'ngrams' - for sklearn models)
+        from_saved: flag to initialize model from saved or not
+        num_ngrams: number of considered ngrams (for sklearn models)
+        vectorizers: list of feature selectors (for sklearn models)
+        selectors: list of feature selectors (for sklearn models)
+        n_examples: total number of samples model trained on (or predicts on)
+        updates: total number of batch model trained on
+        train_loss: loss on training batch
+        train_acc: accuracy on training batch
+        train_auc: AUC-ROC on training batch
+        valid_loss: loss on validation batch
+        valid_acc: accuracy on validation batch
+        valid_auc: AUC-ROC on validation batch
+        model: chosen model to fit
+    """
 
     def __init__(self, model_name, word_index, embedding_dict, opt):
         self.model_name = model_name
@@ -154,10 +192,9 @@ class InsultsModel(object):
             print('CLS:', self.model)
 
     def _build_ex(self, ex):
+        """Find the token span of the answer in the context for this example."""
         if 'text' not in ex:
             return
-        """Find the token span of the answer in the context for this example.
-        """
         inputs = dict()
         inputs['question'] = ex['text']
         if 'labels' in ex:
