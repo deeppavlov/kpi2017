@@ -1,3 +1,19 @@
+"""
+Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
 from setuptools import setup, find_packages
 from pip.req import parse_requirements
 from pip.download import PipSession
@@ -14,7 +30,7 @@ def read_requirements():
     return reqs
 
 setup(name='deeppavlov',
-      version='0.0.1',
+      version='0.0.4',
       description='Open source NLP framework',
       url='https://github.com/deepmipt/deeppavlov',
       author='Neural Networks and Deep Learning lab, MIPT',
@@ -28,5 +44,8 @@ setup(name='deeppavlov',
                 'paraphrase',
                 'NER',
                 'named entity recognition',
-                'coreference resolution'],
+                'coreference resolution',
+                'text comprehension',
+                'insult detection',
+                'AI']
       )

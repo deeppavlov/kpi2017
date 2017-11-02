@@ -18,19 +18,25 @@ import os
 import copy
 import numpy as np
 import urllib.request
-from gensim.models.wrappers import FastText
-import nltk
-from nltk.tokenize import sent_tokenize, word_tokenize
-
+import fasttext
 
 class EmbeddingsDict(object):
+    """EmbeddingsDict
+
+    Class provides embeddings for fasttext model.
+
+    Attributes:
+        tok2emb: dictionary gives embedding vector for token (word)
+        embedding_dim: dimension of embeddings
+        opt: given parameters
+        fasttext_model_file: file contains fasttext binary model
+    """
     def __init__(self, opt, embedding_dim):
+        """Initialize the class according to given parameters."""
         self.tok2emb = {}
         self.embedding_dim = embedding_dim
         self.opt = copy.deepcopy(opt)
         self.load_items()
-
-        nltk.download('punkt')
 
         if not self.opt.get('fasttext_model'):
             raise RuntimeError('No pretrained fasttext model provided')
@@ -41,29 +47,25 @@ class EmbeddingsDict(object):
                 raise RuntimeError('No pretrained fasttext model provided')
             fname = os.path.basename(self.fasttext_model_file)
             try:
-                print('Trying to download a pretrained fasttext model from the repository')
+                print('Trying to download a pretrained fasttext model from repository')
                 url = urllib.parse.urljoin(emb_path, fname)
                 urllib.request.urlretrieve(url, self.fasttext_model_file)
                 print('Downloaded a fasttext model')
             except Exception as e:
                 raise RuntimeError('Looks like the `EMBEDDINGS_URL` variable is set incorrectly', e)
-
-        self.fasttext_model = FastText.load_fasttext_format(self.fasttext_model_file)
+        self.fasttext_model = fasttext.load_model(self.fasttext_model_file)
 
     def add_items(self, sentence_li):
+        """Add new items to tok2emb dictionary from given text."""
         for sen in sentence_li:
-            sent_toks = sent_tokenize(sen)
-            word_toks = [word_tokenize(el) for el in sent_toks]
-            tokens = [val for sublist in word_toks for val in sublist]
+            tokens = sen.split(' ')
             tokens = [el for el in tokens if el != '']
             for tok in tokens:
                 if self.tok2emb.get(tok) is None:
-                    try:
-                        self.tok2emb[tok] = self.fasttext_model[tok]
-                    except:
-                        self.tok2emb[tok] = np.zeros(self.embedding_dim)
+                    self.tok2emb[tok] = self.fasttext_model[tok]
 
     def save_items(self, fname):
+        """Save dictionary tok2emb to file."""
         if self.opt.get('fasttext_embeddings_dict') is not None:
             fname = self.opt['fasttext_embeddings_dict']
         else:
@@ -74,6 +76,7 @@ class EmbeddingsDict(object):
         f.close()
 
     def emb2str(self, vec):
+        """Return string corresponding to the given embedding vectors"""
         string = ' '.join([str(el) for el in vec])
         return string
 
