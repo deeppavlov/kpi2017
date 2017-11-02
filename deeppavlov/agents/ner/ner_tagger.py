@@ -31,7 +31,7 @@ class NERTagger:
                  n_char_cnn_filters=25,
                  filter_width=3,
                  learning_rate=1e-3,
-                 n_layers=3):
+                 n_layers=4):
         """Assemble and initialize the model
 
                 Args:
