@@ -1,3 +1,19 @@
+"""
+Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
 import copy
 import numpy as np
 from parlai.core.agents import Agent
@@ -8,21 +24,25 @@ from .ner_tagger import NERTagger
 from .dictionary import get_char_dict
 
 
-char_dict = get_char_dict()
+CHAR_DICT = get_char_dict()
 
 
 class NERAgent(Agent):
+    """Named Entity Recognition agent"""
 
     @staticmethod
     def dictionary_class():
+        """Define the dictionary agent"""
         return NERDictionaryAgent
 
     @staticmethod
     def add_cmdline_args(argparser):
+        """Update command line arguments"""
         config.add_cmdline_args(argparser)
         NERAgent.dictionary_class().add_cmdline_args(argparser)
 
     def __init__(self, opt, shared=None):
+        """Initialization of the agent"""
         self.id = 'NERAgent'
         self.episode_done = True
         self.loss = None
@@ -38,6 +58,7 @@ class NERAgent(Agent):
         super().__init__(opt, shared)
 
     def observe(self, observation):
+        """Observe the data from the teacher"""
         observation = copy.deepcopy(observation)
         if not self.episode_done:
             dialogue = self.observation['text'].split(' ')[:-1]
@@ -48,9 +69,18 @@ class NERAgent(Agent):
         return observation
 
     def act(self):
+        """Perform action on the observations"""
         return self.batch_act([self.observation])[0]
 
     def batch_act(self, observations):
+        """Perform action on observations
+
+        Args:
+            observations: batch of observations
+
+        Returns:
+            batch_response: predicted tags for observatoins
+        """
         if self.is_shared:
             raise RuntimeError("Parallel act is not supported.")
 
@@ -72,6 +102,16 @@ class NERAgent(Agent):
         return batch_response
 
     def batchify(self, observations):
+        """Create numpy ndarray from the given observations
+
+        Args:
+            observations: observations
+
+        Returns:
+            x - 2-D array of token indices
+            xc - 3-D array of indiced of characters
+            y - 2-D array of ground truth tag indices
+        """
         batch_size = len(observations)
         x_list = []
         x_char_list = []
@@ -98,7 +138,7 @@ class NERAgent(Agent):
         # Handle the case of incomplete batch in the end of the dataset
         current_batch_size = len(x_list)
         x = np.ones([current_batch_size, max_len]) * self.word_dict[self.word_dict.null_token]
-        xc = np.ones([current_batch_size, max_len, max_len_char]) * char_dict['<PAD>']
+        xc = np.ones([current_batch_size, max_len, max_len_char]) * CHAR_DICT['<PAD>']
         y = np.ones([current_batch_size, max_len]) * self.word_dict.labels_dict[self.word_dict.labels_dict.null_token]
 
         for n, (x_item, x_char, y_item) in enumerate(zip(x_list, x_char_list, y_list)):
@@ -110,7 +150,7 @@ class NERAgent(Agent):
         return (x, xc), y
 
     def save(self, fname=None):
-        """Save the parameters of the agent to a file."""
+        """Save the parameters of the agent to a file"""
         fname = self.opt.get('model_file', None) if fname is None else fname
         if fname:
             print("[ saving model: " + fname + " ]")
@@ -120,6 +160,7 @@ class NERAgent(Agent):
                 print('[ WARN: Saving failed... continuing anyway. ]')
 
     def load(self, fname=None):
+        """Load the parameters of the agent from the file"""
         fname = self.opt.get('model_file', None) if fname is None else fname
         if fname:
             print("[ saving model: " + fname + " ]")
@@ -129,6 +170,8 @@ class NERAgent(Agent):
                 print('[ WARN: Saving failed... continuing anyway. ]')
 
     def shutdown(self):
+        """Reset the model"""
+        # Reset the model
         if not self.is_shared:
             self.network.shutdown()
 
