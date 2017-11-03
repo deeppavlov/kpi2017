@@ -48,7 +48,8 @@ class EmbeddingsDict(object):
             except Exception as e:
                 raise RuntimeError('Looks like the `EMBEDDINGS_URL` variable is set incorrectly', e)
 
-        self.fasttext_model = FastText.load_fasttext_format(self.fasttext_model_file)
+        #self.fasttext_model = FastText.load_fasttext_format(self.fasttext_model_file)
+        self.fasttext_modelmodel = FastText.load(self.fasttext_model_file)
 
     def add_items(self, sentence_li):
         for sen in sentence_li:
