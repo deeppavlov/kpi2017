@@ -40,10 +40,18 @@ class EmbeddingsDict(object):
             if not emb_path:
                 raise RuntimeError('No pretrained fasttext model provided')
             fname = os.path.basename(self.fasttext_model_file)
+            fname1 = os.path.basename(self.fasttext_model_file + '.wv.syn0_ngrams.npy')
+            fname2 = os.path.basename(self.fasttext_model_file + '.wv.syn0.npy')
             try:
                 print('Trying to download a pretrained fasttext model from the repository')
                 url = urllib.parse.urljoin(emb_path, fname)
                 urllib.request.urlretrieve(url, self.fasttext_model_file)
+
+                url = urllib.parse.urljoin(emb_path, fname1)
+                urllib.request.urlretrieve(url, self.fasttext_model_file + '.wv.syn0_ngrams.npy')
+
+                url = urllib.parse.urljoin(emb_path, fname2)
+                urllib.request.urlretrieve(url, self.fasttext_model_file + '.wv.syn0.npy')
                 print('Downloaded a fasttext model')
             except Exception as e:
                 raise RuntimeError('Looks like the `EMBEDDINGS_URL` variable is set incorrectly', e)
