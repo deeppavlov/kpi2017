@@ -35,7 +35,7 @@ def build():
 
 
 @task
-def clean(project):
+def clean():
     import shutil
     shutil.rmtree('./build', ignore_errors=True)
 
@@ -77,6 +77,28 @@ def archive_model(project):
                 archive.add(f)
         os.chdir('..')
     os.chdir('..')
+
+
+@task(description="Run custom test suite")
+def test_models(project):
+    """
+    Use 'pyb -P model_test_suite="<model1_name>[,<model2_name>...]" test_models' to create a test suite for
+    the specified models and to run it.
+    """
+    import unittest
+    from pprint import pprint as pp
+    from tests.model_tests import TestKPIs, KPIException
+    test_suite = unittest.TestSuite()
+    test_results = unittest.TestResult()
+    for model_name in project.get_property('model_test_suite').split(','):
+        test_suite.addTest(TestKPIs('test_' + model_name))
+    test_suite.run(test_results)
+    pp(test_results.errors)
+    pp(test_results.failures)
+    if test_results.failures:
+        raise KPIException(*['{} failed, as KPI was not satisfied'.format(x[0]) for x in test_results.failures])
+    if test_results.errors:
+        raise RuntimeError(test_results)
 
 
 @task
