@@ -16,6 +16,8 @@ limitations under the License.
 
 
 def add_cmdline_args(parser):
+    """Add parameters from command line."""
+
     # Runtime environment
     agent = parser.add_argument_group('Paraphraser Arguments')
     agent.add_argument('--no_cuda', type='bool', default=False)
