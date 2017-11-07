@@ -31,7 +31,7 @@ class TestKPIs(unittest.TestCase):
                             '--batchsize', '256',
                             '--display-examples', 'False',
                             '--fasttext_embeddings_dict', './build/paraphraser/paraphraser.emb',
-                            '--fasttext_model', './build/paraphraser/gensim_ft_yalen_sg_300_v2.0.bin',
+                            '--fasttext_model', './build/paraphraser/gensim_ft_yalen_sg_300_v3.0.bin',
                             '--bagging-folds-number', '5',
                             '--chosen-metrics', 'f1'
                             ])
