@@ -64,11 +64,12 @@ def build(opt):
 
         dataset_path = None
         scorer_path = join(dpath, 'scorer')
-        if 'raw_dataset_path' in opt and os.path.isdir(opt['raw_dataset_path']):
-            print('[Using previously downloaded dataset and scorer]...')
-            scorer_src_path = join(opt['raw_dataset_path'], 'scorer')
+        raw_dataset_path = opt['raw_dataset_path']
+        if raw_dataset_path is not None and os.path.isdir(opt['raw_dataset_path']):
+            print('[Using previously downloaded dataset and scorer] ...')
+            scorer_src_path = join(raw_dataset_path, 'scorer')
             shutil.copytree(scorer_src_path, scorer_path)
-            dataset_path = join(opt['raw_dataset_path'], 'dataset')
+            dataset_path = join(raw_dataset_path, 'dataset')
         else:
             print('[Downloading the conll-2012 scorer]...')
             build_data.make_dir(scorer_path)

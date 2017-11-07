@@ -66,7 +66,7 @@ class CoreferenceTeacher(Teacher):
         self.valid_path = None
         self.train_path = None
         self.predictions_folder = os.path.join(self.datapath, opt['predictions_folder'], self.dt)
-        self.scorer_path = os.path.join(self.datapath, 'scorer')
+        self.scorer_path = os.path.join(self.datapath, opt['scorer_path'])
 
         # in train mode we use train dataset to train model
         # and valid dataset to adjust threshold
