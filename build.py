@@ -118,7 +118,7 @@ def train_paraphraser(project):
                         '--hidden_dim', '200',
                         '--validation-every-n-epochs', '5',
                         '--fasttext_embeddings_dict', './build/paraphraser/paraphraser.emb',
-                        '--fasttext_model', './build/paraphraser/ft_0.8.3_nltk_yalen_sg_300.bin',
+                        '--fasttext_model', './build/paraphraser/gensim_ft_yalen_sg_300_v3.0.bin',
                         '--teacher-random-seed', '50',
                         '--bagging-folds-number', '5',
                         '--validation-patience', '3',
