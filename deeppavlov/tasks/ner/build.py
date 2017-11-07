@@ -51,7 +51,7 @@ def create_heap_file(dpath, raw_dpath=None, heap_filename='heap.txt'):
         os.mkdir(dpath)
 
     prev_token = '\n'
-    with open(os.path.join(raw_dpath, heap_filename), 'w') as outfile:
+    with open(os.path.join(dpath, heap_filename), 'w') as outfile:
         for file_name in [os.path.join(raw_dpath, iob_file) for iob_file in os.listdir(raw_dpath) if iob_file.endswith(".iob")]:
             with open(file_name) as f:
                 lines_list = f.readlines()
@@ -95,7 +95,9 @@ def build(opt):
         opt['raw_dataset_path']=dpath
         create_heap_file(opt['raw_dataset_path'])
     else:
+        print('Use raw data for {}'.format(opt['raw_dataset_path']))
         create_heap_file(dpath, opt['raw_dataset_path'])
+        build_data.mark_done(dpath, version_string=version)
     print("Use dataset from path: %s" % repr(opt['raw_dataset_path']))
 
 
