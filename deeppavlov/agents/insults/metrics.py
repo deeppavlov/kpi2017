@@ -13,12 +13,16 @@ limitations under the License.
 
 import sklearn.metrics
 
+
 def roc_auc_score(y_true, y_pred):
     """Compute Area Under the Curve (AUC) from prediction scores.
 
-    Keyword arguments:
-        y_true -- true binary labels
-        y_pred -- target scores, can either be probability estimates of the positive class
+    Args:
+        y_true: true binary labels
+        y_pred: target scores, can either be probability estimates of the positive class
+
+    Returns:
+        Area Under the Curve (AUC) from prediction scores
     """
     try:
         return sklearn.metrics.roc_auc_score(y_true.reshape(-1), y_pred.reshape(-1))

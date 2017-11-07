@@ -18,6 +18,7 @@ from .model import InsultsModel
 from .utils import create_vectorizer_selector, get_vectorizer_selector
 from .embeddings_dict import EmbeddingsDict
 
+
 class EnsembleInsultsAgent(Agent):
     """EnsembleInsultsAgent
 
@@ -154,6 +155,7 @@ class EnsembleInsultsAgent(Agent):
         result = result / sum(self.model_coefs)
         return result
 
+
 class BoostEnsembleInsultsAgent(Agent):
     """BoostEnsembleInsultsAgent
 
@@ -289,6 +291,7 @@ class BoostEnsembleInsultsAgent(Agent):
             result += self.model_coefs[j] * predictions[j]
         result = result / sum(self.model_coefs)
         return result
+
 
 class InsultsAgent(Agent):
     """insultsAgent
@@ -494,10 +497,3 @@ class OneEpochAgent(InsultsAgent):
                 return
 
         return
-
-
-
-
-
-
-

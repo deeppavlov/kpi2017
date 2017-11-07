@@ -47,7 +47,7 @@ def build_data_for_agent(opt):
             print('[End of download the word embeddings]...')
         except RuntimeWarning:
             raise('To use your own embeddings, please, put the file embeddings_lenta_100.vec in the folder '
-                  '{0}'.format(join(dpath,'embeddings')))
+                  '{0}'.format(join(dpath, 'embeddings')))
 
     if not isfile(join(dpath, 'vocab', 'char_vocab.russian.txt')):
         print('[Download the chars vocalibary]...')
@@ -57,7 +57,7 @@ def build_data_for_agent(opt):
             print('[End of download the chars vocalibary]...')
         except RuntimeWarning:
             raise('To use your own char vocalibary, please, put the file char_vocab.russian.txt in the folder '
-                  '{0}'.format(join(dpath,'vocabs')))
+                  '{0}'.format(join(dpath, 'vocabs')))
     
     if opt['name'] == 'pretrained_model' and not isdir(join(dpath, 'logs', 'pretrain_model')):
         print('[Download the pretrain model]...')
@@ -106,7 +106,7 @@ class CoreferenceAgent(Agent):
         self.saver = tf.train.Saver()
         if self.opt['pretrained_model']:
             print('[ Initializing model from checkpoint {0}]'.format(join(opt['model_file'],
-                                                                          opt['language'],'agent/logs',opt['name'])))
+                                                                          opt['language'], 'agent/logs', opt['name'])))
             self.model.init_from_saved(self.saver)
         else:
             print('[ Initializing model from scratch ]')
@@ -117,11 +117,14 @@ class CoreferenceAgent(Agent):
         return self.obs_dict
 
     def act(self):
+
         if self.is_shared:
             raise RuntimeError("Parallel act is not supported.")
+
         if self.observation['mode'] == 'train':
             self.tf_loss, tf_step = self.model.train(self.obs_dict)
-            act_dict = {'iter_id': self.observation['iter_id'], 'Loss': self.tf_loss}
+            act_dict = dict()
+            act_dict['iter_id'] = self.observation['iter_id']
             act_dict['id'] = self.id
             act_dict['epoch_done'] = self.observation['epoch_done']
             act_dict['mode'] = self.observation['mode']
@@ -170,3 +173,118 @@ class CoreferenceAgent(Agent):
         rep = dict()
         rep['info'] = s
         return rep
+
+
+# class GTOAgent(Agent):
+#     @staticmethod
+#     def add_cmdline_args(argparser):
+#         config.add_cmdline_args(argparser)
+#
+#     def __init__(self, opt, shared=None):
+#
+#         build_data_for_agent(opt)
+#
+#         self.id = 'Coreference_Agent'
+#         self.episode_done = True
+#         super().__init__(opt, shared)
+#
+#         if shared is not None:
+#             self.is_shared = True
+#             return
+#
+#         # Set up params/logging/dicts
+#         self.is_shared = False
+#         self.obs_dict = None
+#         self.iterations = 0
+#         self.start = time.time()
+#         self.tf_loss = None
+#         self.rep_iter = opt['rep_iter']
+#         self.nitr = opt['nitr']
+#         self.model = CorefModel(opt)
+#         self.saver = tf.train.Saver()
+#         if self.opt['pretrained_model']:
+#             print('[ Initializing model from checkpoint {0}]'.format(join(opt['model_file'],
+#                                                                           opt['language'],
+#                                                                           'agent/logs',
+#                                                                           opt['name'])))
+#             self.model.init_from_saved(self.saver)
+#         else:
+#             print('[ Initializing model from scratch ]')
+#
+#     def observe(self, observation):
+#         self.observation = copy.deepcopy(observation)
+#         self.obs_dict = utils.conll2modeldata(self.observation)
+#         return observation
+#
+#     def act(self):
+#         return self.batch_act([self.observation])[0]
+#
+#     def predict(self):
+#         y = self.model.predict(self.obs_dict, self.observation)
+#         return y
+#
+#     def prediction(self, path):
+#         y = self.model.predict(self.obs_dict, self.observation)
+#         utils.dict2conll(y, path)
+#         return None
+#
+#     def save(self):
+#         self.model.save(self.saver)
+#
+#     def shutdown(self):
+#         if not self.is_shared:
+#             if self.model is not None:
+#                 self.model.shutdown()
+#             self.model = None
+#
+#     def report(self):
+#         self.iterations += self.rep_iter
+#         n = self.nitr * 100 - self.iterations
+#         t = time.time() - self.start
+#         r_time = n * (t / self.rep_iter)
+#         hours = int(r_time / (60 ** 2))
+#         minutes = int(r_time / 60 - hours * 60)
+#         self.start = time.time()
+#         s = '[Loss: {0:.3f} | Remaining Time: {1} hours {2} minutes]'.format(self.tf_loss, hours, minutes)
+#         rep = dict()
+#         rep['info'] = s
+#         return rep
+#
+#     def batch_act(self, observations):
+#
+#         if self.is_shared:
+#             raise RuntimeError("Parallel act is not supported.")
+#
+#         batch_size = len(observations)
+#         # initialize a table of replies with this agent's id
+#         act_dict = [{'id': self.getID()} for _ in range(batch_size)]
+#         predictions = [[] for _ in range(batch_size)]
+#
+#         for i in range(batch_size):
+#             if self.observation['mode'] == 'train':
+#                 batch = observations[i]
+#
+#                 self.tf_loss, tf_step = self.model.train()
+#
+#                 act_dict[i]['iter_id'] = self.observation['iter_id']
+#                 act_dict[i]['epoch_done'] = self.observation['epoch_done']
+#                 act_dict[i]['mode'] = self.observation['mode']
+#
+#                 act_dict[i]['id'] = self.id
+#                 act_dict[i]['conll'] = False
+#                 act_dict[i]['loss'] = self.tf_loss
+#                 act_dict[i]['iteration'] = self.iterations
+#                 act_dict[i]['tf_step'] = tf_step
+#                 return act_dict
+#             elif self.observation['mode'] == 'valid' or self.observation['mode'] == 'test':
+#
+#                 conll_str = self.model.predict(self.obs_dict, self.observation)
+#
+#                 act_dict[i]['conll'] = True
+#                 act_dict[i]['iter_id'] = self.observation['iter_id']
+#                 act_dict[i]['iteration'] = self.iterations
+#                 act_dict[i]['epoch_done'] = self.observation['epoch_done']
+#                 act_dict[i]['conll_str'] = conll_str
+#                 return act_dict[i]
+#
+#         return act_dict
