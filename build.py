@@ -1,4 +1,4 @@
-from pybuilder.core import use_plugin, init, task
+from pybuilder.core import use_plugin, init, task, depends, description
 import os
 import build_utils as bu
 
@@ -31,14 +31,75 @@ def set_properties(project):
 
 
 @task
-def build(project):
+def build():
     pass
 
 
 @task
-def clean(project):
+def clean():
     import shutil
     shutil.rmtree('./build', ignore_errors=True)
+
+
+@task(description="upload archived model to the Nexus repository")
+@depends("archive_model")
+def upload_model_to_nexus(project):
+    """
+    Use 'pyb -P model_name="<model_name>" upload_model_to_nexus' to upload archived model to Nexus repository
+    of the lab. archive_model task will be executed before.
+    """
+    import requests, datetime
+    os.chdir('build')
+    model_name = project.get_property('model_name')
+    file_name = model_name + '_' + datetime.date.today().strftime("%y%m%d") + '.tar.gz'
+    url = 'http://share.ipavlov.mipt.ru:8080/repository/models/'
+    headers = {'Content-Type': 'application/binary'}
+    with open(file_name, 'rb') as artifact:
+        requests.put(url + model_name + '/' + file_name, headers=headers,
+                     data=artifact, auth=('jenkins', 'jenkins123'))
+
+
+@task
+@description("Pack a model to model_name_CURRENTDATE.tar.gz")
+def archive_model(project):
+    """
+    Use 'pyb -P model_name="<model_name>" archive_model' to create '<model_name>_CURRENTDATE.tar.gz'
+    in 'build' directory.
+    """
+    import tarfile, datetime
+    os.chdir('build')
+    model_name = project.get_property('model_name')
+    archive_name = model_name + '_' + datetime.date.today().strftime("%y%m%d")
+    with tarfile.open(archive_name + '.tar.gz', "w:gz") as archive:
+        os.chdir(model_name)
+        for f in os.listdir():
+            if os.path.isfile(f) and (('h5' in f) or ('json' in f) or ('pkl' in f)
+                                      or ('data' in f) or ('index' in f) or ('meta' in f)):
+                archive.add(f)
+        os.chdir('..')
+    os.chdir('..')
+
+
+@task(description="Run custom test suite")
+def test_models(project):
+    """
+    Use 'pyb -P model_test_suite="<model1_name>[,<model2_name>...]" test_models' to create a test suite for
+    the specified models and to run it.
+    """
+    import unittest
+    from pprint import pprint as pp
+    from tests.model_tests import TestKPIs, KPIException
+    test_suite = unittest.TestSuite()
+    test_results = unittest.TestResult()
+    for model_name in project.get_property('model_test_suite').split(','):
+        test_suite.addTest(TestKPIs('test_' + model_name))
+    test_suite.run(test_results)
+    pp(test_results.errors)
+    pp(test_results.failures)
+    if test_results.failures:
+        raise KPIException(*['{} failed, as KPI was not satisfied'.format(x[0]) for x in test_results.failures])
+    if test_results.errors:
+        raise RuntimeError(test_results)
 
 
 @task
