@@ -1,4 +1,4 @@
-from pybuilder.core import use_plugin, init, task
+from pybuilder.core import use_plugin, init, task, depends, description
 import os
 import build_utils as bu
 
@@ -30,7 +30,7 @@ def set_properties(project):
 
 
 @task
-def build(project):
+def build():
     pass
 
 
@@ -38,6 +38,45 @@ def build(project):
 def clean(project):
     import shutil
     shutil.rmtree('./build', ignore_errors=True)
+
+
+@task(description="upload archived model to the Nexus repository")
+@depends("archive_model")
+def upload_model_to_nexus(project):
+    """
+    Use 'pyb -P model_name="<model_name>" upload_model_to_nexus' to upload archived model to Nexus repository
+    of the lab. archive_model task will be executed before.
+    """
+    import requests, datetime
+    os.chdir('build')
+    model_name = project.get_property('model_name')
+    file_name = model_name + '_' + datetime.date.today().strftime("%y%m%d") + '.tar.gz'
+    url = 'http://share.ipavlov.mipt.ru:8080/repository/models/'
+    headers = {'Content-Type': 'application/binary'}
+    with open(file_name, 'rb') as artifact:
+        requests.put(url + model_name + '/' + file_name, headers=headers,
+                     data=artifact, auth=('jenkins', 'jenkins123'))
+
+
+@task
+@description("Pack a model to model_name_CURRENTDATE.tar.gz")
+def archive_model(project):
+    """
+    Use 'pyb -P model_name="<model_name>" archive_model' to create '<model_name>_CURRENTDATE.tar.gz'
+    in 'build' directory.
+    """
+    import tarfile, datetime
+    os.chdir('build')
+    model_name = project.get_property('model_name')
+    archive_name = model_name + '_' + datetime.date.today().strftime("%y%m%d")
+    with tarfile.open(archive_name + '.tar.gz', "w:gz") as archive:
+        os.chdir(model_name)
+        for f in os.listdir():
+            if os.path.isfile(f) and (('h5' in f) or ('json' in f) or ('pkl' in f)
+                                      or ('data' in f) or ('index' in f) or ('meta' in f)):
+                archive.add(f)
+        os.chdir('..')
+    os.chdir('..')
 
 
 @task
