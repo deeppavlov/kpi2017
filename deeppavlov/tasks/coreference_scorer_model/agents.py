@@ -40,6 +40,10 @@ class CoreferenceTeacher(Teacher):
         group.add_argument('--test_ratio', type=float,
                            default=0.2, help='test_set ratio')
         group.add_argument('--teacher_seed', type=int, default=42, help='seed')
+        group.add_argument('--raw-dataset-path', type=str, default=None,
+                             help='Path to folder with two subfolders: dataset and scorer. '
+                                  'These two folders are extracted rucoref_29.10.2015.zip and '
+                                  'reference-coreference-scorers.v8.01.tar.gz')
 
     def __init__(self, opt, shared=None):
         """Initialize the parameters for CoreferenceTeacher"""
@@ -62,7 +66,7 @@ class CoreferenceTeacher(Teacher):
         self.valid_path = None
         self.train_path = None
         self.predictions_folder = os.path.join(self.datapath, opt['predictions_folder'], self.dt)
-        self.scorer_path = os.path.join(self.datapath, opt['scorer_path'])
+        self.scorer_path = os.path.join(self.datapath, 'scorer')
 
         # in train mode we use train dataset to train model
         # and valid dataset to adjust threshold
