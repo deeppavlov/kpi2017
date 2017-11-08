@@ -74,7 +74,7 @@ def archive_model(project):
         os.chdir(model_name)
         for f in os.listdir():
             if os.path.isfile(f) and (('h5' in f) or ('json' in f) or ('pkl' in f)or ('dict' in f)
-                                      or ('data' in f) or ('index' in f) or ('meta' in f)):
+                                      or ('data' in f) or ('index' in f) or ('meta' in f) or ('checkpoint' in f)):
                 archive.add(f)
         os.chdir('..')
     os.chdir('..')
