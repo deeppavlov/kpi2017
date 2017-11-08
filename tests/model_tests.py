@@ -135,21 +135,22 @@ class TestKPIs(unittest.TestCase):
         metrics = bu.model(['-t', 'deeppavlov.tasks.coreference.agents',
                             '-m', 'deeppavlov.agents.coreference.agents:CoreferenceAgent',
                             '-mf', './build/coreference/',
-                            '-dt', 'test',
                             '--language', 'russian',
-                            '--name', 'main',
+                            '--name', 'gold_main',
                             '--pretrained_model', 'True',
                             '--datatype', 'test:stream',
                             '--batchsize', '1',
                             '--display-examples', 'False',
-                            '--chosen-metric', 'conll-F-1'
+                            '--chosen-metric', 'conll-F-1',
+                            '--train_on_gold', 'True',
+                            '--random_seed', '5'
                             ])
 
         TestKPIs.report_score("Coreference", metrics["conll-F-1"], expected_score)        
 
-        self.assertTrue(metrics['conll-F-1'] > expected_KPI,
+        self.assertTrue(metrics['conll-F-1'] > expected_score,
                         'KPI for Coreference resolution is not satisfied. \
-                        Got {}, expected more than {}'.format(metrics['conll-F-1'], expected_KPI))
+                        Got {}, expected more than {}'.format(metrics['conll-F-1'], expected_score))
 
     
     def test_coreference_scorer_model(self):
