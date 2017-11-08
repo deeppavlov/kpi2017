@@ -24,14 +24,22 @@ from .model import ParaphraserModel
 
 
 def prediction2text(prediction):
+    """Converts a single prediction of the model to text."""
+
     return 'Да' if prediction > 0.5 else 'Нет'
 
 
 def predictions2text(predictions):
+    """Converts a list of predictions of the model to text."""
+
     return [prediction2text(ex) for ex in predictions]
 
 
 class EnsembleParaphraserAgent(Agent):
+    """
+
+
+    """
 
     @staticmethod
     def add_cmdline_args(argparser):
@@ -98,12 +106,17 @@ class EnsembleParaphraserAgent(Agent):
 
 
 class ParaphraserAgent(Agent):
+    """The class defines an agent to work with paraphraser identification model in ParlAI."""
 
     @staticmethod
     def add_cmdline_args(argparser):
+        """Add command line arguments."""
+
         config.add_cmdline_args(argparser)
 
     def __init__(self, opt, shared=None):
+        """Initialize an agent."""
+
         self.id = 'ParaphraserAgent'
         self.episode_done = True
         super().__init__(opt, shared)
@@ -117,6 +130,8 @@ class ParaphraserAgent(Agent):
         self.n_examples = 0
 
     def observe(self, observation):
+        """Get an observation."""
+
         observation = copy.deepcopy(observation)
         if not self.episode_done:
             # if the last example wasn't the end of an episode, then we need to
@@ -128,10 +143,12 @@ class ParaphraserAgent(Agent):
         return observation
 
     def act(self):
-        # call batch_act with this batch of one
+        """Call batch_act and return only the first element."""
+
         return self.batch_act([self.observation])[0]
 
     def batch_act(self, observations):
+        """Create batches from observations and make update or make predictions for these batches."""
 
         if self.is_shared:
             raise RuntimeError("Parallel act is not supported.")
@@ -158,23 +175,28 @@ class ParaphraserAgent(Agent):
         return batch_reply
 
     def save(self, fname=None):
-        """Save the parameters of the agent to a file."""
+        """Save parameters of an agent to a file."""
+
         fname = self.opt.get('model_file', None) if fname is None else fname
         if fname:
             print("[ saving model: " + fname + " ]")
             self.model.save(fname)
 
     def report(self):
+        """Return a string with training information."""
+
         return (
             '[train] updates = %d | exs = %d | loss = %.4f | acc = %.4f | f1 = %.4f'%
             (self.model.updates, self.n_examples,
              self.model.train_loss, self.model.train_acc, self.model.train_f1))
 
     def reset_metrics(self):
+        """Reset training and validation information of an agent."""
         self.model.reset_metrics()
         self.n_examples = 0
 
     def shutdown(self):
+        """Call model attribute method shutdown() if it is not None and set model attribute to None."""
         if not self.is_shared:
             if self.model is not None:
                 self.model.shutdown()
