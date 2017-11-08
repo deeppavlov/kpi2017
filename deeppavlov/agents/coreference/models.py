@@ -498,7 +498,8 @@ class CorefModel(object):
         return predicted_clusters, mention_to_predicted
 
     def init_from_saved(self, saver):
-        checkpoint_path = join(self.log_root, self.opt['name'])
+        # checkpoint_path = join(self.log_root, self.opt['name'])
+        checkpoint_path = self.opt['model_file']
         if os.path.isfile(join(checkpoint_path, "model.max.ckpt.meta")):
             saver.restore(self.sess, join(checkpoint_path, "model.max.ckpt"))
         else:
@@ -509,24 +510,28 @@ class CorefModel(object):
         tf.reset_default_graph()
 
     def save(self, saver):
-        log_dir = self.log_root
-        if isdir(log_dir):
-            if isdir(join(log_dir, self.opt['name'])):
-                print('saving path ' + join(log_dir, self.opt['name'], 'model.max.ckpt'))
-                saver.save(self.sess, join(log_dir, self.opt['name'], 'model.max.ckpt'))
-            else:
-                os.mkdir(self.opt['name'])
-                print('saving path ' + join(log_dir, self.opt['name'], 'model.max.ckpt'))
-                saver.save(self.sess, join(log_dir, self.opt['name'], 'model.max.ckpt'))
-        else:
-            os.mkdir(self.opt["log_root"])
-            if isdir(join(log_dir, self.opt['name'])):
-                print('saving path ' + join(log_dir, self.opt['name'], 'model.max.ckpt'))
-                saver.save(self.sess, join(log_dir, self.opt['name'], 'model.max.ckpt'))
-            else:
-                os.mkdir(self.opt['name'])
-                print('saving path ' + join(log_dir, self.opt['name'], 'model.max.ckpt'))
-                saver.save(self.sess, join(log_dir, self.opt['name'], 'model.max.ckpt'))
+        # log_dir = self.log_root
+        # if isdir(log_dir):
+        #     if isdir(join(log_dir, self.opt['name'])):
+        #         print('saving path ' + join(log_dir, self.opt['name'], 'model.max.ckpt'))
+        #         saver.save(self.sess, join(log_dir, self.opt['name'], 'model.max.ckpt'))
+        #     else:
+        #         os.mkdir(self.opt['name'])
+        #         print('saving path ' + join(log_dir, self.opt['name'], 'model.max.ckpt'))
+        #         saver.save(self.sess, join(log_dir, self.opt['name'], 'model.max.ckpt'))
+        # else:
+        #     os.mkdir(self.opt["log_root"])
+        #     if isdir(join(log_dir, self.opt['name'])):
+        #         print('saving path ' + join(log_dir, self.opt['name'], 'model.max.ckpt'))
+        #         saver.save(self.sess, join(log_dir, self.opt['name'], 'model.max.ckpt'))
+        #     else:
+        #         os.mkdir(self.opt['name'])
+        #         print('saving path ' + join(log_dir, self.opt['name'], 'model.max.ckpt'))
+        #         saver.save(self.sess, join(log_dir, self.opt['name'], 'model.max.ckpt'))
+
+        # save in root folder
+        print('saving path ' + join(self.opt['model_file'], 'model.max.ckpt'))
+        saver.save(self.sess, join(self.opt['model_file'], 'model.max.ckpt'))
 
     def train(self, batch):
         self.start_enqueue_thread(batch, True)
