@@ -73,7 +73,7 @@ def archive_model(project):
     with tarfile.open(archive_name + '.tar.gz', "w:gz") as archive:
         os.chdir(model_name)
         for f in os.listdir():
-            if os.path.isfile(f) and (('h5' in f) or ('json' in f) or ('pkl' in f)
+            if os.path.isfile(f) and (('h5' in f) or ('json' in f) or ('pkl' in f)or ('dict' in f)
                                       or ('data' in f) or ('index' in f) or ('meta' in f)):
                 archive.add(f)
         os.chdir('..')
@@ -103,7 +103,7 @@ def test_models(project):
 
 
 @task
-def train_paraphraser(project):
+def train_paraphraser():
     create_dir('paraphraser')
     metrics = bu.model(['-t', 'deeppavlov.tasks.paraphrases.agents',
                         '-m', 'deeppavlov.agents.paraphraser.paraphraser:ParaphraserAgent',
@@ -128,7 +128,7 @@ def train_paraphraser(project):
 
 
 @task
-def train_ner(project):
+def train_ner():
     create_dir('ner')
     metrics = bu.model(['-t', 'deeppavlov.tasks.ner.agents',
                         '-m', 'deeppavlov.agents.ner.ner:NERAgent',
@@ -147,7 +147,7 @@ def train_ner(project):
 
 
 @task
-def train_insults(project):
+def train_insults():
     create_dir('insults')
     metrics = bu.model(['-t', 'deeppavlov.tasks.insults.agents',
                         '-m', 'deeppavlov.agents.insults.insults_agents:InsultsAgent',
@@ -180,7 +180,7 @@ def train_insults(project):
 
 
 @task
-def train_squad(project):
+def train_squad():
     create_dir('squad')
     metrics = bu.model(['-t', 'squad',
                         '-m', 'deeppavlov.agents.squad.squad:SquadAgent',
@@ -236,7 +236,7 @@ def compile_coreference(path):
 
 
 @task
-def train_coreference(project):
+def train_coreference():
     create_dir('coreference')
     mf = './build/coreference/'
     compile_coreference(mf)
