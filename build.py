@@ -263,7 +263,7 @@ def train_coreference(project):
 
 
 @task
-def train_coreference_scorer_model(project):
+def train_coreference_scorer_model():
     create_dir('coref')
     metrics = bu.model(['-t', 'deeppavlov.tasks.coreference_scorer_model.agents:CoreferenceTeacher',
                         '-m', 'deeppavlov.agents.coreference_scorer_model.agents:CoreferenceAgent',
