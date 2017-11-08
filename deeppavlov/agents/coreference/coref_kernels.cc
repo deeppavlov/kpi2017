@@ -137,7 +137,7 @@ public:
 REGISTER_KERNEL_BUILDER(Name("Antecedents").Device(DEVICE_CPU), AntecedentsOp);
 
 REGISTER_OP("ExtractMentions")
-.Input("mention_scores: float32")
+.Input("mention_scores: float64")
 .Input("candidate_starts: int32")
 .Input("candidate_ends: int32")
 .Input("num_output_mentions: int32")
@@ -148,7 +148,7 @@ public:
   explicit ExtractMentionsOp(OpKernelConstruction* context) : OpKernel(context) {}
 
   void Compute(OpKernelContext* context) override {
-    TTypes<float>::ConstVec mention_scores = context->input(0).vec<float>();
+    TTypes<double>::ConstVec mention_scores = context->input(0).vec<double>();
     TTypes<int32>::ConstVec candidate_starts = context->input(1).vec<int32>();
     TTypes<int32>::ConstVec candidate_ends = context->input(2).vec<int32>();
     int num_output_mentions = context->input(3).scalar<int32>()(0);
