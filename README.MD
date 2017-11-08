@@ -2,7 +2,9 @@ Install from git
 ```sh
 git clone https://github.com/deepmipt/deeppavlov
 cd deeppavlov
-python setup.py develop
+pip3 install Cython
+pip3 install -r requirements.txt
+python3 setup.py develop
 ```
 
 Run model training
