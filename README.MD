@@ -4,7 +4,7 @@ git clone https://github.com/deepmipt/deeppavlov
 cd deeppavlov
 pip3 install Cython
 pip3 install -r requirements.txt
-python setup.py develop
+python3 setup.py develop
 ```
 
 Run model training
