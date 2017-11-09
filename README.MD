@@ -27,4 +27,5 @@ Works on Ubuntu 16.04.
 
 Install from internal iPavlov PyPi server as dependency for your project
 ```sh
-pip install --extra-index-url http://{host of internal iPavlov PyPi server}:{port}/ --trusted-host {host of internal iPavlov PyPi server} deeppavlov```
+pip install --extra-index-url http://{host of internal iPavlov PyPi server}:{port}/ --trusted-host {host of internal iPavlov PyPi server} deeppavlov
+```
