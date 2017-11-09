@@ -224,7 +224,8 @@ class CorefModel(object):
         if self.opt["use_features"]:
             mention_width_index = mention_width - 1  # [num_mentions]
             mention_width_emb = tf.gather(tf.get_variable("mention_width_embeddings", [self.opt["max_mention_width"],
-                                                                                       self.opt["feature_size"]], dtype=tf.float64),
+                                                                                       self.opt["feature_size"]],
+                                                          dtype=tf.float64),
                                           mention_width_index)  # [num_mentions, emb]
             mention_width_emb = tf.nn.dropout(mention_width_emb, self.dropout)
             mention_emb_list.append(mention_width_emb)
@@ -270,7 +271,8 @@ class CorefModel(object):
             antecedent_speaker_ids = tf.gather(mention_speaker_ids, antecedents)  # [num_mentions, max_ant]
             same_speaker = tf.equal(tf.expand_dims(mention_speaker_ids, 1),
                                     antecedent_speaker_ids)  # [num_mentions, max_ant]
-            speaker_pair_emb = tf.gather(tf.get_variable("same_speaker_emb", [2, self.opt["feature_size"]], dtype=tf.float64),
+            speaker_pair_emb = tf.gather(tf.get_variable("same_speaker_emb", [2, self.opt["feature_size"]],
+                                                         dtype=tf.float64),
                                          tf.to_int32(same_speaker))  # [num_mentions, max_ant, emb]
             feature_emb_list.append(speaker_pair_emb)
 
@@ -283,7 +285,8 @@ class CorefModel(object):
             mention_distance = tf.expand_dims(target_indices, 1) - antecedents  # [num_mentions, max_ant]
             mention_distance_bins = self.distance_bins(mention_distance)  # [num_mentions, max_ant]
             mention_distance_bins.set_shape([None, None])
-            mention_distance_emb = tf.gather(tf.get_variable("mention_distance_emb", [10, self.opt["feature_size"]], dtype=tf.float64),
+            mention_distance_emb = tf.gather(tf.get_variable("mention_distance_emb", [10, self.opt["feature_size"]],
+                                                             dtype=tf.float64),
                                              mention_distance_bins)  # [num_mentions, max_ant]
             feature_emb_list.append(mention_distance_emb)
 
@@ -310,7 +313,8 @@ class CorefModel(object):
 
         antecedent_scores += tf.expand_dims(mention_scores, 1) + tf.gather(mention_scores,
                                                                            antecedents)  # [num_mentions, max_ant]
-        antecedent_scores = tf.concat([tf.zeros([utils.shape(mention_scores, 0), 1], dtype=tf.float64), antecedent_scores],
+        antecedent_scores = tf.concat([tf.zeros([utils.shape(mention_scores, 0), 1], dtype=tf.float64),
+                                       antecedent_scores],
                                       1)  # [num_mentions, max_ant + 1]
         return antecedent_scores  # [num_mentions, max_ant + 1]
 
@@ -417,7 +421,8 @@ class CorefModel(object):
         text_outputs = self.encode_sentences(text_emb, text_len, text_len_mask)
         text_outputs = tf.nn.dropout(text_outputs, self.dropout)
 
-        genre_emb = tf.gather(tf.get_variable("genre_embeddings", [len(self.genres), self.opt["feature_size"]], dtype=tf.float64),
+        genre_emb = tf.gather(tf.get_variable("genre_embeddings", [len(self.genres), self.opt["feature_size"]],
+                                              dtype=tf.float64),
                               genre)  # [emb]
 
         sentence_indices = tf.tile(tf.expand_dims(tf.range(num_sentences), 1),
@@ -574,7 +579,8 @@ class CorefModel(object):
 
         if self.opt["char_embedding_size"] > 0:
             char_emb = tf.gather(
-                tf.get_variable("char_embeddings", [len(self.char_dict), self.opt["char_embedding_size"]], dtype=tf.float64),
+                tf.get_variable("char_embeddings", [len(self.char_dict), self.opt["char_embedding_size"]],
+                                dtype=tf.float64),
                 char_index)  # [num_sentences, max_sentence_length, max_word_length, emb]
             flattened_char_emb = tf.reshape(char_emb, [num_sentences * max_sentence_length, utils.shape(char_emb, 2),
                                                        utils.shape(char_emb,
@@ -600,7 +606,8 @@ class CorefModel(object):
         text_outputs = self.encode_sentences(text_emb, text_len, text_len_mask)
         text_outputs = tf.nn.dropout(text_outputs, self.dropout)
 
-        genre_emb = tf.gather(tf.get_variable("genre_embeddings", [len(self.genres), self.opt["feature_size"]], dtype=tf.float64),
+        genre_emb = tf.gather(tf.get_variable("genre_embeddings", [len(self.genres), self.opt["feature_size"]],
+                                              dtype=tf.float64),
                               genre)  # [emb]
 
         # sentence_indices = tf.tile(tf.expand_dims(tf.range(num_sentences), 1),
