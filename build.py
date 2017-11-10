@@ -72,7 +72,7 @@ def archive_model(project):
     archive_name = model_name + '_' + datetime.date.today().strftime("%y%m%d")
     with tarfile.open(archive_name + '.tar.gz', "w:gz") as archive:
         os.chdir(model_name)
-        for f in os.listdir():
+        for f in os.listdir('.'):
             if os.path.isfile(f) and (('h5' in f) or ('json' in f) or ('pkl' in f)or ('dict' in f)
                                       or ('data' in f) or ('index' in f) or ('meta' in f) or ('checkpoint' in f)):
                 archive.add(f)
@@ -103,15 +103,16 @@ def test_models(project):
 
 
 @task
-def train_paraphraser():
+def train_paraphraser(project):
     create_dir('paraphraser')
+    num_epochs = '-1' if project.has_property('full_train') else '1'
     metrics = bu.model(['-t', 'deeppavlov.tasks.paraphrases.agents',
                         '-m', 'deeppavlov.agents.paraphraser.paraphraser:ParaphraserAgent',
                         '-mf', './build/paraphraser/paraphraser',
                         '--datatype', 'train:ordered',
                         '--batchsize', '256',
                         '--display-examples', 'False',
-                        '--num-epochs', '-1',
+                        '--num-epochs', num_epochs,
                         '--log-every-n-secs', '-1',
                         '--log-every-n-epochs', '1',
                         '--learning_rate', '0.0001',
@@ -128,13 +129,15 @@ def train_paraphraser():
 
 
 @task
-def train_ner():
+def train_ner(project):
     create_dir('ner')
+    num_epochs = '-1' if project.has_property('full_train') else '1'
     metrics = bu.model(['-t', 'deeppavlov.tasks.ner.agents',
                         '-m', 'deeppavlov.agents.ner.ner:NERAgent',
                         '-mf', './build/ner',
                         '-dt', 'train:ordered',
                         '--dict-file', './build/ner/dict',
+                        '--num-epochs', num_epochs,
                         '--learning_rate', '0.01',
                         '--batchsize', '2',
                         '--display-examples', 'False',
@@ -147,8 +150,9 @@ def train_ner():
 
 
 @task
-def train_insults():
+def train_insults(project):
     create_dir('insults')
+    num_epochs = '1000' if project.has_property('full_train') else '1'
     metrics = bu.model(['-t', 'deeppavlov.tasks.insults.agents',
                         '-m', 'deeppavlov.agents.insults.insults_agents:InsultsAgent',
                         '--model_file', './build/insults/cnn_word',
@@ -158,7 +162,7 @@ def train_insults():
                         '--raw-dataset-path', './build/insults/',
                         '--batchsize', '64',
                         '--display-examples', 'False',
-                        '--num-epochs', '1000',
+                        '--num-epochs', num_epochs,
                         '--max_sequence_length', '100',
                         '--learning_rate', '0.01',
                         '--learning_decay', '0.1',
@@ -180,17 +184,26 @@ def train_insults():
 
 
 @task
-def train_squad():
+def train_squad(project):
     create_dir('squad')
+    if project.has_property('full_train'):
+        num_epochs = '-1'
+        val_time = '1800'
+        time_limit = '86400'
+    else:
+        num_epochs = '1'
+        val_time = '100'
+        time_limit = '120'
     metrics = bu.model(['-t', 'squad',
                         '-m', 'deeppavlov.agents.squad.squad:SquadAgent',
                         '--batchsize', '64',
                         '--display-examples', 'False',
-                        '--num-epochs', '-1',
+                        '--num-epochs', num_epochs,
+                        '--max-train-time', time_limit,
                         '--log-every-n-secs', '60',
                         '--log-every-n-epochs', '-1',
-                        '--validation-every-n-secs', '1800',
-                        '--validation-every-n-epochs', '-1',
+                        '--validation-every-n-secs', val_time,
+                        '--validation-every-n-epochs', num_epochs,
                         '--chosen-metrics', 'f1',
                         '--validation-patience', '5',
                         '--type', 'fastqa_default',
@@ -236,10 +249,11 @@ def compile_coreference(path):
 
 
 @task
-def train_coreference():
+def train_coreference(project):
     create_dir('coreference')
     mf = './build/coreference/'
     compile_coreference(mf)
+    num_epochs = '500' if project.has_property('full_train') else '1'
     metrics = bu.model(['-t', 'deeppavlov.tasks.coreference.agents',
                         '-m', 'deeppavlov.agents.coreference.agents:CoreferenceAgent',
                         '-mf', mf,
@@ -249,7 +263,7 @@ def train_coreference():
                         '-dt', 'train:ordered',
                         '--batchsize', '1',
                         '--display-examples', 'False',
-                        '--num-epochs', '500',
+                        '--num-epochs', num_epochs,
                         '--validation-every-n-epochs', '10',
                         '--nitr', '500',
                         '--log-every-n-epochs', '1',
@@ -263,12 +277,13 @@ def train_coreference():
 
 
 @task
-def train_coreference_scorer_model():
+def train_coreference_scorer_model(project):
     create_dir('coref')
+    num_epochs = '20' if project.has_property('full_train') else '1'
     metrics = bu.model(['-t', 'deeppavlov.tasks.coreference_scorer_model.agents:CoreferenceTeacher',
                         '-m', 'deeppavlov.agents.coreference_scorer_model.agents:CoreferenceAgent',
                         '--display-examples', 'False',
-                        '--num-epochs', '20',
+                        '--num-epochs', num_epochs,
                         '--log-every-n-secs', '-1',
                         '--log-every-n-epochs', '1',
                         '--validation-every-n-epochs', '1',
