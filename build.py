@@ -46,13 +46,15 @@ def clean():
 def upload_model_to_nexus(project):
     """
     Use 'pyb -P model_name="<model_name>" upload_model_to_nexus' to upload archived model to Nexus repository
-    of the lab. archive_model task will be executed before.
+    of the lab. If model_name == 'deeppavlov_docs', then documentation from build/docs will be archived and uploaded.
+    archive_model task will be executed before.
     """
     import requests, datetime
     os.chdir('build')
     model_name = project.get_property('model_name')
     file_name = model_name + '_' + datetime.date.today().strftime("%y%m%d") + '.tar.gz'
-    url = 'http://share.ipavlov.mipt.ru:8080/repository/models/'
+    url = 'http://share.ipavlov.mipt.ru:8080/repository/'
+    url += 'docs/' if model_name == 'deeppavlov_docs' else 'models/'
     headers = {'Content-Type': 'application/binary'}
     with open(file_name, 'rb') as artifact:
         requests.put(url + model_name + '/' + file_name, headers=headers,
@@ -64,12 +66,19 @@ def upload_model_to_nexus(project):
 def archive_model(project):
     """
     Use 'pyb -P model_name="<model_name>" archive_model' to create '<model_name>_CURRENTDATE.tar.gz'
-    in 'build' directory.
+    in 'build' directory. If model_name == 'deeppavlov_docs', then documentation from build/docs will be archived.
     """
     import tarfile, datetime
     os.chdir('build')
     model_name = project.get_property('model_name')
     archive_name = model_name + '_' + datetime.date.today().strftime("%y%m%d")
+
+    if model_name == 'deeppavlov_docs':
+        import shutil
+        shutil.make_archive(archive_name, 'gztar', 'docs', 'deeppavlov')
+        os.chdir('..')
+        return
+
     with tarfile.open(archive_name + '.tar.gz', "w:gz") as archive:
         os.chdir(model_name)
         for f in os.listdir('.'):
