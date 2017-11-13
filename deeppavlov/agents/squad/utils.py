@@ -1,26 +1,36 @@
-# Copyright (c) 2017-present, Facebook, Inc.
-# All rights reserved.
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree. An additional grant
-# of patent rights can be found in the PATENTS file in the same directory.
+"""
+Copyright 2017 Neural Networks and Deep Learning lab, MIPT
 
-import time
-import unicodedata
-import numpy as np
-from numpy.random import seed
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
 import re
 import string
+import unicodedata
 from collections import Counter
+
+import numpy as np
 from keras.optimizers import Adam, Adamax, Adadelta
+from numpy.random import seed
+
 
 # ------------------------------------------------------------------------------
 # Optimizer presets.
 # ------------------------------------------------------------------------------
 def getOptimizer(optim, exp_decay, grad_norm_clip, lr = 0.001):
-    '''
-    Function for setting up optimizer, combines several presets from
-    published well performing models on SQuAD.
-    '''
+    """Function for setting up optimizer, combines several presets from
+    published well performing models on SQuAD."""
+
     optimizers = {
         'Adam': Adam(lr=lr, decay=exp_decay, clipnorm=grad_norm_clip),
         'Adamax': Adamax(lr=lr, decay=exp_decay, clipnorm=grad_norm_clip),
@@ -40,10 +50,13 @@ def getOptimizer(optim, exp_decay, grad_norm_clip, lr = 0.001):
 # ------------------------------------------------------------------------------
 
 def normalize_text(text):
+    """Normalize unicode string to NFD form."""
+
     return unicodedata.normalize('NFD', text)
 
 def load_embeddings(opt, word_dict):
     """Initialize embeddings from file of pretrained vectors."""
+
     seed(1)
     embeddings = np.random.normal(0.0, 1.0, (len(word_dict), opt['word_embedding_dim']))
 
@@ -68,6 +81,7 @@ def load_embeddings(opt, word_dict):
 
 def build_feature_dict(opt):
     """Make mapping of feature option to feature index."""
+
     feature_dict = {}
     if opt['use_in_question']:
         feature_dict['in_question'] = len(feature_dict)
@@ -82,10 +96,13 @@ def build_feature_dict(opt):
 
 
 # ------------------------------------------------------------------------------
-# Torchified input utilities.
+# Input utilities.
 # ------------------------------------------------------------------------------
 
 def embed_word(word, word_dict, embeddings):
+    """Return vector representation for a given word from embeddings array indexed by word_dict dictionary.
+    Return random vector sampled from normal distribution for unknown words."""
+
     seed(1)
     try:
         return embeddings[word_dict[word]]
@@ -94,6 +111,7 @@ def embed_word(word, word_dict, embeddings):
         return np.random.normal(0, 1, size=(embeddings[0].shape[0]))
 
 def embed_index(word, word_dict):
+    """Return index of a given word in a word_dict dictionary."""
     try:
         return word_dict[word]
     except:
@@ -103,7 +121,6 @@ def embed_index(word, word_dict):
 def vectorize(opt, ex, word_dict, feature_dict, embeddings):
     """Turn tokenized text inputs into feature vectors."""
 
-    # Old way is fo
     if not opt['inner_embeddings']:
         # Index words
         document = np.array([embed_word(w, word_dict, embeddings) for w in ex['document']])
@@ -159,6 +176,7 @@ def vectorize(opt, ex, word_dict, feature_dict, embeddings):
 
 def batchify(batch, null=0):
     """Collate inputs into batches."""
+
     NUM_INPUTS = 3
     NUM_TARGETS = 2
     NUM_EXTRA = 2
@@ -210,7 +228,8 @@ def batchify(batch, null=0):
 
 
 class AverageMeter(object):
-    """Computes and stores the average and current value."""
+    """Compute and store the average and current value."""
+
     def __init__(self):
         self.reset()
 
@@ -232,6 +251,11 @@ class AverageMeter(object):
 # ------------------------------------------------------------------------------
 
 def _normalize_answer(s):
+    """Normalize string to score answers according to SQuAD dataset scoring rules.
+
+    Remove articles, remove punctuation, fix multiple whitespaces in string, and convert all characters to lowercase.
+    """
+
     def remove_articles(text):
         return re.sub(r'\b(a|an|the)\b', ' ', text)
 
@@ -249,6 +273,8 @@ def _normalize_answer(s):
 
 
 def _exact_match(pred, answers):
+    """Compute the EM score."""
+
     if pred is None or answers is None:
         return False
     pred = _normalize_answer(pred)
@@ -259,6 +285,8 @@ def _exact_match(pred, answers):
 
 
 def _f1_score(pred, answers):
+    """Compute the F1 score."""
+
     def _score(g_tokens, a_tokens):
         common = Counter(g_tokens) & Counter(a_tokens)
         num_same = sum(common.values())
@@ -277,6 +305,19 @@ def _f1_score(pred, answers):
 
 
 def score(pred, truth):
+    """Score answers.
+
+    Args:
+        pred: batch of answer predictions
+        truth: batch of ground truth predictions
+
+    Returns:
+        [em, f1] where
+            em - Exact match (EM) for each answer in the batch
+            f1 - F1 score for each answer in the batch
+
+    """
+
     assert len(pred) == len(truth)
     f1 = em = total = 0
     for p, t in zip(pred, truth):
