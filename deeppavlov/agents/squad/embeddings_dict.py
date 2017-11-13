@@ -1,7 +1,20 @@
-import os
-import copy
-import numpy as np
+"""
+Copyright 2017 Neural Networks and Deep Learning lab, MIPT
 
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
+import os
 
 try:
     import spacy
@@ -10,11 +23,8 @@ except ImportError:
         "Please install spacy and spacy 'en' model: go to spacy.io"
     )
 
-
-from parlai.core.agents import Agent
 from parlai.core.dict import DictionaryAgent
-from . import config
-from .utils import build_feature_dict, vectorize, batchify, normalize_text
+from .utils import normalize_text
 import urllib
 
 
@@ -22,10 +32,11 @@ NLP = spacy.load('en')
 
 
 class SimpleDictionaryAgent(DictionaryAgent):
-    """Override DictionaryAgent to use spaCy tokenizer."""
+    """Overrides DictionaryAgent to use spaCy tokenizer."""
 
     @staticmethod
     def add_cmdline_args(argparser):
+        """Specify permission to index words not included in embedding_file."""
         group = DictionaryAgent.add_cmdline_args(argparser)
         group.add_argument(
             '--pretrained_words', type='bool', default=True,
@@ -61,17 +72,32 @@ class SimpleDictionaryAgent(DictionaryAgent):
             self.embedding_words = None
 
     def tokenize(self, text, **kwargs):
+        """
+        Args:
+            text: string to tokenize
+            **kwargs: anything
+
+        Returns:
+            list of tokens (words, punctuation, etc...)
+        """
         tokens = NLP.tokenizer(text)
         return [t.text for t in tokens]
 
     def span_tokenize(self, text):
+        """
+        Args:
+            text: string to tokenize
+
+        Returns:
+            list of tuples with start and end position of each token in original string
+        """
         tokens = NLP.tokenizer(text)
         return [(t.idx, t.idx + len(t.text)) for t in tokens]
 
     def add_to_dict(self, tokens):
         """Builds dictionary from the list of provided tokens.
-        Only adds words contained in self.embedding_words, if not None.
-        """
+        Only adds words contained in self.embedding_words, if not None."""
+
         for token in tokens:
             if (self.embedding_words is not None and
                 token not in self.embedding_words):
