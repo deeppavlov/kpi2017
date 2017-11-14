@@ -9,13 +9,13 @@ python3 setup.py develop
 
 Run model training
 ```sh
-pyb train_<model_name>
+pyb train_<model1_name>[ ,train_<model2_name>, ...]
 ```
 Run model testing
 ```sh
-pyb run_unit_tests -P unittest_test_method_prefix="test_<model_name>"
+pyb run_unit_tests -P unittest_test_method_prefix="Test<model1_name>[,Test<model2_name>,...]"
 ```
-where <model_name> should be replaced with the name of the model from the library: ner, paraphraser, insults, squad.
+where <modelX_name> should be replaced with the name of the model from the library: NER, Paraphraser, Insults, SQaAD, Coreference, CoreferenceScorer.
 
 To test all the models use
 ```sh

@@ -89,30 +89,8 @@ def archive_model(project):
     os.chdir('..')
 
 
-@task(description="Run custom test suite")
-def test_models(project):
-    """
-    Use 'pyb -P model_test_suite="<model1_name>[,<model2_name>...]" test_models' to create a test suite for
-    the specified models and to run it.
-    """
-    import unittest
-    from pprint import pprint as pp
-    from tests.model_tests import TestKPIs, KPIException
-    test_suite = unittest.TestSuite()
-    test_results = unittest.TestResult()
-    for model_name in project.get_property('model_test_suite').split(','):
-        test_suite.addTest(TestKPIs('test_' + model_name))
-    test_suite.run(test_results)
-    pp(test_results.errors)
-    pp(test_results.failures)
-    if test_results.failures:
-        raise KPIException(*['{} failed, as KPI was not satisfied'.format(x[0]) for x in test_results.failures])
-    if test_results.errors:
-        raise RuntimeError(test_results)
-
-
 @task
-def train_paraphraser(project):
+def train_Paraphraser(project):
     create_dir('paraphraser')
     num_epochs = '1' if project.get_property('idle_train') == 'True' else '-1'
     metrics = bu.model(['-t', 'deeppavlov.tasks.paraphrases.agents',
@@ -138,7 +116,7 @@ def train_paraphraser(project):
 
 
 @task
-def train_ner(project):
+def train_NER(project):
     create_dir('ner')
     num_epochs = '1' if project.get_property('idle_train') == 'True' else '-1'
     metrics = bu.model(['-t', 'deeppavlov.tasks.ner.agents',
@@ -159,7 +137,7 @@ def train_ner(project):
 
 
 @task
-def train_insults(project):
+def train_Insults(project):
     create_dir('insults')
     num_epochs = '1' if project.get_property('idle_train') == 'True' else '1000'
     metrics = bu.model(['-t', 'deeppavlov.tasks.insults.agents',
@@ -193,7 +171,7 @@ def train_insults(project):
 
 
 @task
-def train_squad(project):
+def train_SQuAD(project):
     create_dir('squad')
     if project.get_property('idle_train') == 'True':
         num_epochs = '1'
@@ -258,7 +236,7 @@ def compile_coreference(path):
 
 
 @task
-def train_coreference(project):
+def train_Coreference(project):
     create_dir('coreference')
     mf = './build/coreference/'
     compile_coreference(mf)
@@ -286,7 +264,7 @@ def train_coreference(project):
 
 
 @task
-def train_coreference_scorer_model(project):
+def train_CoreferenceScorer(project):
     create_dir('coref')
     num_epochs = '1' if project.get_property('idle_train') == 'True' else '20'
     metrics = bu.model(['-t', 'deeppavlov.tasks.coreference_scorer_model.agents:CoreferenceTeacher',
