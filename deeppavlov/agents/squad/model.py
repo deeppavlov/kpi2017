@@ -1,23 +1,35 @@
-# from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import division
+"""
+Copyright 2017 Neural Networks and Deep Learning lab, MIPT
 
-import numpy as np
-import json, os, copy
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
+# from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import copy
+import os
 import pickle
-from keras import backend as K
-from keras.utils import np_utils
-from keras.models import Model
-from keras.layers import Input, Dense, Activation, Lambda,  multiply, Masking, Dropout
-from keras.layers.wrappers import Bidirectional, TimeDistributed
-from keras.layers.recurrent import LSTM
-from keras.activations import softmax as Softmax
-from keras.optimizers import Adamax, Adam, Adadelta
-from keras.callbacks import ModelCheckpoint
-from .utils import AverageMeter, getOptimizer, score
 
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
+from keras.layers import Input, Masking
+from keras.models import Model
+from keras.utils import np_utils
+
+from .utils import AverageMeter, getOptimizer, score
+
 config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction = 0.95
 config.gpu_options.visible_device_list = '0'
@@ -31,7 +43,18 @@ from .layers import *
 '''
 
 class SquadModel(object):
-    def __init__(self, opt, word_dict = None, feature_dict = None, weights_path = None ):
+    """SquadModel
+
+    Class defines models to train and theirs methods.
+    Attributes:
+        opt: given parameters
+        word_dict: dictionary with word indexes (if given)
+        feature_dict: dictionary with additional features indexes (if given)
+        weights_path: path to model weights to restore model (if given)
+
+    """
+
+    def __init__(self, opt, word_dict=None, feature_dict=None, weights_path=None):
 
         self.opt = copy.deepcopy(opt)
 
@@ -73,6 +96,7 @@ class SquadModel(object):
 
 
     def save(self, fname):
+        """Save trained model along with parameters needed to restore model."""
 
         self.model.save_weights(fname+'.h5')
 
@@ -86,6 +110,7 @@ class SquadModel(object):
             pickle.dump(params, f)
 
     def update(self, batch):
+        """Make one training step (forward pass, back pass) with provided batch."""
 
         def cat(target):
             dtype = K.floatx()
@@ -118,6 +143,7 @@ class SquadModel(object):
             self.train_em.update(scorer[0])
 
     def predict(self, batch):
+        """Returns answer predictions for provided batch."""
 
         score_s, score_e = self.model.predict_on_batch([batch[0], batch[1], batch[3], batch[2], batch[4]])
 
@@ -139,6 +165,8 @@ class SquadModel(object):
 
 
     def build_ex(self, ex):
+        """Reformat input to proper structure."""
+
         if 'text' not in ex:
             return
 
@@ -155,6 +183,7 @@ class SquadModel(object):
 
 
     def drqa_default(self):
+        """Architecture similar to one described in DRQA paper."""
 
         '''Inputs'''
         P = Input(shape=(None, self.word_embedding_dim), name='context_input')
@@ -224,6 +253,7 @@ class SquadModel(object):
 
 
     def fastqa_default(self):
+        """Architecture similar to one described in Fastqa paper."""
 
         '''Inputs'''
         P = Input(shape=(None, self.word_embedding_dim), name='context_input')
@@ -288,6 +318,7 @@ class SquadModel(object):
 
 
     def fastqa_hybrid(self):
+        """Architecture that combine layers from Fastqa and DRQA."""
 
         '''Inputs'''
         P = Input(shape=(None, self.word_embedding_dim), name='context_input')
