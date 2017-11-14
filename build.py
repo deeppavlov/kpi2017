@@ -114,7 +114,7 @@ def test_models(project):
 @task
 def train_paraphraser(project):
     create_dir('paraphraser')
-    num_epochs = '-1' if project.has_property('full_train') else '1'
+    num_epochs = '1' if project.get_property('idle_train') == 'True' else '-1'
     metrics = bu.model(['-t', 'deeppavlov.tasks.paraphrases.agents',
                         '-m', 'deeppavlov.agents.paraphraser.paraphraser:ParaphraserAgent',
                         '-mf', './build/paraphraser/paraphraser',
@@ -140,7 +140,7 @@ def train_paraphraser(project):
 @task
 def train_ner(project):
     create_dir('ner')
-    num_epochs = '-1' if project.has_property('full_train') else '1'
+    num_epochs = '1' if project.get_property('idle_train') == 'True' else '-1'
     metrics = bu.model(['-t', 'deeppavlov.tasks.ner.agents',
                         '-m', 'deeppavlov.agents.ner.ner:NERAgent',
                         '-mf', './build/ner',
@@ -161,7 +161,7 @@ def train_ner(project):
 @task
 def train_insults(project):
     create_dir('insults')
-    num_epochs = '1000' if project.has_property('full_train') else '1'
+    num_epochs = '1' if project.get_property('idle_train') == 'True' else '1000'
     metrics = bu.model(['-t', 'deeppavlov.tasks.insults.agents',
                         '-m', 'deeppavlov.agents.insults.insults_agents:InsultsAgent',
                         '--model_file', './build/insults/cnn_word',
@@ -195,14 +195,14 @@ def train_insults(project):
 @task
 def train_squad(project):
     create_dir('squad')
-    if project.has_property('full_train'):
-        num_epochs = '-1'
-        val_time = '1800'
-        time_limit = '86400'
-    else:
+    if project.get_property('idle_train') == 'True':
         num_epochs = '1'
         val_time = '100'
         time_limit = '120'
+    else:
+        num_epochs = '-1'
+        val_time = '1800'
+        time_limit = '86400'
     metrics = bu.model(['-t', 'squad',
                         '-m', 'deeppavlov.agents.squad.squad:SquadAgent',
                         '--batchsize', '64',
@@ -262,7 +262,7 @@ def train_coreference(project):
     create_dir('coreference')
     mf = './build/coreference/'
     compile_coreference(mf)
-    num_epochs = '500' if project.has_property('full_train') else '1'
+    num_epochs = '1' if project.get_property('idle_train') == 'True' else '500'
     metrics = bu.model(['-t', 'deeppavlov.tasks.coreference.agents',
                         '-m', 'deeppavlov.agents.coreference.agents:CoreferenceAgent',
                         '-mf', mf,
@@ -288,7 +288,7 @@ def train_coreference(project):
 @task
 def train_coreference_scorer_model(project):
     create_dir('coref')
-    num_epochs = '20' if project.has_property('full_train') else '1'
+    num_epochs = '1' if project.get_property('idle_train') == 'True' else '20'
     metrics = bu.model(['-t', 'deeppavlov.tasks.coreference_scorer_model.agents:CoreferenceTeacher',
                         '-m', 'deeppavlov.agents.coreference_scorer_model.agents:CoreferenceAgent',
                         '--display-examples', 'False',
