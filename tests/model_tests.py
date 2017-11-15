@@ -3,13 +3,18 @@ import build_utils as bu
 import datetime
 
 
-class KPIException(Exception):
-    """Class for exceptions raised if some KPI is not satisfied"""
-    pass
+def load_tests(loader, tests, pattern):
+    suite = unittest.TestSuite()
+    if loader.testMethodPrefix != 'test':
+        test_cases = [__name__ + '.' + x for x in loader.testMethodPrefix.split(',')]
+        loader.testMethodPrefix = 'test' #return to default
+        tests = loader.loadTestsFromNames(test_cases)
+    suite.addTests(tests)
+    return suite
 
 
-class TestKPIs(unittest.TestCase):
-    """Class for tests of different KPIs"""
+class TestModels(unittest.TestCase):
+    """Parent class for model tests"""
 
     report_string = '{:%Y/%m/%d %H:%M} {}: actual {}, expected {}\n'
     report_file = './build/kpi_score_reports.txt'
@@ -21,8 +26,10 @@ class TestKPIs(unittest.TestCase):
         with open(cls.report_file, 'a+') as f:
             f.write(report)
 
-    def test_paraphraser(self):
-        expected_score = 0.8
+
+class TestParaphraser(TestModels):
+    expected_score = 0.8
+    def test_KPI(self):
         metrics = bu.model(['-t', 'deeppavlov.tasks.paraphrases.agents',
                             '-m', 'deeppavlov.agents.paraphraser.paraphraser:EnsembleParaphraserAgent',
                             '-mf', './build/paraphraser/paraphraser',
@@ -35,14 +42,20 @@ class TestKPIs(unittest.TestCase):
                             '--bagging-folds-number', '5',
                             '--chosen-metrics', 'f1'
                             ])
-        TestKPIs.report_score("paraphraser", metrics["f1"], expected_score)
+        TestModels.report_score("paraphraser", metrics["f1"], self.expected_score)
 
-        self.assertTrue(metrics['f1'] > expected_score,
+        self.assertTrue(metrics['f1'] > self.expected_score,
                         'KPI for paraphraser is not satisfied. \
-                        Got {}, expected more than {}'.format(metrics['f1'], expected_score))
+                        Got {}, expected more than {}'.format(metrics['f1'], self.expected_score))
 
-    def test_ner(self):
-        expected_score = 70
+
+class TestIdleParaphraser(TestParaphraser):
+    expected_score = 0
+
+
+class TestNER(TestModels):
+    expected_score = 70.0
+    def test_KPI(self):
         metrics = bu.model(['-t', 'deeppavlov.tasks.ner.agents',
                             '-m', 'deeppavlov.agents.ner.ner:NERAgent',
                             '-mf', './build/ner',
@@ -57,14 +70,20 @@ class TestKPIs(unittest.TestCase):
                             '--chosen-metrics', 'f1'
                             ])
 
-        TestKPIs.report_score("ner", metrics["f1"], expected_score)
+        TestModels.report_score("ner", metrics["f1"], self.expected_score)
 
-        self.assertTrue(metrics['f1'] > expected_score,
+        self.assertTrue(metrics['f1'] > self.expected_score,
                         'KPI for NER is not satisfied. \
-                        Got {}, expected more than {}'.format(metrics['f1'], expected_score))
+                        Got {}, expected more than {}'.format(metrics['f1'], self.expected_score))
 
-    def test_insults(self):
-        expected_score = 0.85
+
+class TestIdleNER(TestNER):
+    expected_score = 0
+
+
+class TestInsults(TestModels):
+    expected_score = 0.85
+    def test_KPI(self):
         metrics = bu.model(['-t', 'deeppavlov.tasks.insults.agents:FullTeacher',
                             '-m', 'deeppavlov.agents.insults.insults_agents:EnsembleInsultsAgent',
                             '--model_file', './build/insults/insults_ensemble',
@@ -87,14 +106,20 @@ class TestKPIs(unittest.TestCase):
                             '--fasttext_model', './build/insults/reddit_fasttext_model.bin'
                             ])
 
-        TestKPIs.report_score("insults", metrics["auc"], expected_score)
+        TestModels.report_score("insults", metrics["auc"], self.expected_score)
 
-        self.assertTrue(metrics['auc'] > expected_score,
+        self.assertTrue(metrics['auc'] > self.expected_score,
                         'KPI for insults is not satisfied. \
-                        Got {}, expected more than {}'.format(metrics['auc'], expected_score))
+                        Got {}, expected more than {}'.format(metrics['auc'], self.expected_score))
 
-    def test_squad(self):
-        expected_score = 0.7
+
+class TestIdleInsults(TestInsults):
+    expected_score = 0
+
+
+class TestSQuAD(TestModels):
+    expected_score = 0.7
+    def test_KPI(self):
         metrics = bu.model(['-t', 'squad',
                             '-m', 'deeppavlov.agents.squad.squad:SquadAgent',
                             '--batchsize', '64',
@@ -124,15 +149,20 @@ class TestKPIs(unittest.TestCase):
                             '--datatype', 'test'
                             ])
 
-        TestKPIs.report_score("SQuAD", metrics["f1"], expected_score)
+        TestModels.report_score("SQuAD", metrics["f1"], self.expected_score)
 
-        self.assertTrue(metrics['f1'] > expected_score,
+        self.assertTrue(metrics['f1'] > self.expected_score,
                         'KPI for SQuAD is not satisfied. \
-                        Got {}, expected more than {}'.format(metrics['f1'], expected_score))
-    
-    
-    def test_coreference(self):
-        expected_score = 0.55
+                        Got {}, expected more than {}'.format(metrics['f1'], self.expected_score))
+
+
+class TestIdleSQuAD(TestSQuAD):
+    expected_score = 0
+
+
+class TestCoreference(TestModels):
+    expected_score = 0.55
+    def test_KPI(self):
         metrics = bu.model(['-t', 'deeppavlov.tasks.coreference.agents',
                             '-m', 'deeppavlov.agents.coreference.agents:CoreferenceAgent',
                             '-mf', './build/coreference/',
@@ -147,16 +177,20 @@ class TestKPIs(unittest.TestCase):
                             '--random_seed', '5'
                             ])
 
-        TestKPIs.report_score("Coreference", metrics["conll-F-1"], expected_score)        
+        TestModels.report_score("Coreference", metrics["conll-F-1"], self.expected_score)
 
-        self.assertTrue(metrics['conll-F-1'] > expected_score,
+        self.assertTrue(metrics['conll-F-1'] > self.expected_score,
                         'KPI for Coreference resolution is not satisfied. \
-                        Got {}, expected more than {}'.format(metrics['conll-F-1'], expected_score))
+                        Got {}, expected more than {}'.format(metrics['conll-F-1'], self.expected_score))
 
-    
-    def test_coreference_scorer_model(self):
-        expected_score = 0.55
 
+class TestIdleCoreference(TestCoreference):
+    expected_score = 0
+
+
+class TestCoreferenceScorer(TestModels):
+    expected_score = 0.55
+    def test_KPI(self):
         metrics = bu.model(['-t', 'deeppavlov.tasks.coreference_scorer_model.agents:CoreferenceTeacher',
                     '-m', 'deeppavlov.agents.coreference_scorer_model.agents:CoreferenceAgent',
                     '--display-examples', 'False',
@@ -171,11 +205,15 @@ class TestKPIs(unittest.TestCase):
                     '--embeddings_path', './build/coref/fasttext_embdgs.bin',
                     ])
 
-        TestKPIs.report_score("Coreference Scorer Model", metrics["f1"], expected_score)
+        TestModels.report_score("Coreference Scorer Model", metrics["f1"], self.expected_score)
 
-        self.assertTrue(metrics['f1'] > expected_score,
+        self.assertTrue(metrics['f1'] > self.expected_score,
                         'KPI for Coreference resolution is not satisfied. \
-                        Got {}, expected more than {}'.format(metrics['f1'], expected_score))
+                        Got {}, expected more than {}'.format(metrics['f1'], self.expected_score))
+
+
+class TestIdleCoreferenceScorer(TestCoreferenceScorer):
+    expected_score = 0
 
 
 if __name__ == '__main__':

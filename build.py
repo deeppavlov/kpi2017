@@ -46,13 +46,15 @@ def clean():
 def upload_model_to_nexus(project):
     """
     Use 'pyb -P model_name="<model_name>" upload_model_to_nexus' to upload archived model to Nexus repository
-    of the lab. archive_model task will be executed before.
+    of the lab. If model_name == 'deeppavlov_docs', then documentation from build/docs will be archived and uploaded.
+    archive_model task will be executed before.
     """
     import requests, datetime
     os.chdir('build')
     model_name = project.get_property('model_name')
     file_name = model_name + '_' + datetime.date.today().strftime("%y%m%d") + '.tar.gz'
-    url = 'http://share.ipavlov.mipt.ru:8080/repository/models/'
+    url = 'http://share.ipavlov.mipt.ru:8080/repository/'
+    url += 'docs/' if model_name == 'deeppavlov_docs' else 'models/'
     headers = {'Content-Type': 'application/binary'}
     with open(file_name, 'rb') as artifact:
         requests.put(url + model_name + '/' + file_name, headers=headers,
@@ -64,54 +66,40 @@ def upload_model_to_nexus(project):
 def archive_model(project):
     """
     Use 'pyb -P model_name="<model_name>" archive_model' to create '<model_name>_CURRENTDATE.tar.gz'
-    in 'build' directory.
+    in 'build' directory. If model_name == 'deeppavlov_docs', then documentation from build/docs will be archived.
     """
     import tarfile, datetime
     os.chdir('build')
     model_name = project.get_property('model_name')
     archive_name = model_name + '_' + datetime.date.today().strftime("%y%m%d")
+
+    if model_name == 'deeppavlov_docs':
+        import shutil
+        shutil.make_archive(archive_name, 'gztar', 'docs', 'deeppavlov')
+        os.chdir('..')
+        return
+
     with tarfile.open(archive_name + '.tar.gz', "w:gz") as archive:
         os.chdir(model_name)
-        for f in os.listdir():
-            if os.path.isfile(f) and (('h5' in f) or ('json' in f) or ('pkl' in f)or ('dict' in f)
+        for f in os.listdir('.'):
+            if os.path.isfile(f) and (('h5' in f) or ('json' in f) or ('pkl' in f)or ('dict' in f) or ('threshold' in f)
                                       or ('data' in f) or ('index' in f) or ('meta' in f) or ('checkpoint' in f)):
                 archive.add(f)
         os.chdir('..')
     os.chdir('..')
 
 
-@task(description="Run custom test suite")
-def test_models(project):
-    """
-    Use 'pyb -P model_test_suite="<model1_name>[,<model2_name>...]" test_models' to create a test suite for
-    the specified models and to run it.
-    """
-    import unittest
-    from pprint import pprint as pp
-    from tests.model_tests import TestKPIs, KPIException
-    test_suite = unittest.TestSuite()
-    test_results = unittest.TestResult()
-    for model_name in project.get_property('model_test_suite').split(','):
-        test_suite.addTest(TestKPIs('test_' + model_name))
-    test_suite.run(test_results)
-    pp(test_results.errors)
-    pp(test_results.failures)
-    if test_results.failures:
-        raise KPIException(*['{} failed, as KPI was not satisfied'.format(x[0]) for x in test_results.failures])
-    if test_results.errors:
-        raise RuntimeError(test_results)
-
-
 @task
-def train_paraphraser():
+def train_Paraphraser(project):
     create_dir('paraphraser')
+    num_epochs = '1' if project.get_property('idle_train') == 'True' else '-1'
     metrics = bu.model(['-t', 'deeppavlov.tasks.paraphrases.agents',
                         '-m', 'deeppavlov.agents.paraphraser.paraphraser:ParaphraserAgent',
                         '-mf', './build/paraphraser/paraphraser',
                         '--datatype', 'train:ordered',
                         '--batchsize', '256',
                         '--display-examples', 'False',
-                        '--num-epochs', '-1',
+                        '--num-epochs', num_epochs,
                         '--log-every-n-secs', '-1',
                         '--log-every-n-epochs', '1',
                         '--learning_rate', '0.0001',
@@ -128,13 +116,15 @@ def train_paraphraser():
 
 
 @task
-def train_ner():
+def train_NER(project):
     create_dir('ner')
+    num_epochs = '1' if project.get_property('idle_train') == 'True' else '-1'
     metrics = bu.model(['-t', 'deeppavlov.tasks.ner.agents',
                         '-m', 'deeppavlov.agents.ner.ner:NERAgent',
                         '-mf', './build/ner',
                         '-dt', 'train:ordered',
                         '--dict-file', './build/ner/dict',
+                        '--num-epochs', num_epochs,
                         '--learning_rate', '0.01',
                         '--batchsize', '2',
                         '--display-examples', 'False',
@@ -147,8 +137,9 @@ def train_ner():
 
 
 @task
-def train_insults():
+def train_Insults(project):
     create_dir('insults')
+    num_epochs = '1' if project.get_property('idle_train') == 'True' else '1000'
     metrics = bu.model(['-t', 'deeppavlov.tasks.insults.agents',
                         '-m', 'deeppavlov.agents.insults.insults_agents:InsultsAgent',
                         '--model_file', './build/insults/cnn_word',
@@ -158,7 +149,7 @@ def train_insults():
                         '--raw-dataset-path', './build/insults/',
                         '--batchsize', '64',
                         '--display-examples', 'False',
-                        '--num-epochs', '1000',
+                        '--num-epochs', num_epochs,
                         '--max_sequence_length', '100',
                         '--learning_rate', '0.01',
                         '--learning_decay', '0.1',
@@ -180,17 +171,26 @@ def train_insults():
 
 
 @task
-def train_squad():
+def train_SQuAD(project):
     create_dir('squad')
+    if project.get_property('idle_train') == 'True':
+        num_epochs = '1'
+        val_time = '100'
+        time_limit = '120'
+    else:
+        num_epochs = '-1'
+        val_time = '1800'
+        time_limit = '86400'
     metrics = bu.model(['-t', 'squad',
                         '-m', 'deeppavlov.agents.squad.squad:SquadAgent',
                         '--batchsize', '64',
                         '--display-examples', 'False',
-                        '--num-epochs', '-1',
+                        '--num-epochs', num_epochs,
+                        '--max-train-time', time_limit,
                         '--log-every-n-secs', '60',
                         '--log-every-n-epochs', '-1',
-                        '--validation-every-n-secs', '1800',
-                        '--validation-every-n-epochs', '-1',
+                        '--validation-every-n-secs', val_time,
+                        '--validation-every-n-epochs', num_epochs,
                         '--chosen-metrics', 'f1',
                         '--validation-patience', '5',
                         '--type', 'fastqa_default',
@@ -236,10 +236,11 @@ def compile_coreference(path):
 
 
 @task
-def train_coreference():
+def train_Coreference(project):
     create_dir('coreference')
     mf = './build/coreference/'
     compile_coreference(mf)
+    num_epochs = '1' if project.get_property('idle_train') == 'True' else '500'
     metrics = bu.model(['-t', 'deeppavlov.tasks.coreference.agents',
                         '-m', 'deeppavlov.agents.coreference.agents:CoreferenceAgent',
                         '-mf', mf,
@@ -249,7 +250,7 @@ def train_coreference():
                         '-dt', 'train:ordered',
                         '--batchsize', '1',
                         '--display-examples', 'False',
-                        '--num-epochs', '500',
+                        '--num-epochs', num_epochs,
                         '--validation-every-n-epochs', '10',
                         '--nitr', '500',
                         '--log-every-n-epochs', '1',
@@ -263,12 +264,13 @@ def train_coreference():
 
 
 @task
-def train_coreference_scorer_model():
+def train_CoreferenceScorer(project):
     create_dir('coref')
+    num_epochs = '1' if project.get_property('idle_train') == 'True' else '20'
     metrics = bu.model(['-t', 'deeppavlov.tasks.coreference_scorer_model.agents:CoreferenceTeacher',
                         '-m', 'deeppavlov.agents.coreference_scorer_model.agents:CoreferenceAgent',
                         '--display-examples', 'False',
-                        '--num-epochs', '20',
+                        '--num-epochs', num_epochs,
                         '--log-every-n-secs', '-1',
                         '--log-every-n-epochs', '1',
                         '--validation-every-n-epochs', '1',
