@@ -245,7 +245,7 @@ def train_coreference(project):
     create_dir('coreference')
     mf = './build/coreference/'
     compile_coreference(mf)
-    num_epochs = '1' if project.get_property('idle_train') == 'True' else '500'
+    num_epochs = '20' if project.get_property('idle_train') == 'True' else '500'
     metrics = bu.model(['-t', 'deeppavlov.tasks.coreference.agents',
                         '-m', 'deeppavlov.agents.coreference.agents:CoreferenceAgent',
                         '-mf', mf,
@@ -271,7 +271,7 @@ def train_coreference(project):
 @task
 def train_coref(project):
     create_dir('coref')
-    num_epochs = '1' if project.get_property('idle_train') == 'True' else '20'
+    num_epochs = '2' if project.get_property('idle_train') == 'True' else '20'
     metrics = bu.model(['-t', 'deeppavlov.tasks.coreference_scorer_model.agents:CoreferenceTeacher',
                         '-m', 'deeppavlov.agents.coreference_scorer_model.agents:CoreferenceAgent',
                         '--display-examples', 'False',
