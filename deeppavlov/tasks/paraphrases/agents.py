@@ -25,6 +25,15 @@ import random
 
 
 def _path(opt):
+    """Function to create a full data path.
+
+    Args:
+        opt: given arguments
+
+    Returns:
+        full datafile name
+    """
+
     # ensure data is built
     build(opt)
 
@@ -39,15 +48,32 @@ def _path(opt):
 
 
 class DefaultTeacher(DialogTeacher):
+    """The class implements a default teacher.
+
+    The class reads the data, composes observations and feeds them to an agent.
+
+    Attributes:
+        datatype_strict: mode to train or to predict ("train" or "test")
+        id: a teacher name
+        question: a phrase prepending train or test data
+        answer_candidates: possible text labels
+        random_state: random state with given seed
+        metrics: metrics which are used
+        opt: given parameters
+    """
 
     @staticmethod
     def add_cmdline_args(argparser):
+        """Add arguments from a command line."""
+
         teacher = argparser.add_argument_group('paraphrases teacher arguments')
         teacher.add_argument('--teacher-random-seed', type=int, default=71)
         teacher.add_argument('--bagging-fold-index', type=int)
         teacher.add_argument('--bagging-folds-number', type=int, default=5)
 
     def __init__(self, opt, shared=None):
+        """Initialize the class according to given parameters in opt."""
+
         # store datatype
         self.datatype_strict = opt['datatype'].split(':')[0]
 
@@ -73,9 +99,13 @@ class DefaultTeacher(DialogTeacher):
         super().__init__(opt, shared)
 
     def label_candidates(self):
+        """Return the label candidates."""
+
         return self.answer_candidates
 
     def setup_data(self, path):
+        """Read and iteratively yield data to an agent."""
+
         print('loading: ' + path)
 
         questions = []
@@ -119,6 +149,8 @@ class DefaultTeacher(DialogTeacher):
             yield (self.question + "\n" + questions[i], y[i]), episode_done
 
     def reset(self):
+        """Reset class and random state."""
+
         super().reset()
 
         random_state = random.getstate()
