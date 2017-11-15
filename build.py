@@ -99,7 +99,7 @@ def train_models():
 @task
 def train_paraphraser(project):
     create_dir('paraphraser')
-    num_epochs = '1' if project.get_property('idle_train') == 'True' else '-1'
+    num_epochs = '5' if project.get_property('idle_train') == 'True' else '-1'
     metrics = bu.model(['-t', 'deeppavlov.tasks.paraphrases.agents',
                         '-m', 'deeppavlov.agents.paraphraser.paraphraser:ParaphraserAgent',
                         '-mf', './build/paraphraser/paraphraser',
