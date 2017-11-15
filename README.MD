@@ -13,9 +13,9 @@ pyb train_<model1_name>[ ,train_<model2_name>, ...]
 ```
 Run model testing
 ```sh
-pyb run_unit_tests -P unittest_test_method_prefix="Test<model1_name>[,Test<model2_name>,...]"
+pyb run_unit_tests -P unittest_test_method_prefix="test_<model1_name>[,test_<model2_name>,...]"
 ```
-where <modelX_name> should be replaced with the name of the model from the library: NER, Paraphraser, Insults, SQaAD, Coreference, CoreferenceScorer.
+where <modelX_name> should be replaced with the name of the model from the library: ner, paraphraser, insults, squad, coreference, coref.
 
 To test all the models use
 ```sh

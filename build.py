@@ -89,8 +89,15 @@ def archive_model(project):
     os.chdir('..')
 
 
+@task(description="train all models")
+@depends("train_paraphraser", "train_ner", "train_insults",
+         "train_coreference", "train_coref", "train_squad")
+def train_models():
+    pass
+
+
 @task
-def train_Paraphraser(project):
+def train_paraphraser(project):
     create_dir('paraphraser')
     num_epochs = '1' if project.get_property('idle_train') == 'True' else '-1'
     metrics = bu.model(['-t', 'deeppavlov.tasks.paraphrases.agents',
@@ -116,7 +123,7 @@ def train_Paraphraser(project):
 
 
 @task
-def train_NER(project):
+def train_ner(project):
     create_dir('ner')
     num_epochs = '1' if project.get_property('idle_train') == 'True' else '-1'
     metrics = bu.model(['-t', 'deeppavlov.tasks.ner.agents',
@@ -137,7 +144,7 @@ def train_NER(project):
 
 
 @task
-def train_Insults(project):
+def train_insults(project):
     create_dir('insults')
     num_epochs = '1' if project.get_property('idle_train') == 'True' else '1000'
     metrics = bu.model(['-t', 'deeppavlov.tasks.insults.agents',
@@ -171,26 +178,24 @@ def train_Insults(project):
 
 
 @task
-def train_SQuAD(project):
+def train_squad(project):
     create_dir('squad')
     if project.get_property('idle_train') == 'True':
-        num_epochs = '1'
-        val_time = '100'
-        time_limit = '120'
+        val_time = '600'
+        time_limit = '900'
     else:
-        num_epochs = '-1'
         val_time = '1800'
         time_limit = '86400'
     metrics = bu.model(['-t', 'squad',
                         '-m', 'deeppavlov.agents.squad.squad:SquadAgent',
                         '--batchsize', '64',
                         '--display-examples', 'False',
-                        '--num-epochs', num_epochs,
+                        '--num-epochs', '-1',
                         '--max-train-time', time_limit,
                         '--log-every-n-secs', '60',
                         '--log-every-n-epochs', '-1',
                         '--validation-every-n-secs', val_time,
-                        '--validation-every-n-epochs', num_epochs,
+                        '--validation-every-n-epochs', '-1',
                         '--chosen-metrics', 'f1',
                         '--validation-patience', '5',
                         '--type', 'fastqa_default',
@@ -236,7 +241,7 @@ def compile_coreference(path):
 
 
 @task
-def train_Coreference(project):
+def train_coreference(project):
     create_dir('coreference')
     mf = './build/coreference/'
     compile_coreference(mf)
@@ -264,7 +269,7 @@ def train_Coreference(project):
 
 
 @task
-def train_CoreferenceScorer(project):
+def train_coref(project):
     create_dir('coref')
     num_epochs = '1' if project.get_property('idle_train') == 'True' else '20'
     metrics = bu.model(['-t', 'deeppavlov.tasks.coreference_scorer_model.agents:CoreferenceTeacher',

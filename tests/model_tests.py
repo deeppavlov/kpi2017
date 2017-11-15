@@ -6,7 +6,9 @@ import datetime
 def load_tests(loader, tests, pattern):
     suite = unittest.TestSuite()
     if loader.testMethodPrefix != 'test':
-        test_cases = [__name__ + '.' + x for x in loader.testMethodPrefix.split(',')]
+        test_cases = loader.testMethodPrefix.split(',')
+        for i in range(len(test_cases)):
+            test_cases[i] = __name__ + '.' + ''.join([word.capitalize() for word in test_cases[i].split('_')])
         loader.testMethodPrefix = 'test' #return to default
         tests = loader.loadTestsFromNames(test_cases)
     suite.addTests(tests)
@@ -53,7 +55,7 @@ class TestIdleParaphraser(TestParaphraser):
     expected_score = 0
 
 
-class TestNER(TestModels):
+class TestNer(TestModels):
     expected_score = 70.0
     def test_KPI(self):
         metrics = bu.model(['-t', 'deeppavlov.tasks.ner.agents',
@@ -77,7 +79,7 @@ class TestNER(TestModels):
                         Got {}, expected more than {}'.format(metrics['f1'], self.expected_score))
 
 
-class TestIdleNER(TestNER):
+class TestIdleNer(TestNer):
     expected_score = 0
 
 
@@ -117,7 +119,7 @@ class TestIdleInsults(TestInsults):
     expected_score = 0
 
 
-class TestSQuAD(TestModels):
+class TestSquad(TestModels):
     expected_score = 0.7
     def test_KPI(self):
         metrics = bu.model(['-t', 'squad',
@@ -156,7 +158,7 @@ class TestSQuAD(TestModels):
                         Got {}, expected more than {}'.format(metrics['f1'], self.expected_score))
 
 
-class TestIdleSQuAD(TestSQuAD):
+class TestIdleSquad(TestSquad):
     expected_score = 0
 
 
@@ -188,7 +190,7 @@ class TestIdleCoreference(TestCoreference):
     expected_score = 0
 
 
-class TestCoreferenceScorer(TestModels):
+class TestCoref(TestModels):
     expected_score = 0.55
     def test_KPI(self):
         metrics = bu.model(['-t', 'deeppavlov.tasks.coreference_scorer_model.agents:CoreferenceTeacher',
@@ -212,7 +214,7 @@ class TestCoreferenceScorer(TestModels):
                         Got {}, expected more than {}'.format(metrics['f1'], self.expected_score))
 
 
-class TestIdleCoreferenceScorer(TestCoreferenceScorer):
+class TestIdleCoref(TestCoref):
     expected_score = 0
 
 
