@@ -1,15 +1,17 @@
-"""
-Copyright 2017 Neural Networks and Deep Learning lab, MIPT
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-    http://www.apache.org/licenses/LICENSE-2.0
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 
 import os
 import random
@@ -40,6 +42,10 @@ class CoreferenceTeacher(Teacher):
         group.add_argument('--test_ratio', type=float,
                            default=0.2, help='test_set ratio')
         group.add_argument('--teacher_seed', type=int, default=42, help='seed')
+        group.add_argument('--raw-dataset-path', type=str, default=None,
+                             help='Path to folder with two subfolders: dataset and scorer. '
+                                  'These two folders are extracted rucoref_29.10.2015.zip and '
+                                  'reference-coreference-scorers.v8.01.tar.gz')
 
     def __init__(self, opt, shared=None):
         """Initialize the parameters for CoreferenceTeacher"""

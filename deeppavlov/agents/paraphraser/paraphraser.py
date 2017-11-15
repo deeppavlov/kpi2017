@@ -1,18 +1,17 @@
-"""
-Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+# Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
 
 import copy
 
@@ -24,23 +23,42 @@ from .model import ParaphraserModel
 
 
 def prediction2text(prediction):
+    """Converts a single prediction of the model to text."""
+
     return 'Да' if prediction > 0.5 else 'Нет'
 
 
 def predictions2text(predictions):
+    """Converts a list of predictions of the model to text."""
+
     return [prediction2text(ex) for ex in predictions]
 
 
 class EnsembleParaphraserAgent(Agent):
+    """The class defines an ensemble agent to work with multiple paraphraser identification models.
+
+    Attributes:
+        id: an agent name
+        episode_done: a parameter indicating if an episode is done
+        is_shared: a parameter to enable parallel computations
+        observation: gathered text observations (samples)
+        models: all models which the agent uses
+        n_examples: a number of processed examples
+        observation: a message from a teacher containing information for train or evaluation
+    """
 
     @staticmethod
     def add_cmdline_args(argparser):
+        """Add command line arguments."""
+
         config.add_cmdline_args(argparser)
         ensemble = argparser.add_argument_group('Ensemble parameters')
         ensemble.add_argument('--model_files', type=str, default=None, nargs='+',
                               help='list of all the model files for the ensemble')
 
     def __init__(self, opt, shared=None):
+        """Initialize an ensemble agent."""
+
         self.id = 'ParaphraserAgent'
         self.episode_done = True
         super().__init__(opt, shared)
@@ -57,6 +75,8 @@ class EnsembleParaphraserAgent(Agent):
             self.models.append(ParaphraserModel(opt, embdict))
 
     def observe(self, observation):
+        """Set an observation attribute with an observation from a teacher."""
+
         observation = copy.deepcopy(observation)
         if not self.episode_done:
             # if the last example wasn't the end of an episode, then we need to
@@ -68,10 +88,12 @@ class EnsembleParaphraserAgent(Agent):
         return observation
 
     def act(self):
-        # call batch_act with this batch of one
+        """Call batch_act and return only the first element."""
+
         return self.batch_act([self.observation])[0]
 
     def batch_act(self, observations):
+        """Create batches from observations and make model updates or predictions for these batches."""
 
         if self.is_shared:
             raise RuntimeError("Parallel act is not supported.")
@@ -98,12 +120,27 @@ class EnsembleParaphraserAgent(Agent):
 
 
 class ParaphraserAgent(Agent):
+    """The class defines an agent to work with paraphraser identification model.
+
+    Attributes:
+        id: an agent name
+        episode_done: a parameter indicating if an episode is done
+        is_shared: a parameter to enable parallel computations
+        observation: gathered text observations (samples)
+        model: particular model which the agent uses
+        n_examples: a number of processed examples
+        observation: a message from a teacher containing information for train or evaluation
+    """
 
     @staticmethod
     def add_cmdline_args(argparser):
+        """Add command line arguments."""
+
         config.add_cmdline_args(argparser)
 
     def __init__(self, opt, shared=None):
+        """Initialize an agent."""
+
         self.id = 'ParaphraserAgent'
         self.episode_done = True
         super().__init__(opt, shared)
@@ -117,6 +154,8 @@ class ParaphraserAgent(Agent):
         self.n_examples = 0
 
     def observe(self, observation):
+        """Set an observation attribute with an observation from a teacher."""
+
         observation = copy.deepcopy(observation)
         if not self.episode_done:
             # if the last example wasn't the end of an episode, then we need to
@@ -128,10 +167,12 @@ class ParaphraserAgent(Agent):
         return observation
 
     def act(self):
-        # call batch_act with this batch of one
+        """Call batch_act and return only the first element."""
+
         return self.batch_act([self.observation])[0]
 
     def batch_act(self, observations):
+        """Create batches from observations and make update or make predictions for these batches."""
 
         if self.is_shared:
             raise RuntimeError("Parallel act is not supported.")
@@ -158,23 +199,30 @@ class ParaphraserAgent(Agent):
         return batch_reply
 
     def save(self, fname=None):
-        """Save the parameters of the agent to a file."""
+        """Save parameters of an agent to a file."""
+
         fname = self.opt.get('model_file', None) if fname is None else fname
         if fname:
             print("[ saving model: " + fname + " ]")
             self.model.save(fname)
 
     def report(self):
+        """Return a string with training information."""
+
         return (
             '[train] updates = %d | exs = %d | loss = %.4f | acc = %.4f | f1 = %.4f'%
             (self.model.updates, self.n_examples,
              self.model.train_loss, self.model.train_acc, self.model.train_f1))
 
     def reset_metrics(self):
+        """Reset training and validation information of an agent."""
+
         self.model.reset_metrics()
         self.n_examples = 0
 
     def shutdown(self):
+        """Reset a model attribute."""
+
         if not self.is_shared:
             if self.model is not None:
                 self.model.shutdown()
