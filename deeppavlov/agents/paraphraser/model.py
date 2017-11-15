@@ -73,7 +73,7 @@ class ParaphraserModel(object):
     """
 
     def __init__(self, opt, embdict=None):
-        """Initialize a model from scratch of from saved files."""
+        """Initialize a model from scratch or from saved files."""
 
         self.opt = copy.deepcopy(opt)
 
@@ -108,7 +108,7 @@ class ParaphraserModel(object):
         self.val_f1 = 0.0
 
     def shutdown(self):
-        """Set embdict attribute of the class to None."""
+        """Reset an embdict attribute of the class."""
 
         self.embdict = None
         # tf.reset_default_graph()
@@ -201,7 +201,7 @@ class ParaphraserModel(object):
         return self.model.predict_on_batch(batch)
 
     def build_ex(self, ex):
-        """Extract data from observation."""
+        """Extract data from an observation."""
 
         if 'text' not in ex:
             return
@@ -259,7 +259,7 @@ class ParaphraserModel(object):
         return embeddings_batch
 
     def create_lstm_layer(self, input_dim):
-        """Create a lstm layer of a model."""
+        """Create a LSTM layer of a model."""
 
         inp = Input(shape=(input_dim, self.embedding_dim,))
         inp_dropout = Dropout(self.ldrop_val)(inp)
@@ -280,7 +280,7 @@ class ParaphraserModel(object):
         return model
 
     def create_lstm_layer_1(self, input_dim):
-        """Create a lstm layer of a model."""
+        """Create a LSTM layer of a model."""
 
         inp = Input(shape=(input_dim,  self.embedding_dim,))
         inp_drop = Dropout(self.ldrop_val)(inp)
@@ -303,7 +303,7 @@ class ParaphraserModel(object):
         return model
 
     def create_lstm_layer_2(self, input_dim):
-        """Create a lstm layer of a model."""
+        """Create a LSTM layer of a model."""
 
         inp = Input(shape=(input_dim, 2*self.perspective_num,))
         inp_drop = Dropout(self.ldrop_val)(inp)
@@ -326,7 +326,7 @@ class ParaphraserModel(object):
         return model
 
     def create_lstm_layer_last(self, input_dim):
-        """Create a lstm layer of a model."""
+        """Create a LSTM layer of a model."""
 
         inp = Input(shape=(input_dim,  self.embedding_dim,))
         inp_drop = Dropout(self.ldrop_val)(inp)
@@ -663,7 +663,7 @@ class ParaphraserModel(object):
         return shape[0], shape[2]
 
     def bmwacor_model(self):
-        """Define a model with lstm layers and with attention."""
+        """Define a model with LSTM layers and with attention."""
 
         input_a = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         input_b = Input(shape=(self.max_sequence_length, self.embedding_dim,))
@@ -693,7 +693,7 @@ class ParaphraserModel(object):
         return model
 
     def bilstm_split_model(self):
-        """Define a model with bi-lstm layers and with attention."""
+        """Define a model with bi-LSTM layers and with attention."""
 
         input_a = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         input_b = Input(shape=(self.max_sequence_length, self.embedding_dim,))
@@ -935,7 +935,7 @@ class ParaphraserModel(object):
         return model
 
     def bilstm_woatt_model(self):
-        """Define a model with bi-lstm layers and without attention."""
+        """Define a model with bi-LSTM layers and without attention."""
 
         input_a = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         input_b = Input(shape=(self.max_sequence_length, self.embedding_dim,))

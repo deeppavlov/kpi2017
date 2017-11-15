@@ -36,19 +36,30 @@ def predictions2text(predictions):
 
 
 class EnsembleParaphraserAgent(Agent):
-    """
+    """The class defines an ensemble agent to work with multiple paraphraser identification models.
 
-
+    Attributes:
+        id: an agent name
+        episode_done: a parameter indicating if an episode is done
+        is_shared: a parameter to enable parallel computations
+        observation: gathered text observations (samples)
+        models: all models which the agent uses
+        n_examples: a number of processed examples
+        observation: a message from a teacher containing information for train or evaluation
     """
 
     @staticmethod
     def add_cmdline_args(argparser):
+        """Add command line arguments."""
+
         config.add_cmdline_args(argparser)
         ensemble = argparser.add_argument_group('Ensemble parameters')
         ensemble.add_argument('--model_files', type=str, default=None, nargs='+',
                               help='list of all the model files for the ensemble')
 
     def __init__(self, opt, shared=None):
+        """Initialize an ensemble agent."""
+
         self.id = 'ParaphraserAgent'
         self.episode_done = True
         super().__init__(opt, shared)
@@ -65,6 +76,8 @@ class EnsembleParaphraserAgent(Agent):
             self.models.append(ParaphraserModel(opt, embdict))
 
     def observe(self, observation):
+        """Set an observation attribute with an observation from a teacher."""
+
         observation = copy.deepcopy(observation)
         if not self.episode_done:
             # if the last example wasn't the end of an episode, then we need to
@@ -76,10 +89,12 @@ class EnsembleParaphraserAgent(Agent):
         return observation
 
     def act(self):
-        # call batch_act with this batch of one
+        """Call batch_act and return only the first element."""
+
         return self.batch_act([self.observation])[0]
 
     def batch_act(self, observations):
+        """Create batches from observations and make model updates or predictions for these batches."""
 
         if self.is_shared:
             raise RuntimeError("Parallel act is not supported.")
@@ -106,7 +121,17 @@ class EnsembleParaphraserAgent(Agent):
 
 
 class ParaphraserAgent(Agent):
-    """The class defines an agent to work with paraphraser identification model in ParlAI."""
+    """The class defines an agent to work with paraphraser identification model.
+
+    Attributes:
+        id: an agent name
+        episode_done: a parameter indicating if an episode is done
+        is_shared: a parameter to enable parallel computations
+        observation: gathered text observations (samples)
+        model: particular model which the agent uses
+        n_examples: a number of processed examples
+        observation: a message from a teacher containing information for train or evaluation
+    """
 
     @staticmethod
     def add_cmdline_args(argparser):
@@ -130,7 +155,7 @@ class ParaphraserAgent(Agent):
         self.n_examples = 0
 
     def observe(self, observation):
-        """Get an observation."""
+        """Set an observation attribute with an observation from a teacher."""
 
         observation = copy.deepcopy(observation)
         if not self.episode_done:
@@ -192,11 +217,13 @@ class ParaphraserAgent(Agent):
 
     def reset_metrics(self):
         """Reset training and validation information of an agent."""
+
         self.model.reset_metrics()
         self.n_examples = 0
 
     def shutdown(self):
-        """Call model attribute method shutdown() if it is not None and set model attribute to None."""
+        """Reset a model attribute."""
+
         if not self.is_shared:
             if self.model is not None:
                 self.model.shutdown()
