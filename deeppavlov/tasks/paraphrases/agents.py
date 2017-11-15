@@ -18,33 +18,9 @@ from parlai.core.dialog_teacher import DialogTeacher
 
 from .metric import BinaryClassificationMetrics
 from .build import build
-import os
 import csv
 from sklearn.model_selection import KFold
 import random
-
-
-def _path(opt):
-    """Function to create a full data path.
-
-    Args:
-        opt: given arguments
-
-    Returns:
-        full datafile name
-    """
-
-    # ensure data is built
-    build(opt)
-
-    # set up paths to data (specific to each dataset)
-    dt = opt['datatype'].split(':')[0]
-    fname = 'paraphrases'
-    if dt == 'test':
-        fname += '_gold'
-    fname += '.tsv'
-    datafile = os.path.join(opt['datapath'], 'paraphrases', fname)
-    return datafile
 
 
 class DefaultTeacher(DialogTeacher):
@@ -77,7 +53,7 @@ class DefaultTeacher(DialogTeacher):
         # store datatype
         self.datatype_strict = opt['datatype'].split(':')[0]
 
-        opt['datafile'] = _path(opt)
+        opt['datafile'] = build(opt, shared)
 
         # store identifier for the teacher in the dialog
         self.id = 'paraphrases_teacher'
