@@ -18,6 +18,7 @@ import numpy as np
 
 def precision(y_true, y_pred):
     """Precision metric.
+
     Only computes a batch-wise average of precision.
     Computes the precision, a metric for multi-label classification of
     how many selected items are relevant.
@@ -32,6 +33,7 @@ def precision(y_true, y_pred):
 
 def recall(y_true, y_pred):
     """Recall metric.
+
     Only computes a batch-wise average of recall.
     Computes the recall, a metric for multi-label classification of
     how many relevant items are selected.
@@ -46,6 +48,7 @@ def recall(y_true, y_pred):
 
 def fbeta_score(y_true, y_pred, beta=1):
     """Computes the F score.
+
     The F score is the weighted harmonic mean of precision and recall.
     Here it is only computed as a batch-wise average, not globally.
     This is useful for multi-label classification, where input samples can be
@@ -76,28 +79,45 @@ def fbeta_score(y_true, y_pred, beta=1):
 
 
 def accuracy(y_true, y_pred):
+    """Accuracy metric."""
+
     if len(y_pred) > 0:
         return np.equal(y_true, y_pred).astype(int).mean()
     return 0
 
 
 class BinaryClassificationMetrics(object):
+    """The class converts text representations of predictions and labels to binary ones and calculate metrics on them.
+
+    Attributes:
+        true_str: text representation of the positive answer
+        y_pred: predictions of a model
+        y_true: labels
+    """
 
     def __init__(self, true_str):
+        """Initialize predictions and labels with empty lists."""
+
         self.true_str = true_str
         self.y_pred = []
         self.y_true = []
 
     def clear(self):
+        """Reset predictions and labels."""
+
         del self.y_pred[:]
         del self.y_true[:]
 
     def update(self, observation, y):
+        """Update predictions and labels according with an observation."""
+
         if y and 'text' in observation:
             self.y_pred.append(1 if observation['text'] == self.true_str else 0)
             self.y_true.append(1 if y[0] == self.true_str else 0)
 
     def report(self):
+        """Calculate metrics and return the result."""
+
         if len(self.y_pred) > 0:
             report = {
                 'f1': fbeta_score(self.y_true, self.y_pred),

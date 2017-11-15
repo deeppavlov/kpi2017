@@ -20,6 +20,12 @@ import csv
 
 
 def clean_dataset(path):
+    """Remove duplicates from the dataset and write clean data in .tsv files
+
+    Args:
+        path: a path to the dataset
+    """
+
     with open(path, 'r') as labels_file:
         context = ET.iterparse(labels_file, events=("start", "end"))
         # turn it into an iterator
@@ -52,6 +58,12 @@ def clean_dataset(path):
 
 
 def build(opt):
+    """Download data and unpack it to the specified directory.
+
+    Args:
+        opt: given parameters
+    """
+
     # get path to data directory
     dpath = os.path.join(opt['datapath'], 'paraphrases')
     # define version if any

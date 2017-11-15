@@ -26,10 +26,10 @@ class EmbeddingsDict(object):
     """The class provides embeddings using fasttext model.
 
     Attributes:
-        tok2emb: dictionary gives embedding vector (value) for token (key)
-        embedding_dim: dimension of embeddings
+        tok2emb: a dictionary containing embedding vectors (value) for tokens (keys)
+        embedding_dim: a dimension of embeddings
         opt: given parameters
-        fasttext_model_file: file contains fasttext binary model
+        fasttext_model_file: a file containing fasttext binary model
     """
 
     def __init__(self, opt, embedding_dim):
@@ -61,7 +61,7 @@ class EmbeddingsDict(object):
         self.fasttext_model = fasttext.load_model(self.fasttext_model_file)
 
     def add_items(self, sentence_li):
-        """Add new items to tok2emb dictionary from given text."""
+        """Add new items to the tok2emb dictionary from a given text."""
 
         for sen in sentence_li:
             sent_toks = sent_tokenize(sen)
@@ -73,7 +73,7 @@ class EmbeddingsDict(object):
                     self.tok2emb[tok] = self.fasttext_model[tok]
 
     def save_items(self, fname):
-        """Save dictionary tok2emb to file."""
+        """Save the dictionary tok2emb to the file."""
 
         if self.opt.get('fasttext_embeddings_dict') is not None:
             fname = self.opt['fasttext_embeddings_dict']
@@ -85,13 +85,13 @@ class EmbeddingsDict(object):
         f.close()
 
     def emb2str(self, vec):
-        """Return string corresponding to the given embedding vectors"""
+        """Return the string corresponding to given embedding vectors"""
 
         string = ' '.join([str(el) for el in vec])
         return string
 
     def load_items(self):
-        """Initialize embeddings from file."""
+        """Initialize embeddings from the file."""
 
         fname = None
         if self.opt.get('fasttext_embeddings_dict') is not None:
