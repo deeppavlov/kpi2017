@@ -196,7 +196,9 @@ def train_coreference(project):
                         '--chosen-metric', 'conll-F-1',
                         '--validation-patience', '20',
                         '--train_on_gold', 'True',
-                        '--random_seed', '5'
+                        '--random_seed', '5',
+                        '--emb_format', 'bin',
+                        '--embedding_size', '300'
                         ])
     return metrics
 

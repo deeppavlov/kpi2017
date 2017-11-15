@@ -18,6 +18,7 @@ import numpy as np
 import collections
 import tensorflow as tf
 import operator
+import fasttext
 
 seed = 5
 np.random.seed(seed)
@@ -46,20 +47,27 @@ def load_char_dict(char_vocab_path):
     char_dict.update({c: i for i, c in enumerate(sorted(set(vocab)))})
     return char_dict
 
+
 def load_embedding_dict(embedding_path, embedding_size, embedding_format):
     print("Loading word embeddings from {}...".format(embedding_path))
-    default_embedding = np.zeros(embedding_size)
-    embedding_dict = collections.defaultdict(lambda: default_embedding)
-    skip_first = embedding_format == "vec"
-    with open(embedding_path) as f:
-        for i, line in enumerate(f.readlines()):
-            if skip_first and i == 0:
-                continue
-            splits = line.split()
-            assert len(splits) == embedding_size + 1
-            word = splits[0]
-            embedding = np.array([float(s) for s in splits[1:]])
-            embedding_dict[word] = embedding
+
+    if embedding_format == 'vec':
+        default_embedding = np.zeros(embedding_size)
+        embedding_dict = collections.defaultdict(lambda: default_embedding)
+        skip_first = embedding_format == "vec"
+        with open(embedding_path) as f:
+            for i, line in enumerate(f.readlines()):
+                if skip_first and i == 0:
+                    continue
+                splits = line.split()
+                assert len(splits) == embedding_size + 1
+                word = splits[0]
+                embedding = np.array([float(s) for s in splits[1:]])
+                embedding_dict[word] = embedding
+    elif embedding_format == 'bin':
+        embedding_dict = fasttext.load_model(embedding_path)
+    else:
+        raise ValueError('Not supported embeddings format {}'.format(embedding_format))
     print("Done loading word embeddings.")
     return embedding_dict
 

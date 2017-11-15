@@ -36,6 +36,7 @@ class CorefModel(object):
 
     def __init__(self, opt):
         self.opt = copy.deepcopy(opt)
+
         tf.set_random_seed(opt['random_seed'])
         config = tf.ConfigProto()
         config.gpu_options.per_process_gpu_memory_fraction = 0.8
@@ -47,16 +48,22 @@ class CorefModel(object):
         self.get_antecedents = coref_op_library.antecedents
         
         dpath = join(self.opt['model_file'], self.opt['language'], 'agent')
-        self.char_vocab_path = join(dpath, 'vocab', 'char_vocab.russian.txt')
-        self.embedding_path = join(dpath, 'embeddings', 'embeddings_lenta_100.vec')
         self.log_root = join(dpath, 'logs')
+        self.char_embedding_size = self.opt["char_embedding_size"]
+        self.char_vocab_path = join(dpath, 'vocab', 'char_vocab.russian.txt')
+        self.char_dict = utils.load_char_dict(self.char_vocab_path)
 
+        if opt['emb_format'] == 'vec':
+            self.embedding_path = join(dpath, 'embeddings', 'embeddings_lenta_100.vec')
+        elif opt['emb_format'] == 'bin':
+            self.embedding_path = join(dpath, 'embeddings', 'ft_0.8.3_nltk_yalen_sg_300.bin')
+        else:
+            raise ValueError('Not supported embeddings format {}'.format(opt['emb_format']))
         self.embedding_info = (self.opt["embedding_size"], self.opt["emb_lowercase"])
         self.embedding_size = self.opt['embedding_size']
-        self.char_embedding_size = self.opt["char_embedding_size"]
-        self.char_dict = utils.load_char_dict(self.char_vocab_path)
         self.embedding_dicts = utils.load_embedding_dict(self.embedding_path, self.embedding_size,
                                                          self.opt["emb_format"])
+
         self.max_mention_width = self.opt["max_mention_width"]
         self.genres = {g: i for i, g in enumerate(self.opt["genres"])}
 
@@ -153,7 +160,11 @@ class CorefModel(object):
                 if l:
                     cerrent_word = word.lower()
 
-                word_emb[i, j, current_dim:current_dim + s] = utils.normalize(d[current_word])
+                if self.opt['emb_format'] == 'vec':
+                    word_emb[i, j, current_dim:current_dim + s] = utils.normalize(d[current_word])
+                else:
+                    word_emb[i, j, current_dim:current_dim + s] = utils.normalize(np.array(d[current_word]))
+
                 current_dim += s
                 char_index[i, j, :len(word)] = [self.char_dict[c] for c in word]
 
