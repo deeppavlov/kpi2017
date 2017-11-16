@@ -69,11 +69,21 @@ def build(opt, shared):
 
     # get path to data directory
     if (opt['raw_dataset_path'] is not None
-        and os.path.isdir(opt['raw_dataset_path'])
-        and build_data.built(opt['raw_dataset_path'], version_string=version)):
-            if shared is None:
-                print('Setting the raw_dataset_path parameter for datasets.')
-            dpath = opt['raw_dataset_path']
+    and os.path.isfile(os.path.join(opt['raw_dataset_path'], 'paraphrases.xml'))
+    and os.path.isfile(os.path.join(opt['raw_dataset_path'], 'paraphrases_gold.xml'))):
+        if shared is None:
+            print('Setting the raw_dataset_path parameter for datasets.')
+        dpath = opt['raw_dataset_path']
+
+        # check if data had been previously built
+        if not build_data.built(dpath, version_string=version):
+            path = os.path.join(dpath, 'paraphrases.xml')
+            clean_dataset(path)
+            path = os.path.join(dpath, 'paraphrases_gold.xml')
+            clean_dataset(path)
+            # mark the data as built
+            build_data.mark_done(dpath, version_string=version)
+
     else:
         if shared is None:
             print('The raw_dataset_path parameter is not set or it is invalid.'
