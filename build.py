@@ -109,6 +109,7 @@ def train_paraphraser(project):
                         '--num-epochs', num_epochs,
                         '--log-every-n-secs', '-1',
                         '--log-every-n-epochs', '1',
+                        '--raw_dataset_path', './build/paraphraser/',
                         '--learning_rate', '0.0001',
                         '--hidden_dim', '200',
                         '--validation-every-n-epochs', '5',
