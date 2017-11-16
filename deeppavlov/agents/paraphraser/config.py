@@ -32,8 +32,8 @@ def add_cmdline_args(parser):
                        help='fasttext trained model file name')
     agent.add_argument('-fed', '--fasttext_embeddings_dict', type=str, default=None,
                        help='saved fasttext embeddings dict')
-
-
+    agent.add_argument('-rdp', '--raw_dataset_path', type=str, default=None,
+                       help='path to downloaded datasets')
 
     # Model details
     agent.add_argument('--model_name', default='maxpool_match')

@@ -57,44 +57,82 @@ def clean_dataset(path):
 
 
 
-def build(opt):
-    """Download data and unpack it to the specified directory.
+def build(opt, shared):
+    """Set up full path to datasets files.
 
     Args:
         opt: given parameters
     """
 
-    # get path to data directory
-    dpath = os.path.join(opt['datapath'], 'paraphrases')
     # define version if any
     version = '1.1'
 
-    # check if data had been previously built
-    if not build_data.built(dpath, version_string=version):
-        print('[building data: ' + dpath + ']')
+    # get path to data directory
+    if (opt['raw_dataset_path'] is not None
+    and os.path.isfile(os.path.join(opt['raw_dataset_path'], 'paraphrases.xml'))
+    and os.path.isfile(os.path.join(opt['raw_dataset_path'], 'paraphrases_gold.xml'))):
+        if shared is None:
+            print('Setting the raw_dataset_path parameter for datasets.')
+        dpath = opt['raw_dataset_path']
 
-        # make a clean directory if needed
-        if build_data.built(dpath):
-            # an older version exists, so remove these outdated files.
-            build_data.remove_dir(dpath)
-        build_data.make_dir(dpath)
+        # check if data had been previously built
+        if not build_data.built(dpath, version_string=version):
+            path = os.path.join(dpath, 'paraphrases.xml')
+            clean_dataset(path)
+            path = os.path.join(dpath, 'paraphrases_gold.xml')
+            clean_dataset(path)
+            # mark the data as built
+            build_data.mark_done(dpath, version_string=version)
 
-        # download the data.
-        url = 'http://paraphraser.ru/download/get?file_id='  # datasets URL
+    else:
+        if shared is None:
+            print('The raw_dataset_path parameter is not set or it is invalid.'
+                  ' Setting the datapath parameter for datasets.')
+        dpath = os.path.join(opt['datapath'], 'paraphrases')
 
-        fname = 'paraphraser.zip'
-        build_data.download(url+'1', dpath, fname)
-        # uncompress it
-        build_data.untar(dpath, fname)
-        path = os.path.join(dpath, 'paraphrases.xml')
-        clean_dataset(path)
+        # check if data had been previously built
+        if not build_data.built(dpath, version_string=version):
+            print('[building data: ' + dpath + ']')
 
-        fname = 'paraphraser_gold.zip'
-        build_data.download(url+'5', dpath, fname)
-        # uncompress it
-        build_data.untar(dpath, fname)
-        path = os.path.join(dpath, 'paraphrases_gold.xml')
-        clean_dataset(path)
+            # make a clean directory if needed
+            if build_data.built(dpath):
+                # an older version exists, so remove these outdated files.
+                build_data.remove_dir(dpath)
+            build_data.make_dir(dpath)
 
-        # mark the data as built
-        build_data.mark_done(dpath, version_string=version)
+            # download the data.
+            url = 'http://paraphraser.ru/download/get?file_id='  # datasets URL
+
+            fname = 'paraphraser.zip'
+            build_data.download(url+'1', dpath, fname)
+            # uncompress it
+            build_data.untar(dpath, fname)
+            path = os.path.join(dpath, 'paraphrases.xml')
+            clean_dataset(path)
+
+            fname = 'paraphraser_gold.zip'
+            build_data.download(url+'5', dpath, fname)
+            # uncompress it
+            build_data.untar(dpath, fname)
+            path = os.path.join(dpath, 'paraphrases_gold.xml')
+            clean_dataset(path)
+
+            # mark the data as built
+            build_data.mark_done(dpath, version_string=version)
+
+    datafile = set_path(opt, dpath)
+    return datafile
+
+
+def set_path(opt, dpath):
+    """Join the path to datasets directory with datasets file names and return result."""
+
+    dt = opt['datatype'].split(':')[0]
+    fname = 'paraphrases'
+    if dt == 'test':
+        fname += '_gold'
+    fname += '.tsv'
+    datafile = os.path.join(dpath, fname)
+    return datafile
+
+
