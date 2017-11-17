@@ -30,8 +30,8 @@
     Training the model:
         pyb train_squad
 
-	Evaluating the model:
-	    pyb run_unit_tests -P unittest_test_method_prefix="test_squad"
+    Evaluating the model:
+        pyb run_unit_tests -P unittest_test_method_prefix="test_squad"
 
     References
         [1] Pranav Rajpurkar, Jian Zhang, Konstantin Lopyrev, Percy Liang:
