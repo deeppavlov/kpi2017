@@ -2,7 +2,7 @@ Install from git
 ```sh
 git clone https://github.com/deepmipt/deeppavlov
 cd deeppavlov
-pip3 install Cython
+pip3 install Cython==0.26.0
 pip3 install -r requirements.txt
 python3 setup.py develop
 ```
