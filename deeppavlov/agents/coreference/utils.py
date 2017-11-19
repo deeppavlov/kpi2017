@@ -1,25 +1,25 @@
-"""
-Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+# Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
 
 import numpy as np
 import collections
 import tensorflow as tf
-from collections import Counter
 import operator
-import copy
+
+seed = 5
+np.random.seed(seed)
 
 def dict2conll(data, predict):
     with open(predict, 'w') as CoNLL:
@@ -76,15 +76,18 @@ def shape(x, dim):
 
 
 #  Networks
-def ffnn(inputs, num_hidden_layers, hidden_size, output_size, dropout, output_weights_initializer=None):
+def ffnn(inputs, num_hidden_layers, hidden_size, output_size, dropout,
+         output_weights_initializer=tf.contrib.layers.xavier_initializer(dtype=tf.float64)):
+    #inputs = tf.cast(inputs, tf.float32)
     if len(inputs.get_shape()) > 2:
         current_inputs = tf.reshape(inputs, [-1, shape(inputs, -1)])
     else:
         current_inputs = inputs
 
     for i in range(num_hidden_layers):
-        hidden_weights = tf.get_variable("hidden_weights_{}".format(i), [shape(current_inputs, 1), hidden_size])
-        hidden_bias = tf.get_variable("hidden_bias_{}".format(i), [hidden_size])
+        hidden_weights = tf.get_variable("hidden_weights_{}".format(i), [shape(current_inputs, 1), hidden_size], dtype=tf.float64)
+        hidden_bias = tf.get_variable("hidden_bias_{}".format(i), [hidden_size], dtype=tf.float64)
+
         current_outputs = tf.nn.relu(tf.matmul(current_inputs, hidden_weights) + hidden_bias)
 
         if dropout is not None:
@@ -92,10 +95,10 @@ def ffnn(inputs, num_hidden_layers, hidden_size, output_size, dropout, output_we
         current_inputs = current_outputs
 
     output_weights = tf.get_variable("output_weights", [shape(current_inputs, 1), output_size],
-                                     initializer=output_weights_initializer)
-    output_bias = tf.get_variable("output_bias", [output_size])
+                                     dtype=tf.float64)
+    output_bias = tf.get_variable("output_bias", [output_size], dtype=tf.float64)
     outputs = tf.matmul(current_inputs, output_weights) + output_bias
-
+    #outputs = tf.cast(outputs, tf.float64)
     if len(inputs.get_shape()) == 3:
         outputs = tf.reshape(outputs, [shape(inputs, 0), shape(inputs, 1), output_size])
     elif len(inputs.get_shape()) > 3:
@@ -108,12 +111,14 @@ def cnn(inputs, filter_sizes, num_filters):
     num_chars = shape(inputs, 1)
     input_size = shape(inputs, 2)
     outputs = []
+
+    # TODO: del the tf.cast(float32) when https://github.com/tensorflow/tensorflow/pull/12943 will be done
     for i, filter_size in enumerate(filter_sizes):
         with tf.variable_scope("conv_{}".format(i)):
             w = tf.get_variable("w", [filter_size, input_size, num_filters])
-            b = tf.get_variable("b", [num_filters])
-        conv = tf.nn.conv1d(inputs, w, stride=1, padding="VALID")  # [num_words, num_chars - filter_size, num_filters]
-        h = tf.nn.relu(tf.nn.bias_add(conv, b))  # [num_words, num_chars - filter_size, num_filters]
+            b = tf.get_variable("b", [num_filters], dtype=tf.float64)
+        conv = tf.nn.conv1d(tf.cast(inputs, tf.float32), w, stride=1, padding="VALID")  # [num_words, num_chars - filter_size, num_filters]
+        h = tf.nn.relu(tf.nn.bias_add(tf.cast(conv, tf.float64), b))  # [num_words, num_chars - filter_size, num_filters]
         pooled = tf.reduce_max(h, 1)  # [num_words, num_filters]
         outputs.append(pooled)
     return tf.concat(outputs, 1)  # [num_words, num_filters * len(filter_sizes)]
@@ -123,10 +128,10 @@ class CustomLSTMCell(tf.contrib.rnn.RNNCell):
     def __init__(self, num_units, batch_size, dropout):
         self._num_units = num_units
         self._dropout = dropout
-        self._dropout_mask = tf.nn.dropout(tf.ones([batch_size, self.output_size]), dropout)
+        self._dropout_mask = tf.nn.dropout(tf.ones([batch_size, self.output_size], dtype=tf.float64), dropout)
         self._initializer = self._block_orthonormal_initializer([self.output_size] * 3)
-        initial_cell_state = tf.get_variable("lstm_initial_cell_state", [1, self.output_size])
-        initial_hidden_state = tf.get_variable("lstm_initial_hidden_state", [1, self.output_size])
+        initial_cell_state = tf.get_variable("lstm_initial_cell_state", [1, self.output_size], dtype=tf.float64)
+        initial_hidden_state = tf.get_variable("lstm_initial_hidden_state", [1, self.output_size], dtype=tf.float64)
         self._initial_state = tf.contrib.rnn.LSTMStateTuple(initial_cell_state, initial_hidden_state)
 
     @property
@@ -159,9 +164,9 @@ class CustomLSTMCell(tf.contrib.rnn.RNNCell):
             return new_h, new_state
 
     def _orthonormal_initializer(self, scale=1.0):
-        def _initializer(shape, dtype=tf.float32, partition_info=None):
-            M1 = np.random.randn(shape[0], shape[0]).astype(np.float32)
-            M2 = np.random.randn(shape[1], shape[1]).astype(np.float32)
+        def _initializer(shape, dtype=tf.float64, partition_info=None):
+            M1 = np.random.randn(shape[0], shape[0]).astype(np.float64)
+            M2 = np.random.randn(shape[1], shape[1]).astype(np.float64)
             Q1, R1 = np.linalg.qr(M1)
             Q2, R2 = np.linalg.qr(M2)
             Q1 = Q1 * np.sign(np.diag(R1))
@@ -173,7 +178,7 @@ class CustomLSTMCell(tf.contrib.rnn.RNNCell):
         return _initializer
 
     def _block_orthonormal_initializer(self, output_sizes):
-        def _initializer(shape, dtype=np.float32, partition_info=None):
+        def _initializer(shape, dtype=np.float64, partition_info=None):
             assert len(shape) == 2
             assert sum(output_sizes) == shape[1]
             initializer = self._orthonormal_initializer()
@@ -194,21 +199,21 @@ class DocumentState(object):
     self.stacks = collections.defaultdict(list)
 
   def assert_empty(self):
-    assert self.doc_key is None , 'self.doc_key is None'
-    assert len(self.text) == 0 , 'len(self.text) == 0'
-    assert len(self.text_speakers) == 0 , 'len(self.text_speakers)'
-    assert len(self.sentences) == 0 , 'len(self.sentences) == 0'
-    assert len(self.speakers) == 0 , 'len(self.speakers) == 0'
-    assert len(self.clusters) == 0 , 'len(self.clusters) == 0'
-    assert len(self.stacks) == 0 , 'len(self.stacks) == 0'
+    assert self.doc_key is None, 'self.doc_key is None'
+    assert len(self.text) == 0, 'len(self.text) == 0'
+    assert len(self.text_speakers) == 0, 'len(self.text_speakers)'
+    assert len(self.sentences) == 0, 'len(self.sentences) == 0'
+    assert len(self.speakers) == 0, 'len(self.speakers) == 0'
+    assert len(self.clusters) == 0, 'len(self.clusters) == 0'
+    assert len(self.stacks) == 0, 'len(self.stacks) == 0'
 
   def assert_finalizable(self):
-    assert self.doc_key is not None , 'self.doc_key is not None finalizable'
-    assert len(self.text) == 0 , 'len(self.text) == 0_finalizable'
-    assert len(self.text_speakers) == 0 , 'len(self.text_speakers) == 0_finalizable'
-    assert len(self.sentences) > 0 , 'len(self.sentences) > 0_finalizable'
-    assert len(self.speakers) > 0 , 'len(self.speakers) > 0_finalizable'
-    assert all(len(s) == 0 for s in self.stacks.values()) , 'all(len(s) == 0 for s in self.stacks.values())_finalizable'
+    assert self.doc_key is not None, 'self.doc_key is not None finalizable'
+    assert len(self.text) == 0, 'len(self.text) == 0_finalizable'
+    assert len(self.text_speakers) == 0, 'len(self.text_speakers) == 0_finalizable'
+    assert len(self.sentences) > 0, 'len(self.sentences) > 0_finalizable'
+    assert len(self.speakers) > 0, 'len(self.speakers) > 0_finalizable'
+    assert all(len(s) == 0 for s in self.stacks.values()), 'all(len(s) == 0 for s in self.stacks.values())_finalizable'
 
   def finalize(self):
     merged_clusters = []

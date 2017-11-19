@@ -1,18 +1,17 @@
-"""
-Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+# Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
 
 import os
 import numpy as np
@@ -37,8 +36,44 @@ from nltk.tokenize import sent_tokenize, word_tokenize
 
 
 class ParaphraserModel(object):
+    """The class defines models for the task of paraphrase identification.
+
+    Attributes:
+        opt: given parameters.
+        embdict: an object of EmbeddingsDict class, gives embedding vector (value) for token (key).
+        n_examples: a number of processed examples.
+        updates: a number of gradient updates.
+        train_loss: train loss.
+        train_acc: train accuracy.
+        train_f1: train f1 measure.
+        val_loss: validation loss.
+        val_acc: validation accuracy.
+        val_f1: validation f1 measure.
+        max_sequence_length: a length of input sequences counted in tokens.
+        embedding_dim: a dimension of embeddings
+        learning_rate: learning rate.
+        batch_size: a batch size.
+        epoch_num: a number of epochs.
+        seed: random seed for layers initialization of a model.
+        hidden_dim: a dimension of hidden state in lstm and bi-lstm layers of a model.
+        attention_dim: a dimension of attention vector in attention layer of a model.
+        perspective_num: a parameter of a model defining a tesnor dimension
+        aggregation_dim: a parameter of a model defining a tesnor dimension
+        dense_dim: a parameter of a model defining a tesnor dimension
+        ldrop_val: a parameter of a model defining a value of dropout
+        dropout_val: a parameter of a model defining a value of dropout
+        recdrop_val: a parameter of a model defining a value of dropout
+        inpdrop_val: a parameter of a model defining a value of dropout
+        ldropagg_val: a parameter of a model defining a value of dropout
+        dropoutagg_val: a parameter of a model defining a value of dropout
+        recdropagg_val: a parameter of a model defining a value of dropout
+        inpdropagg_val: a parameter of a model defining a value of dropout
+        model_name: a name of a model
+    """
 
     def __init__(self, opt, embdict=None):
+        """Initialize a model from scratch or from saved files."""
+
         self.opt = copy.deepcopy(opt)
 
         if self.opt.get('pretrained_model'):
@@ -60,6 +95,8 @@ class ParaphraserModel(object):
         self.val_f1 = 0.0
 
     def reset_metrics(self):
+        """Reset train and validation information."""
+
         self.n_examples = 0
         self.updates = 0
         self.train_loss = 0.0
@@ -70,10 +107,14 @@ class ParaphraserModel(object):
         self.val_f1 = 0.0
 
     def shutdown(self):
+        """Reset an embdict attribute of the class."""
+
         self.embdict = None
         # tf.reset_default_graph()
 
     def _init_params(self, param_dict=None):
+        """Initialize parameters of a model."""
+
         if param_dict is None:
             param_dict = self.opt
         self.max_sequence_length = param_dict['max_sequence_length']
@@ -98,6 +139,8 @@ class ParaphraserModel(object):
         self.model_name = param_dict['model_name']
 
     def _init_from_scratch(self):
+        """Initialize a model from scratch."""
+
         if self.model_name == 'bmwacor':
             self.model = self.bmwacor_model()
         if self.model_name == 'bilstm_split':
@@ -118,12 +161,16 @@ class ParaphraserModel(object):
                            metrics=['accuracy', fbeta_score])
 
     def save(self, fname):
+        """Save a model."""
+
         self.model.save_weights(fname+'.h5')
         with open(fname+'.json', 'w') as f:
             json.dump(self.opt, f)
         self.embdict.save_items(fname)
 
     def _init_from_saved(self):
+        """Initialize a model from saved files."""
+
         fname = self.opt['pretrained_model']
         print('[ Loading model %s ]' % fname)
         if os.path.isfile(fname+'.json'):
@@ -141,14 +188,20 @@ class ParaphraserModel(object):
             exit()
 
     def update(self, batch):
+        """Train a model on a batch of samples."""
+
         x, y = batch
         self.train_loss, self.train_acc, self.train_f1 = self.model.train_on_batch(x, y)
         self.updates += 1
 
     def predict(self, batch):
+        """Make prediction for a batch of samples."""
+
         return self.model.predict_on_batch(batch)
 
     def build_ex(self, ex):
+        """Extract data from an observation."""
+
         if 'text' not in ex:
             return
 
@@ -164,6 +217,8 @@ class ParaphraserModel(object):
         return inputs
 
     def batchify(self, batch):
+        """Create a batch for sentence pairs."""
+
         question1 = []
         question2 = []
         for ex in batch:
@@ -181,6 +236,8 @@ class ParaphraserModel(object):
             return [b1, b2], None
 
     def create_batch(self, sentence_li):
+        """Create a batch for a list of sentences."""
+
         embeddings_batch = []
         for sen in sentence_li:
             embeddings = []
@@ -201,6 +258,8 @@ class ParaphraserModel(object):
         return embeddings_batch
 
     def create_lstm_layer(self, input_dim):
+        """Create a LSTM layer of a model."""
+
         inp = Input(shape=(input_dim, self.embedding_dim,))
         inp_dropout = Dropout(self.ldrop_val)(inp)
         ker_in = glorot_uniform(seed=self.seed)
@@ -220,6 +279,8 @@ class ParaphraserModel(object):
         return model
 
     def create_lstm_layer_1(self, input_dim):
+        """Create a LSTM layer of a model."""
+
         inp = Input(shape=(input_dim,  self.embedding_dim,))
         inp_drop = Dropout(self.ldrop_val)(inp)
         ker_in = glorot_uniform(seed=self.seed)
@@ -241,6 +302,8 @@ class ParaphraserModel(object):
         return model
 
     def create_lstm_layer_2(self, input_dim):
+        """Create a LSTM layer of a model."""
+
         inp = Input(shape=(input_dim, 2*self.perspective_num,))
         inp_drop = Dropout(self.ldrop_val)(inp)
         ker_in = glorot_uniform(seed=self.seed)
@@ -262,6 +325,8 @@ class ParaphraserModel(object):
         return model
 
     def create_lstm_layer_last(self, input_dim):
+        """Create a LSTM layer of a model."""
+
         inp = Input(shape=(input_dim,  self.embedding_dim,))
         inp_drop = Dropout(self.ldrop_val)(inp)
         ker_in = glorot_uniform(seed=self.seed)
@@ -282,6 +347,8 @@ class ParaphraserModel(object):
         return model
 
     def create_attention_layer(self, input_dim_a, input_dim_b):
+        """Create an attention layer of a model."""
+
         inp_a = Input(shape=(input_dim_a, self.hidden_dim,))
         inp_b = Input(shape=(input_dim_b, self.hidden_dim,))
         val = np.concatenate((np.zeros((self.max_sequence_length-1,1)), np.ones((1,1))), axis=0)
@@ -301,6 +368,8 @@ class ParaphraserModel(object):
         return model
 
     def create_attention_layer_f(self, input_dim_a, input_dim_b):
+        """Create an attention layer of a model."""
+
         inp_a = Input(shape=(input_dim_a, self.hidden_dim,))
         inp_b = Input(shape=(input_dim_b, self.hidden_dim,))
         val = np.concatenate((np.zeros((self.max_sequence_length-1,1)), np.ones((1,1))), axis=0)
@@ -320,6 +389,8 @@ class ParaphraserModel(object):
         return model
 
     def create_attention_layer_b(self, input_dim_a, input_dim_b):
+        """Create an attention layer of a model."""
+
         inp_a = Input(shape=(input_dim_a, self.hidden_dim,))
         inp_b = Input(shape=(input_dim_b, self.hidden_dim,))
         val = np.concatenate((np.ones((1,1)), np.zeros((self.max_sequence_length-1,1))), axis=0)
@@ -339,6 +410,8 @@ class ParaphraserModel(object):
         return model
 
     def weighted_with_attention(self, inputs):
+        """Define a function for a lambda layer of a model."""
+
         inp, inp_cont = inputs
         val = np.eye(self.max_sequence_length)
         kcon = K.constant(value=val, dtype='float32')
@@ -346,36 +419,52 @@ class ParaphraserModel(object):
         return K.batch_dot(diag, K.permute_dimensions(inp, (0,2,1)), axes=[1,2])
 
     def weighted_with_attention_output_shape(self, shapes):
+        """Define an output shape of a lambda layer of a model."""
+
         shape1, shape2 = shapes
         return shape1
 
     def dim_reduction(self, inp):
+        """Define a function for a lambda layer of a model."""
+
         return K.sum(inp, axis=1)
 
     def dim_reduction_output_shape(self, shape):
+        """Define an output shape of a lambda layer of a model."""
+
         return shape[0], shape[2]
 
     def weight_and_reduce(self, inputs):
+        """Define a function for a lambda layer of a model."""
+
         inp, inp_cont = inputs
         reduced = K.batch_dot(inp_cont,
                               K.permute_dimensions(inp, (0,2,1)), axes=[1,2])
         return K.squeeze(reduced, 1)
 
     def weight_and_reduce_output_shape(self, shapes):
+        """Define an output shape of a lambda layer of a model."""
+
         shape1, shape2 = shapes
         return shape1[0], shape1[2]
 
     def cosine_dist(self, inputs):
+        """Define a function for a lambda layer of a model."""
+
         input1, input2 = inputs
         a = K.abs(input1-input2)
         b = multiply(inputs)
         return K.concatenate([a, b])
 
     def cosine_dist_output_shape(self, shapes):
+        """Define an output shape of a lambda layer of a model."""
+
         shape1, shape2 = shapes
         return shape1[0], 2*shape1[1]
 
     def create_full_matching_layer_f(self, input_dim_a, input_dim_b):
+        """Create a full-matching layer of a model."""
+
         inp_a = Input(shape=(input_dim_a, self.hidden_dim,))
         inp_b = Input(shape=(input_dim_b, self.hidden_dim,))
         W = []
@@ -406,6 +495,8 @@ class ParaphraserModel(object):
         return model
 
     def create_full_matching_layer_b(self, input_dim_a, input_dim_b):
+        """Create a full-matching layer of a model."""
+
         inp_a = Input(shape=(input_dim_a, self.hidden_dim,))
         inp_b = Input(shape=(input_dim_b, self.hidden_dim,))
         W = []
@@ -436,6 +527,8 @@ class ParaphraserModel(object):
         return model
 
     def create_maxpool_matching_layer(self, input_dim_a, input_dim_b):
+        """Create a maxpooling-matching layer of a model."""
+
         inp_a = Input(shape=(input_dim_a, self.hidden_dim,))
         inp_b = Input(shape=(input_dim_b, self.hidden_dim,))
         W = []
@@ -463,6 +556,8 @@ class ParaphraserModel(object):
         return model
 
     def create_att_matching_layer(self, input_dim_a, input_dim_b):
+        """Create an attentive-matching layer of a model."""
+
         inp_a = Input(shape=(input_dim_a, self.hidden_dim,))
         inp_b = Input(shape=(input_dim_b, self.hidden_dim,))
 
@@ -499,6 +594,8 @@ class ParaphraserModel(object):
         return model
 
     def create_maxatt_matching_layer(self, input_dim_a, input_dim_b):
+        """Create a max-attentive-matching layer of a model."""
+
         inp_a = Input(shape=(input_dim_a, self.hidden_dim,))
         inp_b = Input(shape=(input_dim_b, self.hidden_dim,))
 
@@ -565,6 +662,8 @@ class ParaphraserModel(object):
         return shape[0], shape[2]
 
     def bmwacor_model(self):
+        """Define a model with LSTM layers and with attention."""
+
         input_a = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         input_b = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         lstm_layer = self.create_lstm_layer(self.max_sequence_length)
@@ -593,6 +692,8 @@ class ParaphraserModel(object):
         return model
 
     def bilstm_split_model(self):
+        """Define a model with bi-LSTM layers and with attention."""
+
         input_a = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         input_b = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         lstm_layer = self.create_lstm_layer_1(self.max_sequence_length)
@@ -637,6 +738,8 @@ class ParaphraserModel(object):
         return model
 
     def maxpool_match_model(self):
+        """Define a model with maxpooling-matching layers."""
+
         input_a = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         input_b = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         lstm_layer = self.create_lstm_layer_1(self.max_sequence_length)
@@ -684,6 +787,8 @@ class ParaphraserModel(object):
         return model
 
     def maxatt_match_model(self):
+        """Define a model with max-attentive-matching layers."""
+
         input_a = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         input_b = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         lstm_layer = self.create_lstm_layer_1(self.max_sequence_length)
@@ -731,6 +836,8 @@ class ParaphraserModel(object):
         return model
 
     def att_match_model(self):
+        """Define a model with attentive-matching layers."""
+
         input_a = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         input_b = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         lstm_layer = self.create_lstm_layer_1(self.max_sequence_length)
@@ -778,6 +885,8 @@ class ParaphraserModel(object):
         return model
 
     def full_match_model(self):
+        """Define a model with full-matching layers."""
+
         input_a = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         input_b = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         lstm_layer = self.create_lstm_layer_1(self.max_sequence_length)
@@ -825,6 +934,8 @@ class ParaphraserModel(object):
         return model
 
     def bilstm_woatt_model(self):
+        """Define a model with bi-LSTM layers and without attention."""
+
         input_a = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         input_b = Input(shape=(self.max_sequence_length, self.embedding_dim,))
         lstm_layer = self.create_lstm_layer_last(self.max_sequence_length)
