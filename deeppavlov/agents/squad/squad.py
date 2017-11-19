@@ -1,24 +1,46 @@
+# Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 import copy
 import os
 import pickle
+
 import numpy as np
 from numpy.random import seed
-from . import config
-from .model import SquadModel
 from parlai.core.agents import Agent
-from parlai.core.params import class2str
+
+from . import config
 from .embeddings_dict import SimpleDictionaryAgent
+from .model import SquadModel
 from .utils import build_feature_dict, vectorize, batchify, load_embeddings
 
+
 class SquadAgent(Agent):
+    """The class defines an agent to answer questions on SQuAD dataset in ParlAI."""
 
     @staticmethod
     def add_cmdline_args(argparser):
+        """Add command line arguments."""
+
         config.add_cmdline_args(argparser)
         SquadAgent.dictionary_class().add_cmdline_args(argparser)
 
     @staticmethod
     def dictionary_class():
+        """Return dictionary class."""
+
         return SimpleDictionaryAgent
 
     def __init__(self, opt, shared=None):
@@ -58,9 +80,8 @@ class SquadAgent(Agent):
 
 
     def _init_from_scratch(self):
-        '''
-        Initializes model from scratch
-        '''
+        """Initializes model from scratch."""
+
         self.feature_dict = build_feature_dict(self.opt)
         self.opt['num_features'] = len(self.feature_dict)
         self.opt['vocab_size'] = len(self.word_dict)
@@ -70,9 +91,8 @@ class SquadAgent(Agent):
 
 
     def _init_from_saved(self, fname):
-        '''
-        Loading model from checkpoint.
-        '''
+        """Load model from checkpoint."""
+
         print('[ Loading from saved %s ]' % fname)
 
         with open(fname+'.pkl','rb') as f:
@@ -87,6 +107,8 @@ class SquadAgent(Agent):
 
 
     def observe(self, observation):
+        """Return observation."""
+
         observation = copy.deepcopy(observation)
         if not self.episode_done:
             # if the last example wasn't the end of an episode, then we need to
@@ -99,6 +121,7 @@ class SquadAgent(Agent):
 
     def act(self):
         """Update or predict on a single example (batchsize = 1)."""
+
         if self.is_shared:
             raise RuntimeError("Parallel act is not supported.")
 
@@ -122,8 +145,8 @@ class SquadAgent(Agent):
 
     def batch_act(self, observations):
         """Update or predict on a batch of examples.
-        More efficient than act().
-        """
+        More efficient than act()."""
+
         if self.is_shared:
             raise RuntimeError("Parallel act is not supported.")
 
@@ -156,17 +179,20 @@ class SquadAgent(Agent):
         return batch_reply
 
     def drop_lr(self):
-        ''' Reset optimizer and reset learning rate if validation score is not increasing'''
+        """Reset optimizer and reset learning rate if validation score is not increasing."""
+
         self.model.model.optimizer.lr = self.model.model.optimizer.lr * self.opt['lr_drop']
 
     def save(self, fname=None):
         """Save the parameters of the agent to a file."""
+
         fname = self.opt.get('model_file', None) if fname is None else fname
         if fname:
             print("[ saving model: " + fname + " ]")
             self.model.save(fname)
 
     def report(self):
+        """Report and reset metrics."""
 
         output = (
             '[train] updates = %d | exs = %d | loss = %.4f | acc = %.4f' %
@@ -187,8 +213,8 @@ class SquadAgent(Agent):
 
     def _build_ex(self, ex):
         """Find the token span of the answer in the context for this example.
-        If a token span cannot be found, return None. Otherwise, torchify.
-        """
+        If a token span cannot be found, return None. Otherwise, torchify."""
+
         # Check if empty input (end of epoch)
         if not 'text' in ex:
             return
@@ -222,8 +248,8 @@ class SquadAgent(Agent):
 
     def _find_target(self, document, labels):
         """Find the start/end token span for all labels in document.
-        Return a random one for training.
-        """
+        Return a random one for training."""
+
         seed(1)
         def _positions(d, l):
             for i in range(len(d)):

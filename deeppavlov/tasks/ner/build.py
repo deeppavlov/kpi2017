@@ -1,18 +1,17 @@
-"""
-Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+# Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
 
 import parlai.core.build_data as build_data
 import os
@@ -34,7 +33,7 @@ def is_end_of_sentence(prev_token, current_token):
     return is_capital and is_punctuation
 
 
-def create_heap_file(dpath, heap_filename='heap.txt'):
+def create_heap_file(dpath, raw_dpath=None, heap_filename='heap.txt'):
     """Merge separate data files into one big heap file
 
     Args:
@@ -44,12 +43,15 @@ def create_heap_file(dpath, heap_filename='heap.txt'):
     Returns:
         None
     """
+    if raw_dpath is None:
+        raw_dpath = dpath
+
     if not os.path.exists(dpath):
         os.mkdir(dpath)
 
     prev_token = '\n'
     with open(os.path.join(dpath, heap_filename), 'w') as outfile:
-        for file_name in [os.path.join(dpath, iob_file) for iob_file in os.listdir(dpath) if iob_file.endswith(".iob")]:
+        for file_name in [os.path.join(raw_dpath, iob_file) for iob_file in os.listdir(raw_dpath) if iob_file.endswith(".iob")]:
             with open(file_name) as f:
                 lines_list = f.readlines()
             for line in lines_list:
@@ -90,7 +92,12 @@ def build(opt):
             # mark the data as built
             build_data.mark_done(dpath, version_string=version)
         opt['raw_dataset_path']=dpath
+        create_heap_file(opt['raw_dataset_path'])
+    else:
+        print('Use raw data for {}'.format(opt['raw_dataset_path']))
+        create_heap_file(dpath, opt['raw_dataset_path'])
+        build_data.mark_done(dpath, version_string=version)
     print("Use dataset from path: %s" % repr(opt['raw_dataset_path']))
-    create_heap_file(opt['raw_dataset_path'])
+
 
 

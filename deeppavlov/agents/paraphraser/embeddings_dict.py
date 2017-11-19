@@ -1,18 +1,17 @@
-"""
-Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+# Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
 
 import os
 import copy
@@ -24,7 +23,18 @@ from nltk.tokenize import sent_tokenize, word_tokenize
 
 
 class EmbeddingsDict(object):
+    """The class provides embeddings using fasttext model.
+
+    Attributes:
+        tok2emb: a dictionary containing embedding vectors (value) for tokens (keys)
+        embedding_dim: a dimension of embeddings
+        opt: given parameters
+        fasttext_model_file: a file containing fasttext binary model
+    """
+
     def __init__(self, opt, embedding_dim):
+        """Initialize the class according to given parameters."""
+
         self.tok2emb = {}
         self.embedding_dim = embedding_dim
         self.opt = copy.deepcopy(opt)
@@ -47,9 +57,12 @@ class EmbeddingsDict(object):
                 print('Downloaded a fasttext model')
             except Exception as e:
                 raise RuntimeError('Looks like the `EMBEDDINGS_URL` variable is set incorrectly', e)
+
         self.fasttext_model = fasttext.load_model(self.fasttext_model_file)
 
     def add_items(self, sentence_li):
+        """Add new items to the tok2emb dictionary from a given text."""
+
         for sen in sentence_li:
             sent_toks = sent_tokenize(sen)
             word_toks = [word_tokenize(el) for el in sent_toks]
@@ -60,6 +73,8 @@ class EmbeddingsDict(object):
                     self.tok2emb[tok] = self.fasttext_model[tok]
 
     def save_items(self, fname):
+        """Save the dictionary tok2emb to the file."""
+
         if self.opt.get('fasttext_embeddings_dict') is not None:
             fname = self.opt['fasttext_embeddings_dict']
         else:
@@ -70,11 +85,14 @@ class EmbeddingsDict(object):
         f.close()
 
     def emb2str(self, vec):
+        """Return the string corresponding to given embedding vectors"""
+
         string = ' '.join([str(el) for el in vec])
         return string
 
     def load_items(self):
-        """Initialize embeddings from file."""
+        """Initialize embeddings from the file."""
+
         fname = None
         if self.opt.get('fasttext_embeddings_dict') is not None:
             fname = self.opt['fasttext_embeddings_dict']
@@ -94,3 +112,4 @@ class EmbeddingsDict(object):
                     word = values[0]
                     coefs = np.asarray(values[1:], dtype='float32')
                     self.tok2emb[word] = coefs
+
