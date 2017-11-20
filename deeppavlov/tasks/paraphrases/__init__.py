@@ -1,4 +1,3 @@
-
 # Copyright 2017 Neural Networks and Deep Learning lab, MIPT
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
