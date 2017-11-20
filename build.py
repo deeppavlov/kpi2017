@@ -219,6 +219,47 @@ def train_squad(project):
     return metrics
 
 
+@task
+def train_sberchallenge(project):
+    create_dir('squad')
+    if project.get_property('idle_train') == 'True':
+        val_time = '600'
+        time_limit = '900'
+    else:
+        val_time = '1800'
+        time_limit = '86400'
+    metrics = bu.model(['-t', 'squad',
+                        '-m', 'deeppavlov.agents.squad.squad:SquadAgent',
+                        '--batchsize', '64',
+                        '--display-examples', 'False',
+                        '--num-epochs', '-1',
+                        '--max-train-time', time_limit,
+                        '--log-every-n-secs', '60',
+                        '--log-every-n-epochs', '-1',
+                        '--validation-every-n-secs', val_time,
+                        '--validation-every-n-epochs', '-1',
+                        '--chosen-metrics', 'f1',
+                        '--validation-patience', '5',
+                        '--type', 'fastqa_default',
+                        '--lr', '0.001',
+                        '--lr_drop', '0.3',
+                        '--linear_dropout', '0.25',
+                        '--embedding_dropout', '0.5',
+                        '--rnn_dropout', '0.25',
+                        '--recurrent_dropout', '0.0',
+                        '--input_dropout', '0.0',
+                        '--output_dropout', '0.0',
+                        '--context_enc_layers', '1',
+                        '--question_enc_layers', '1',
+                        '--encoder_hidden_dim', '300',
+                        '--projection_dim', '300',
+                        '--pointer_dim', '300',
+                        '--model-file', './build/squad/squad1',
+                        '--embedding_file', './build/squad/glove.840B.300d.txt'
+                        ])
+    return metrics
+
+
 def compile_coreference(path):
     path = path + '/coref_kernels.so'
     if not os.path.isfile(path):
