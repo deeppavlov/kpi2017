@@ -2,13 +2,11 @@ sudo: false
 language: python
 python:
 - '3.6'
-#addons:
-#    apt_packages: [ pandoc ]
 branches:
   only:
   - build-system
 before_script:
-- pip3 install pybuilder pdoc
+- pip3 install Cython pybuilder pdoc
 script:
 - "pyb -v"
 after_success:
