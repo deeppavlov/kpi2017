@@ -2,14 +2,14 @@ sudo: false
 language: python
 python:
 - '3.6'
-#addons:
-#    apt_packages: [ pandoc ]
 branches:
   only:
   - build-system
-before_script:
-- pip3 install pybuilder pdoc
+install:
+- pip3 install Cython gitlint pybuilder pdoc
+#before_script:
+#- pip3 install pybuilder pdoc
 script:
-- "pyb -v"
+- gitlint
 after_success:
 - pdoc --html --html-dir build/docs deeppavlov
