@@ -19,19 +19,17 @@
     paragraph of text, model produces answer in the form of two pointers to the start and the end of answer
     in the supporting paragraph.
 
+
     Model architecture is based of FastQA[1] and DRQA[2]. Roughly the architecture consists of the following blocks:
         1. bi-LSTM encoders for question and text passage (3 layers, each layer output is concatenated to one output repr.)
         2. attention over question to produce one fused question representation (instead of sequence of token representation)
         3. answer start and end pointers (two layer dense with dropout)
 
-    Model use pretrained glove embeddings glove.840B.300d.txt [6], and incorporate some additional features for each word
-    such as "word in question", tf (term frequency) etc..
 
-    Training the model:
-        pyb train_squad
-
-    Evaluating the model:
-        pyb run_unit_tests -P unittest_test_method_prefix="test_squad"
+    Details
+        Model use pretrained glove embeddings glove.840B.300d.txt [6], and incorporate some additional features for each word
+        such as "word in question", tf (term frequency) etc..
+        The metrics used for scoring are F1 and EM (Exact match).
 
     References
         [1] Pranav Rajpurkar, Jian Zhang, Konstantin Lopyrev, Percy Liang:
