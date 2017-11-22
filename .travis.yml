@@ -13,8 +13,8 @@ install:
 #- pip3 install Cython==0.26.0
 #- pip3 install -r requirements.txt
 #- python3 setup.py develop
-- pip3 install gitlint pycodestyle
+- pip3 install gitlint flake8
 
 script:
-- gitlint
-- pycodestyle
+- gitlint --commits master..HEAD
+- git diff master | flake8 --diff -
