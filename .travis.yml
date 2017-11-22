@@ -5,16 +5,11 @@ language: python
 python:
 - '3.6'
 
-#branches:
-#  only:
-#  - build-system
-
 install:
-#- pip3 install Cython==0.26.0
-#- pip3 install -r requirements.txt
-#- python3 setup.py develop
 - pip3 install gitlint flake8
 
 script:
-- gitlint --commits build-system..HEAD
-- git diff origin/build-system | flake8 --diff -
+- git config --replace-all remote.origin.fetch +refs/heads/*:refs/remotes/origin/*
+- git branch master
+- gitlint --commits HEAD..master
+- git diff master | flake8 --diff -
