@@ -16,5 +16,5 @@ install:
 - pip3 install gitlint flake8
 
 script:
-- gitlint --commits master..HEAD
-- git diff master | flake8 --diff -
+- gitlint --commits origin/master..HEAD
+- git diff origin/master | flake8 --diff -
