@@ -1,0 +1,15 @@
+sudo: false
+
+language: python
+
+python:
+- '3.6'
+
+install:
+- pip3 install gitlint flake8
+
+script:
+- git config --replace-all remote.origin.fetch +refs/heads/*:refs/remotes/origin/*
+- git branch master
+- gitlint --commits HEAD..master
+- git diff master | flake8 --diff -
