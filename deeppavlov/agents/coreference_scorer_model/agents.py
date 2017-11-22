@@ -241,6 +241,7 @@ class CoreferenceAgent(Agent):
 
         # create model
         if self.model is None:
+            tf.reset_default_graph()
             self.model = MentionScorerModel(hidden_size=self.opt['dense_hidden_size'], lr=self.opt['lr'],
                                             keep_prob_input=self.opt['keep_prob_input'],
                                             keep_prob_dense=self.opt['keep_prob_dense'],
