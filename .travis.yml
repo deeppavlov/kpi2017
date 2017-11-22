@@ -1,0 +1,19 @@
+language: python
+
+python:
+- '3.6'
+
+install:
+- pip3 install gitlint flake8
+
+script:
+- git config --replace-all remote.origin.fetch +refs/heads/*:refs/remotes/origin/*
+- >
+    if [ "${TRAVIS_PULL_REQUEST}" != "false" ]; then
+        bash git checkout ${TRAVIS_PULL_REQUEST_BRANCH};
+    else
+        bash git checkout ${TRAVIS_BRANCH};
+        git branch master;
+    fi
+- git diff master | flake8 --diff -
+- gitlint --commits ${TRAVIS_COMMIT_RANGE}
