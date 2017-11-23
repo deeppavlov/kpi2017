@@ -10,7 +10,7 @@ script:
 - git config --replace-all remote.origin.fetch +refs/heads/*:refs/remotes/origin/*
 - if [ "${TRAVIS_PULL_REQUEST}" != "false" ];
   then git checkout -b ${TRAVIS_PULL_REQUEST_BRANCH};
-  else git checkout -b ${TRAVIS_BRANCH} && git branch master;
+  else git checkout -b master && git checkout ${TRAVIS_BRANCH};
   fi
 - git diff master | flake8 --diff -
-- gitlint --commits ${TRAVIS_COMMIT_RANGE}
+- gitlint --extra-path tests/gitlint/ --commits ${TRAVIS_COMMIT_RANGE}
