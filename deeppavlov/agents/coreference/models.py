@@ -33,8 +33,13 @@ tf.set_random_seed(seed)
 
 
 class CorefModel(object):
+    """
+    End-to-end neural model for coreference resolution.
+    Class that create model from https://homes.cs.washington.edu/~kentonl/pub/lhlz-emnlp.2017.pdf
+    """
 
     def __init__(self, opt):
+        """Initialize the class and model according to the given parameters in opt."""
         self.opt = copy.deepcopy(opt)
 
         tf.set_random_seed(opt['random_seed'])
@@ -118,6 +123,17 @@ class CorefModel(object):
         self.sess.run(self.init_op)
         
     def start_enqueue_thread(self, train_example, is_training, returning=False):
+        """
+        Initialize queue of tensors that feed one at the input of the model.
+        Args:
+            train_example: modified dict from agent
+            is_training: training flag
+            returning: returning flag
+
+        Returns:
+            if returning is True, return list of variables:
+                [word_emb, char_index, text_len, speaker_ids, genre, is_training, gold_starts, gold_ends, cluster_ids]
+        """
         tensorized_example = self.tensorize_example(train_example, is_training=is_training)
         feed_dict = dict(zip(self.queue_input_tensors, tensorized_example))
         self.sess.run(self.enqueue_op, feed_dict=feed_dict)
@@ -125,6 +141,15 @@ class CorefModel(object):
             return tensorized_example
 
     def tensorize_mentions(self, mentions):
+        """
+        Create two np.array of starts end ends positions of gold mentions.
+        Args:
+            mentions: list of tuple
+
+        Returns:
+            np.array(starts positions), np.array(ends positions)
+
+        """
         if len(mentions) > 0:
             starts, ends = zip(*mentions)
         else:
@@ -132,6 +157,16 @@ class CorefModel(object):
         return np.array(starts), np.array(ends)
 
     def tensorize_example(self, example, is_training, oov_counts=None):
+        """
+
+        Args:
+            example:
+            is_training:
+            oov_counts:
+
+        Returns:
+
+        """
         clusters = example["clusters"]
         gold_mentions = sorted(tuple(m) for m in utils.flatten(clusters))
         gold_mention_map = {m: i for i, m in enumerate(gold_mentions)}
@@ -187,6 +222,22 @@ class CorefModel(object):
 
     def truncate_example(self, word_emb, char_index, text_len, speaker_ids, genre, is_training, gold_starts, gold_ends,
                          cluster_ids):
+        """
+
+        Args:
+            word_emb:
+            char_index:
+            text_len:
+            speaker_ids:
+            genre:
+            is_training:
+            gold_starts:
+            gold_ends:
+            cluster_ids:
+
+        Returns:
+
+        """
         max_training_sentences = self.opt["max_training_sentences"]
         num_sentences = word_emb.shape[0]
         assert num_sentences > max_training_sentences
@@ -223,6 +274,17 @@ class CorefModel(object):
         return word_emb, char_index, text_len, speaker_ids, genre, is_training, gold_starts, gold_ends, cluster_ids
 
     def get_mention_emb(self, text_emb, text_outputs, mention_starts, mention_ends):
+        """
+
+        Args:
+            text_emb:
+            text_outputs:
+            mention_starts:
+            mention_ends:
+
+        Returns:
+
+        """
         mention_emb_list = []
 
         mention_start_emb = tf.gather(text_outputs, mention_starts)  # [num_mentions, emb]
@@ -261,11 +323,28 @@ class CorefModel(object):
         return mention_emb
 
     def get_mention_scores(self, mention_emb):
+        """
+
+        Args:
+            mention_emb:
+
+        Returns:
+
+        """
         with tf.variable_scope("mention_scores"):
             return utils.ffnn(mention_emb, self.opt["ffnn_depth"], self.opt["ffnn_size"], 1,
                               self.dropout)  # [num_mentions, 1]
 
     def softmax_loss(self, antecedent_scores, antecedent_labels):
+        """
+
+        Args:
+            antecedent_scores:
+            antecedent_labels:
+
+        Returns:
+
+        """
         gold_scores = antecedent_scores + tf.log(tf.cast(antecedent_labels, tf.float64))  # [num_mentions, max_ant + 1]
         marginalized_gold_scores = tf.reduce_logsumexp(gold_scores, [1])  # [num_mentions]
         log_norm = tf.reduce_logsumexp(antecedent_scores, [1])  # [num_mentions]
@@ -273,6 +352,21 @@ class CorefModel(object):
 
     def get_antecedent_scores(self, mention_emb, mention_scores, antecedents, antecedents_len, mention_starts,
                               mention_ends, mention_speaker_ids, genre_emb):
+        """
+
+        Args:
+            mention_emb:
+            mention_scores:
+            antecedents:
+            antecedents_len:
+            mention_starts:
+            mention_ends:
+            mention_speaker_ids:
+            genre_emb:
+
+        Returns:
+
+        """
         num_mentions = utils.shape(mention_emb, 0)
         max_antecedents = utils.shape(antecedents, 1)
 
@@ -330,6 +424,15 @@ class CorefModel(object):
         return antecedent_scores  # [num_mentions, max_ant + 1]
 
     def flatten_emb_by_sentence(self, emb, text_len_mask):
+        """
+
+        Args:
+            emb:
+            text_len_mask:
+
+        Returns:
+
+        """
         num_sentences = tf.shape(emb)[0]
         max_sentence_length = tf.shape(emb)[1]
 
@@ -343,6 +446,16 @@ class CorefModel(object):
         return tf.boolean_mask(flattened_emb, text_len_mask)
 
     def encode_sentences(self, text_emb, text_len, text_len_mask):
+        """
+
+        Args:
+            text_emb:
+            text_len:
+            text_len_mask:
+
+        Returns:
+
+        """
         num_sentences = tf.shape(text_emb)[0]
         max_sentence_length = tf.shape(text_emb)[1]
 
@@ -387,6 +500,15 @@ class CorefModel(object):
         return self.flatten_emb_by_sentence(text_outputs, text_len_mask)
 
     def get_predicted_antecedents(self, antecedents, antecedent_scores):
+        """
+
+        Args:
+            antecedents:
+            antecedent_scores:
+
+        Returns:
+
+        """
         predicted_antecedents = []
         for i, index in enumerate(np.argmax(antecedent_scores, axis=1) - 1):
             if index < 0:
@@ -397,6 +519,22 @@ class CorefModel(object):
 
     def get_predictions_and_loss(self, word_emb, char_index, text_len, speaker_ids, genre, is_training, gold_starts,
                                  gold_ends, cluster_ids):
+        """
+
+        Args:
+            word_emb:
+            char_index:
+            text_len:
+            speaker_ids:
+            genre:
+            is_training:
+            gold_starts:
+            gold_ends:
+            cluster_ids:
+
+        Returns:
+
+        """
         self.dropout = 1 - (tf.cast(is_training, tf.float64) * self.opt["dropout_rate"])
         self.lexical_dropout = 1 - (tf.cast(is_training, tf.float64) * self.opt["lexical_dropout_rate"])
 
@@ -490,6 +628,16 @@ class CorefModel(object):
                 antecedent_scores], loss
 
     def get_predicted_clusters(self, mention_starts, mention_ends, predicted_antecedents):
+        """
+
+        Args:
+            mention_starts:
+            mention_ends:
+            predicted_antecedents:
+
+        Returns:
+
+        """
         mention_to_predicted = {}
         predicted_clusters = []
         for i, predicted_index in enumerate(predicted_antecedents):
@@ -514,6 +662,14 @@ class CorefModel(object):
         return predicted_clusters, mention_to_predicted
 
     def init_from_saved(self, saver):
+        """
+
+        Args:
+            saver:
+
+        Returns:
+
+        """
         # checkpoint_path = join(self.log_root, self.opt['name'])
         checkpoint_path = self.opt['model_file']
         if os.path.isfile(join(checkpoint_path, "model.max.ckpt.meta")):
@@ -523,9 +679,11 @@ class CorefModel(object):
             print('Init from scratch')
 
     def shutdown(self):
+        """Reset the model"""
         tf.reset_default_graph()
 
     def save(self, saver):
+        """Save model checkpoint"""
         # log_dir = self.log_root
         # if isdir(log_dir):
         #     if isdir(join(log_dir, self.opt['name'])):
@@ -550,11 +708,28 @@ class CorefModel(object):
         saver.save(self.sess, join(self.opt['model_file'], 'model.max.ckpt'))
 
     def train(self, batch):
+        """
+
+        Args:
+            batch:
+
+        Returns:
+
+        """
         self.start_enqueue_thread(batch, True)
         self.tf_loss, tf_global_step, _ = self.sess.run([self.loss, self.global_step, self.train_op])
         return self.tf_loss, tf_global_step
 
     def predict(self, batch, out_file):
+        """
+
+        Args:
+            batch:
+            out_file:
+
+        Returns:
+
+        """
         self.start_enqueue_thread(batch, False)
 
         if self.opt['train_on_gold']:
@@ -576,6 +751,22 @@ class CorefModel(object):
 
     def get_predictions_and_loss_on_gold(self, word_emb, char_index, text_len, speaker_ids, genre, is_training,
                                          gold_starts, gold_ends, cluster_ids):
+        """
+
+        Args:
+            word_emb:
+            char_index:
+            text_len:
+            speaker_ids:
+            genre:
+            is_training:
+            gold_starts:
+            gold_ends:
+            cluster_ids:
+
+        Returns:
+
+        """
         self.dropout = 1 - (tf.cast(is_training, tf.float64) * self.opt["dropout_rate"])
         self.lexical_dropout = 1 - (tf.cast(is_training, tf.float64) * self.opt["lexical_dropout_rate"])
 

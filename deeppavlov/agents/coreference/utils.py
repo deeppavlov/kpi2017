@@ -24,11 +24,28 @@ seed = 5
 np.random.seed(seed)
 
 def dict2conll(data, predict):
+    """
+
+    Args:
+        data:
+        predict:
+
+    Returns:
+
+    """
     with open(predict, 'w') as CoNLL:
         CoNLL.write(data['conll_str'])
     return None
 
 def normalize(v):
+    """
+
+    Args:
+        v:
+
+    Returns:
+
+    """
     norm = np.linalg.norm(v)
     if norm > 0:
         return v / norm
@@ -36,10 +53,26 @@ def normalize(v):
         return v
 
 def flatten(l):
+    """
+
+    Args:
+        l:
+
+    Returns:
+
+    """
     return [item for sublist in l for item in sublist]
 
 
 def load_char_dict(char_vocab_path):
+    """
+
+    Args:
+        char_vocab_path:
+
+    Returns:
+
+    """
     vocab = [u"<unk>"]
     with open(char_vocab_path) as f:
         vocab.extend(c.strip() for c in f.readlines())
@@ -49,6 +82,16 @@ def load_char_dict(char_vocab_path):
 
 
 def load_embedding_dict(embedding_path, embedding_size, embedding_format):
+    """
+
+    Args:
+        embedding_path:
+        embedding_size:
+        embedding_format:
+
+    Returns:
+
+    """
     print("Loading word embeddings from {}...".format(embedding_path))
 
     if embedding_format == 'vec':
@@ -77,16 +120,48 @@ def maybe_divide(x, y):
 
 
 def projection(inputs, output_size, initializer=None):
+    """
+
+    Args:
+        inputs:
+        output_size:
+        initializer:
+
+    Returns:
+
+    """
     return ffnn(inputs, 0, -1, output_size, dropout=None, output_weights_initializer=initializer)
 
 
 def shape(x, dim):
+    """
+
+    Args:
+        x:
+        dim:
+
+    Returns:
+
+    """
     return x.get_shape()[dim].value or tf.shape(x)[dim]
 
 
 #  Networks
 def ffnn(inputs, num_hidden_layers, hidden_size, output_size, dropout,
          output_weights_initializer=tf.contrib.layers.xavier_initializer(dtype=tf.float64)):
+    """
+
+    Args:
+        inputs:
+        num_hidden_layers:
+        hidden_size:
+        output_size:
+        dropout:
+        output_weights_initializer:
+
+    Returns:
+
+    """
     #inputs = tf.cast(inputs, tf.float32)
     if len(inputs.get_shape()) > 2:
         current_inputs = tf.reshape(inputs, [-1, shape(inputs, -1)])
@@ -116,6 +191,16 @@ def ffnn(inputs, num_hidden_layers, hidden_size, output_size, dropout,
 
 
 def cnn(inputs, filter_sizes, num_filters):
+    """
+
+    Args:
+        inputs:
+        filter_sizes:
+        num_filters:
+
+    Returns:
+
+    """
     num_words = shape(inputs, 0)
     num_chars = shape(inputs, 1)
     input_size = shape(inputs, 2)
@@ -134,7 +219,17 @@ def cnn(inputs, filter_sizes, num_filters):
 
 
 class CustomLSTMCell(tf.contrib.rnn.RNNCell):
+    """
+
+    """
     def __init__(self, num_units, batch_size, dropout):
+        """
+
+        Args:
+            num_units:
+            batch_size:
+            dropout:
+        """
         self._num_units = num_units
         self._dropout = dropout
         self._dropout_mask = tf.nn.dropout(tf.ones([batch_size, self.output_size], dtype=tf.float64), dropout)
@@ -305,6 +400,7 @@ def handle_line(line, document_state):
         document_state.clusters[cluster_id].append((start, word_index))
     return None
 
+
 def conll2modeldata(data):  
     conll_str = data['conll_str']
     document_state = DocumentState()
@@ -314,6 +410,7 @@ def conll2modeldata(data):
         if document is not None:
             model_file = document
     return model_file
+
 
 def output_conll(input_file, predictions):
     prediction_map = {}
