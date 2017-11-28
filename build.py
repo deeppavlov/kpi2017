@@ -188,17 +188,17 @@ def train_coreference(project):
                         '-dt', 'train:ordered',
                         '--batchsize', '1',
                         '--display-examples', 'False',
-                        '--num-epochs', '500',
+                        '--num-epochs', '300',
                         '--validation-every-n-epochs', '10',
-                        '--nitr', '500',
+                        '--nitr', '300',
                         '--log-every-n-epochs', '1',
                         '--log-every-n-secs', '-1',
                         '--chosen-metric', 'conll-F-1',
-                        '--validation-patience', '20',
+                        '--validation-patience', '15',
                         '--train_on_gold', 'True',
                         '--random_seed', '5',
-                        '--emb_format', 'bin',
-                        '--embedding_size', '300'
+                        '--emb_format', 'vec',
+                        '--embedding_size', '100'
                         ])
     return metrics
 
