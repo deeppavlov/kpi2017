@@ -13,3 +13,27 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+
+"""
+    tasks.coreference
+
+    This teacher prepares data from RuCor corpus [1][2].
+
+    Data preprocessing
+        1. RuCor corpus files are converted to standard conll format [3]. 
+        2. RuCor doesn't provide train/test data splitting, teacher makes random splitting. 
+
+    Learning process
+        1. In train mode teacher acts by sending one document from train set as conll files.
+        2. In valid/test mode teacher acts by sending one conll files from test set.
+
+    Evaluating
+        For evaluation official CoNLL-2012 [3] scorer script is used.
+        Target score: CoNLL-F-1.
+    References
+        [1] RuCor - Russian coreference corpus http://rucoref.maimbava.net/
+        [2] Evaluating Anaphora and Coreference Resolution for Russian / S. Toldova, A. Roytberg, A. A. Ladygina et al. //
+            Komp’juternaja lingvistika i intellektual’nye tehnologii. Po materialam ezhegodnoj Mezhdunarodnoj konferencii
+            Dialog. — 2014. — Pp. 681–695.
+        [3] CoNLL-2012 shared task http://conll.cemantix.org/2012/
+"""

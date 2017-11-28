@@ -15,13 +15,15 @@ limitations under the License.
 """
 
 import parlai.core.build_data as build_data
-import os
 from os.path import join
 from shutil import copytree
 import time
 from . import utils
 
+
 def build(opt):
+    """prepares datasets and other dependencies for CoreferenceTeacher"""
+
     # get path to data directory and create folders tree
     dpath = join(opt['datapath'])
     # define version if any, and languages
