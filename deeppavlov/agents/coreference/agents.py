@@ -58,6 +58,17 @@ def build_data_for_agent(opt):
             raise('To use your own embeddings, please, put the file embeddings_lenta_100.vec in the folder '
                   '{0}'.format(join(dpath, 'embeddings')))
 
+    if not isfile(join(dpath, 'embeddings', 'ft_0.8.3_nltk_yalen_sg_300.bin')):
+        print('[Download the fasttext binary model]...')
+        try:
+            embed_url = os.environ['EMBEDDINGS_URL'] + 'ft_0.8.3_nltk_yalen_sg_300.bin'
+            build_data.download(embed_url, join(dpath, 'embeddings'), 'ft_0.8.3_nltk_yalen_sg_300.bin')
+            print('[End of download the fasttext binary model]...')
+        except RuntimeWarning:
+            raise('To use your own embeddings, please, put the file ft_0.8.3_nltk_yalen_sg_300.bin or another'
+                  'binary model in the folder '
+                  '{0}'.format(join(dpath, 'embeddings')))
+
     if not isfile(join(dpath, 'vocab', 'char_vocab.russian.txt')):
         print('[Download the chars vocalibary]...')
         try:
