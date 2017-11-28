@@ -156,16 +156,18 @@ class CorefModel(object):
             starts, ends = [], []
         return np.array(starts), np.array(ends)
 
-    def tensorize_example(self, example, is_training, oov_counts=None):
+    def tensorize_example(self, example, is_training):
         """
-
+        Takes a dictionary from the observation and transforms it into a set of tensors
+        for tensorflow placeholders.
         Args:
-            example:
-            is_training:
-            oov_counts:
+            example: dict from observation
+            is_training: True or False value, use as a returned parameter or flag
 
-        Returns:
-
+        Returns: word_emb, char_index, text_len, speaker_ids, genre, is_training, gold_starts, gold_ends, cluster_ids;
+            it numpy tensors for placeholders (is_training - bool)
+            If length of the longest sentence in the document is greater than parameter "max_training_sentences",
+            the returning method calls the 'truncate_example' function.
         """
         clusters = example["clusters"]
         gold_mentions = sorted(tuple(m) for m in utils.flatten(clusters))
@@ -211,9 +213,6 @@ class CorefModel(object):
 
         gold_starts, gold_ends = self.tensorize_mentions(gold_mentions)  # numpy of unicode str
 
-        # print 'gold_ends_len', len(gold_ends), type(gold_ends[0])
-        # print 'gold_starts_len', len(gold_starts), type(gold_starts[0])
-
         if is_training and len(sentences) > self.opt["max_training_sentences"]:
             return self.truncate_example(word_emb, char_index, text_len, speaker_ids, genre, is_training, gold_starts,
                                          gold_ends, cluster_ids)
@@ -223,19 +222,27 @@ class CorefModel(object):
     def truncate_example(self, word_emb, char_index, text_len, speaker_ids, genre, is_training, gold_starts, gold_ends,
                          cluster_ids):
         """
+        It takes the output of the function "tensorize_example" and cuts off the excess part of the tensor.
 
         Args:
-            word_emb:
-            char_index:
-            text_len:
-            speaker_ids:
-            genre:
-            is_training:
-            gold_starts:
-            gold_ends:
-            cluster_ids:
+            word_emb: [Amount of sentences, Amount of words in sentence (max len), self.embedding_size],
+                float64, Text embeddings.
+            char_index: [Amount of words, Amount of chars in word (max len), char_embedding_size],
+                tf.int32, Character indices.
+            text_len: tf.int32, [Amount of sentences]
+            speaker_ids: [Amount of independent speakers], tf.int32, Speaker IDs.
+            genre: [Amount of independent genres], tf.int32, Genre
+            is_training: tf.bool
+            gold_starts: tf.int32, [Amount of gold mentions]
+            gold_ends: tf.int32, [Amount of gold mentions]
+            cluster_ids: tf.int32, [Amount of independent clusters]
 
-        Returns:
+        Returns: word_emb, char_index, text_len, speaker_ids, genre, is_training, gold_starts, gold_ends, cluster_ids;
+        The same set of tensors as in the input, but with a corrected shape.
+
+        Additional Information:
+        "None" in some form-size tensors, for example "word_emb", means that this axis measurement can vary
+         from document to document.
 
         """
         max_training_sentences = self.opt["max_training_sentences"]
@@ -275,14 +282,15 @@ class CorefModel(object):
 
     def get_mention_emb(self, text_emb, text_outputs, mention_starts, mention_ends):
         """
-
+        Forms a tensor that contains of embeddings of specific mentions.
         Args:
-            text_emb:
-            text_outputs:
-            mention_starts:
-            mention_ends:
+            text_emb:  boolean mask, [num_sentences, max_sentence_length, emb]
+            text_outputs: tf.float64, [num_sentences, max_sentence_length, emb]
+            mention_starts: tf.int32, [Amount of mentions]
+            mention_ends: tf.int32, [Amount of mentions]
 
-        Returns:
+        Returns: tf.float64, [num_mentions, emb]
+        Mentions embeddings tensor.
 
         """
         mention_emb_list = []
@@ -324,12 +332,13 @@ class CorefModel(object):
 
     def get_mention_scores(self, mention_emb):
         """
-
+        Sends a mentions tensor to the input of a fully connected network, and outputs its output.
+        It compute mentions scores.
         Args:
-            mention_emb:
+            mention_emb: tf.float64, [num_mentions, emb], a tensor that contains of embeddings of specific mentions
 
-        Returns:
-
+        Returns: [num_mentions, 1]
+            Output of the fully-connected network, that compute the mentions scores.
         """
         with tf.variable_scope("mention_scores"):
             return utils.ffnn(mention_emb, self.opt["ffnn_depth"], self.opt["ffnn_size"], 1,
@@ -337,34 +346,35 @@ class CorefModel(object):
 
     def softmax_loss(self, antecedent_scores, antecedent_labels):
         """
-
+        Computes the value of the loss function using antecedent_scores and antecedent_labels.
+        Practically standard softmax function.
         Args:
-            antecedent_scores:
-            antecedent_labels:
+            antecedent_scores: tf.float64, [num_mentions, max_ant + 1], output of fully-connected network that compute
+                antecedent scores.
+            antecedent_labels:  True labels for antecedent.
 
-        Returns:
-
+        Returns: [num_mentions]
+            The value of loss function.
         """
         gold_scores = antecedent_scores + tf.log(tf.cast(antecedent_labels, tf.float64))  # [num_mentions, max_ant + 1]
         marginalized_gold_scores = tf.reduce_logsumexp(gold_scores, [1])  # [num_mentions]
         log_norm = tf.reduce_logsumexp(antecedent_scores, [1])  # [num_mentions]
         return log_norm - marginalized_gold_scores  # [num_mentions]
 
-    def get_antecedent_scores(self, mention_emb, mention_scores, antecedents, antecedents_len, mention_starts,
-                              mention_ends, mention_speaker_ids, genre_emb):
+    def get_antecedent_scores(self, mention_emb, mention_scores, antecedents, antecedents_len, mention_speaker_ids,
+                              genre_emb):
         """
-
+        Forms a new tensor using special features, mentions embeddings, mentions scores, etc.
+        and passes it through a fully-connected network that compute antecedent scores.
         Args:
-            mention_emb:
-            mention_scores:
-            antecedents:
-            antecedents_len:
-            mention_starts:
-            mention_ends:
-            mention_speaker_ids:
-            genre_emb:
+            mention_emb: [num_mentions, emb], a tensor that contains of embeddings of specific mentions
+            mention_scores: [num_mentions, 1], Output of the fully-connected network, that compute the mentions scores.
+            antecedents: [] get from C++ function
+            antecedents_len: [] get from C++ function
+            mention_speaker_ids: [num_mentions, speaker_emb_size], tf.float64, Speaker IDs.
+            genre_emb: [genre_emb_size], tf.float64, Genre
 
-        Returns:
+        Returns: tf.float64, [num_mentions, max_ant + 1], antecedent scores.
 
         """
         num_mentions = utils.shape(mention_emb, 0)
@@ -425,12 +435,12 @@ class CorefModel(object):
 
     def flatten_emb_by_sentence(self, emb, text_len_mask):
         """
-
+        Create boolean mask for emb tensor.
         Args:
-            emb:
-            text_len_mask:
+            emb: Some embeddings tensor with rank 2 or 3
+            text_len_mask: A mask tensor representing the first N positions of each row.
 
-        Returns:
+        Returns: emb tensor after mask applications.
 
         """
         num_sentences = tf.shape(emb)[0]
@@ -447,13 +457,13 @@ class CorefModel(object):
 
     def encode_sentences(self, text_emb, text_len, text_len_mask):
         """
-
+        Passes the input tensor through bi_LSTM.
         Args:
-            text_emb:
-            text_len:
-            text_len_mask:
+            text_emb: [num_sentences, max_sentence_length, emb], text code in tensor
+            text_len: tf.int32, [Amount of sentences]
+            text_len_mask: boolean mask for text_emb
 
-        Returns:
+        Returns: [num_sentences, max_sentence_length, emb], output of bi-LSTM after boolean mask application
 
         """
         num_sentences = tf.shape(text_emb)[0]
@@ -501,12 +511,13 @@ class CorefModel(object):
 
     def get_predicted_antecedents(self, antecedents, antecedent_scores):
         """
-
+        Forms a list of predicted antecedent labels
         Args:
-            antecedents:
-            antecedent_scores:
+            antecedents: [] get from C++ function
+            antecedent_scores: [num_mentions, max_ant + 1] output of fully-connected network
+                that compute antecedent_scores
 
-        Returns:
+        Returns: a list of predicted antecedent labels
 
         """
         predicted_antecedents = []
@@ -520,20 +531,24 @@ class CorefModel(object):
     def get_predictions_and_loss(self, word_emb, char_index, text_len, speaker_ids, genre, is_training, gold_starts,
                                  gold_ends, cluster_ids):
         """
-
+        Connects all elements of the network to one complete graph, that compute mentions spans independently
+        And passes through it the tensors that came to the input of placeholders.
         Args:
-            word_emb:
-            char_index:
-            text_len:
-            speaker_ids:
-            genre:
-            is_training:
-            gold_starts:
-            gold_ends:
-            cluster_ids:
+            word_emb: [Amount of sentences, Amount of words in sentence (max len), self.embedding_size],
+                float64, Text embeddings.
+            char_index: [Amount of words, Amount of chars in word (max len), char_embedding_size],
+                tf.int32, Character indices.
+            text_len: tf.int32, [Amount of sentences]
+            speaker_ids: [Amount of independent speakers], tf.int32, Speaker IDs.
+            genre: [Amount of independent genres], tf.int32, Genre
+            is_training: tf.bool
+            gold_starts: tf.int32, [Amount of gold mentions]
+            gold_ends: tf.int32, [Amount of gold mentions]
+            cluster_ids: tf.int32, [Amount of independent clusters]
 
-        Returns:
-
+        Returns:[candidate_starts, candidate_ends, candidate_mention_scores, mention_starts, mention_ends, antecedents,
+                antecedent_scores], loss
+        List of predictions and scores, and Loss function value
         """
         self.dropout = 1 - (tf.cast(is_training, tf.float64) * self.opt["dropout_rate"])
         self.lexical_dropout = 1 - (tf.cast(is_training, tf.float64) * self.opt["lexical_dropout_rate"])
@@ -590,9 +605,6 @@ class CorefModel(object):
         candidate_mention_scores = self.get_mention_scores(candidate_mention_emb)  # [num_mentions, 1]
         candidate_mention_scores = tf.squeeze(candidate_mention_scores, 1)  # [num_mentions]
 
-        # TODO: it seems that 'mention_ratio' it like average frequency of mentions in text
-        # TODO: how we can destroy this hardcoding ?
-        # TODO: k it is the fixed amount of mentions in text/tensor, we need fixed it
         k = tf.to_int32(tf.floor(tf.to_float(tf.shape(text_outputs)[0]) * self.opt["mention_ratio"]))
         predicted_mention_indices = self.extract_mentions(candidate_mention_scores, candidate_starts,
                                                           candidate_ends, k)  # ([k], [k])
@@ -618,8 +630,7 @@ class CorefModel(object):
         antecedents_len.set_shape([None])
 
         antecedent_scores = self.get_antecedent_scores(mention_emb, mention_scores, antecedents, antecedents_len,
-                                                       mention_starts, mention_ends, mention_speaker_ids,
-                                                       genre_emb)  # [num_mentions, max_ant + 1]
+                                                       mention_speaker_ids, genre_emb)  # [num_mentions, max_ant + 1]
 
         loss = self.softmax_loss(antecedent_scores, antecedent_labels)  # [num_mentions]
         loss = tf.reduce_sum(loss)  # []
@@ -629,14 +640,17 @@ class CorefModel(object):
 
     def get_predicted_clusters(self, mention_starts, mention_ends, predicted_antecedents):
         """
-
+        Creates a list of clusters, as in dict from observation, and dict mentions with a list of clusters
+        to which they belong. They are necessary for inference mode and marking a new conll documents without
+        last column.
         Args:
-            mention_starts:
-            mention_ends:
-            predicted_antecedents:
+            mention_starts: tf.float64, [Amount of mentions]
+            mention_ends: tf.float64, [Amount of mentions]
+            predicted_antecedents: [len antecedent scores]
 
         Returns:
-
+            predicted_clusters = [[(),(),()],[(),()]] list like, with mention id
+            mention_to_predicted = {mentions id: [(),(),()], ...}
         """
         mention_to_predicted = {}
         predicted_clusters = []
@@ -663,11 +677,11 @@ class CorefModel(object):
 
     def init_from_saved(self, saver):
         """
-
+        Load model from saved checkpoint.
         Args:
-            saver:
+            saver: tf.saver
 
-        Returns:
+        Returns: Nothing
 
         """
         # checkpoint_path = join(self.log_root, self.opt['name'])
@@ -709,11 +723,11 @@ class CorefModel(object):
 
     def train(self, batch):
         """
-
+        Run train operation on one batch/document
         Args:
-            batch:
+            batch: list of tensors for placeholders, output of "tensorize_example" function
 
-        Returns:
+        Returns: Loss functions value and tf.global_step
 
         """
         self.start_enqueue_thread(batch, True)
@@ -722,12 +736,12 @@ class CorefModel(object):
 
     def predict(self, batch, out_file):
         """
-
+        Make prediction of new coreference clusters and write it conll document.
         Args:
-            batch:
-            out_file:
+            batch: list of tensors for placeholders, output of "tensorize_example" function
+            out_file: original conll document
 
-        Returns:
+        Returns: str with new conll document, with new coreference clusters
 
         """
         self.start_enqueue_thread(batch, False)
@@ -752,20 +766,24 @@ class CorefModel(object):
     def get_predictions_and_loss_on_gold(self, word_emb, char_index, text_len, speaker_ids, genre, is_training,
                                          gold_starts, gold_ends, cluster_ids):
         """
-
+        Connects all elements of the network to one complete graph, that use gold mentions.
+        And passes through it the tensors that came to the input of placeholders.
         Args:
-            word_emb:
-            char_index:
-            text_len:
-            speaker_ids:
-            genre:
-            is_training:
-            gold_starts:
-            gold_ends:
-            cluster_ids:
+            word_emb: [Amount of sentences, Amount of words in sentence (max len), self.embedding_size],
+                float64, Text embeddings.
+            char_index: [Amount of words, Amount of chars in word (max len), char_embedding_size],
+                tf.int32, Character indices.
+            text_len: tf.int32, [Amount of sentences]
+            speaker_ids: [Amount of independent speakers], tf.int32, Speaker IDs.
+            genre: [Amount of independent genres], tf.int32, Genre
+            is_training: tf.bool
+            gold_starts: tf.int32, [Amount of gold mentions]
+            gold_ends: tf.int32, [Amount of gold mentions]
+            cluster_ids: tf.int32, [Amount of independent clusters]
 
-        Returns:
-
+        Returns:[candidate_starts, candidate_ends, candidate_mention_scores, mention_starts, mention_ends, antecedents,
+                antecedent_scores], loss
+        List of predictions and scores, and Loss function value
         """
         self.dropout = 1 - (tf.cast(is_training, tf.float64) * self.opt["dropout_rate"])
         self.lexical_dropout = 1 - (tf.cast(is_training, tf.float64) * self.opt["lexical_dropout_rate"])
@@ -848,8 +866,7 @@ class CorefModel(object):
         antecedents_len.set_shape([None])
 
         antecedent_scores = self.get_antecedent_scores(mention_emb, mention_scores, antecedents, antecedents_len,
-                                                       mention_starts, mention_ends, mention_speaker_ids,
-                                                       genre_emb)  # [num_mentions, max_ant + 1]
+                                                       mention_speaker_ids, genre_emb)  # [num_mentions, max_ant + 1]
 
         loss = self.softmax_loss(tf.cast(antecedent_scores, tf.float64), antecedent_labels)  # [num_mentions]
         loss = tf.reduce_sum(loss)  # []
