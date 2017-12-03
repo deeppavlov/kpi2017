@@ -14,11 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import numpy as np
 import time
 import os
-from os.path import join, basename
-import json
 from sklearn.model_selection import ShuffleSplit
 from tqdm import tqdm
 import parlai.core.build_data as build_data
@@ -27,10 +24,13 @@ from collections import defaultdict
 
 
 class watcher():
+    """
+    A class that ensures that there are no violations in the structure of mentions.
+    """
     def __init__(self):
         self.mentions = 0
     
-    def mentions_closed(self,s):
+    def mentions_closed(self, s):
         s = s.split('|')
         for x in s:
             if x[0] == '(' and x[-1] != ')':
@@ -43,7 +43,18 @@ class watcher():
         else:
             return True
 
+
 def RuCoref2CoNLL(path, out_path, language='russian'):
+    """
+    RuCor corpus files are converted to standard conll format.
+    Args:
+        path: path to the RuCorp dataset
+        out_path: -
+        language: language of dataset
+
+    Returns: Nothing
+
+    """
     data = {"doc_id": [],
             "part_id": [],
             "word_number": [],
@@ -217,6 +228,16 @@ def RuCoref2CoNLL(path, out_path, language='russian'):
 
 
 def split_doc(inpath, outpath, language='russian'):
+    """
+    It splits one large conll file containing the entire RuCorp dataset into many separate documents.
+    Args:
+        inpath: -
+        outpath: -
+        language: -
+
+    Returns: Nothing
+
+    """
     # split massive conll file to many little
     
     print('Start of splitting ...')
@@ -251,6 +272,18 @@ def split_doc(inpath, outpath, language='russian'):
 
 
 def train_test_split(inpath, train, test, split, random_seed):
+    """
+    RuCor doesn't provide train/test data splitting, it makes random splitting.
+    Args:
+        inpath: path to data
+        train: path to train folder
+        test: path to test folder
+        split: int, split ratio
+        random_seed: seed for random module
+
+    Returns:
+
+    """
     print('Start train-test splitting ...')
     z = os.listdir(inpath)
     doc_split = ShuffleSplit(1, test_size=split, random_state=random_seed)
@@ -266,6 +299,15 @@ def train_test_split(inpath, train, test, split, random_seed):
 
 
 def get_all_texts_from_tokens_file(tokens_path, out_path):
+    """
+    Creates file with pure text from RuCorp dataset.
+    Args:
+        tokens_path: -
+        out_path: -
+
+    Returns: Nothing
+
+    """
     lengths = {}
     # determine number of texts and their lengths
     with open(tokens_path, "r") as tokens_file:
@@ -296,7 +338,17 @@ def get_all_texts_from_tokens_file(tokens_path, out_path):
             out_file.write("\n")
     return None
 
+
 def get_char_vocab(input_filename, output_filename):
+    """
+    Gets chars dictionary from text, and write it into output_filename.
+    Args:
+        input_filename: -
+        output_filename: -
+
+    Returns: Nothing
+
+    """
     data = open(input_filename, "r").read()
     vocab = sorted(list(set(data)))
 
@@ -305,7 +357,26 @@ def get_char_vocab(input_filename, output_filename):
             f.write(u"{}\n".format(c))
     print("[Wrote {} characters to {}] ...".format(len(vocab), output_filename))
 
+
 def conll2dict(conll, iter_id=None, agent=None, mode='train', doc=None, epoch_done=False):
+    """
+    Opens the document, reads it, and adds its contents as a string to the dictionary.
+    Args:
+        conll: path to the conll file
+        iter_id: number of operations
+        agent: agent name
+        mode: train/valid mode
+        doc: document name
+        epoch_done: flag
+
+    Returns: dict { 'iter_id': iter_id,
+                    'id': agent,
+                    'epoch_done': epoch_done,
+                    'mode': mode,
+                    'doc_name': doc
+                    'conll_str': s}
+
+    """
     data = {'iter_id': iter_id,
             'id': agent,
             'epoch_done': epoch_done,
@@ -318,16 +389,22 @@ def conll2dict(conll, iter_id=None, agent=None, mode='train', doc=None, epoch_do
         f.close()
     return data
 
+
 def dict2conll(data, predict):
+    """Writes conll string in file"""
     with open(predict, 'w') as CoNLL:
         CoNLL.write(data['conll_str'])
         CoNLL.close()
     return None
 
+
 def make_summary(value_dict):
+    """Make tf.Summary for tensorboard"""
     return tf.Summary(value=[tf.Summary.Value(tag=k, simple_value=v) for k, v in value_dict.items()])
 
+
 def summary(value_dict, global_step, writer):
+    """Make tf.Summary for tensorboard"""
     summary = tf.Summary(value=[tf.Summary.Value(tag=k, simple_value=v) for k, v in value_dict.items()])
     writer.add_summary(summary, global_step)
     return None
