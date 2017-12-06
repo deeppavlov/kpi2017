@@ -1,3 +1,18 @@
+# Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 import parlai.core.build_data as build_data
 import os
 import re
@@ -8,6 +23,14 @@ import urllib
 
 
 def data_preprocessing(f):
+    """Preprocess the data.
+
+    Args:
+        f: list of text samples
+
+    Returns:
+        preprocessed list of text samples
+    """
     f = [x.lower() for x in f]
     f = [x[1:-1] for x in f]
     f = [x.replace("\\n", " ") for x in f]
@@ -103,6 +126,16 @@ def data_preprocessing(f):
 
 
 def write_input_fasttext_cls(data, path, data_name):
+    """Write down input files for fasttext classificator.
+
+    Args:
+        data: array of text samples
+        path: path to folder to put the files
+        data_name: mode of writing files "train" or "test"
+
+    Returns:
+        nothing
+    """
     f = open(path + '_fasttext_cls.txt', 'w')
     for i in range(data.shape[0]):
         if data_name == 'train':
@@ -115,6 +148,16 @@ def write_input_fasttext_cls(data, path, data_name):
 
 
 def write_input_fasttext_emb(data, path, data_name):
+    """Write down input files for fasttext embedding.
+
+    Args:
+        data: array of text samples
+        path: path to folder to put the files
+        data_name: mode of writing files "train" or "test"
+
+    Returns:
+        nothing
+    """
     f = open(path + '_fasttext_emb.txt', 'w')
     for i in range(data.shape[0]):
         if data_name == 'train' or data_name == 'test':
@@ -125,6 +168,18 @@ def write_input_fasttext_emb(data, path, data_name):
 
 
 def balance_dataset(dataset_0, labels_0, dataset_1, labels_1, ratio=1):
+    """Balance the dataset_0 with samples from dataset_1 up to given ratio.
+
+    Args:
+        dataset_0: array of text samples
+        labels_0: array of labels for dataset_0
+        dataset_1: array of text samples
+        labels_1: array of labels for dataset_1
+        ratio: ratio of samples of class 1 to samples of class 0 (default 1.0)
+
+    Returns:
+        balanced array of text samples, corresponding array of labels
+    """
     initial_train_size = dataset_0.shape[0]
     insult_inds = np.nonzero(labels_1)[0]
     num_insults_0 = len(np.nonzero(labels_0)[0])
@@ -137,6 +192,15 @@ def balance_dataset(dataset_0, labels_0, dataset_1, labels_1, ratio=1):
 
 
 def build(opt):
+    """Read and preprocess data, save preprocessed data, balance data,
+    create input files for fasttext classifier and embeddings.
+
+    Args:
+        opt: given parameters
+
+    Returns:
+        nothing
+    """
     # get path to data directory
     dpath = os.path.join(opt['datapath'], 'insults')
     # define version if any
@@ -192,7 +256,7 @@ def build(opt):
         train_data = train_data.append(valid_data)
 
         if opt.get('balance_train_dataset'):
-            if opt['balance_train_dataset'] == True:
+            if opt['balance_train_dataset']:
                 train_data['Comment'],train_data['Insult'] = balance_dataset(train_data['Comment'],
                                                                              train_data['Insult'],
                                                                              train_data['Comment'],

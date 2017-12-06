@@ -1,3 +1,18 @@
+# Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 import copy
 from parlai.core.agents import Agent
 from . import config
@@ -5,10 +20,28 @@ from .model import InsultsModel
 from .utils import create_vectorizer_selector, get_vectorizer_selector
 from .embeddings_dict import EmbeddingsDict
 
+
 class EnsembleInsultsAgent(Agent):
+    """EnsembleInsultsAgent
+
+    Class that gets the observations from teacher and
+    trains several models, gives weighted predictions.
+
+    Attributes:
+        id: agent name
+        episode_done: flag is episode done
+        is_shared: flag is parallel computations
+        word_dict: dictionary of words
+        num_ngrams: number of considered ngrams (for sklearn models)
+        models: list of chosen models to ensemble
+        model_coefs: list of cefficients to sum models predictions with
+        n_examples: number of samples
+        observation: gathered text observations (samples)
+    """
 
     @staticmethod
     def add_cmdline_args(argparser):
+        """Add arguments from command line."""
         config.add_cmdline_args(argparser)
         ensemble = argparser.add_argument_group('Ensemble parameters')
         ensemble.add_argument('--model_files', type=str, default=None, nargs='+',
@@ -19,6 +52,7 @@ class EnsembleInsultsAgent(Agent):
                               help='list of all the model coefs for the ensemble')
 
     def __init__(self, opt, shared=None):
+        """Initialize the class according to the given parameters in opt."""
         self.id = 'InsultsAgent'
         self.episode_done = True
         super().__init__(opt, shared)
@@ -52,6 +86,7 @@ class EnsembleInsultsAgent(Agent):
         self.n_examples = 0
 
     def observe(self, observation):
+        """Gather obtained observation (sample) with previous observations."""
         observation = copy.deepcopy(observation)
         if not self.episode_done:
             # if the last example wasn't the end of an episode, then we need to
@@ -63,18 +98,19 @@ class EnsembleInsultsAgent(Agent):
         return observation
 
     def _predictions2text(self, predictions):
+        """Convert float predictions to text labels."""
         y = ['Insult' if ex > 0.5 else 'Non-insult' for ex in predictions]
         return y
 
     def _text2predictions(self, predictions):
+        """Convert text labels to integer class labels."""
         y = [1 if ex == 'Insult' else 0 for ex in predictions]
         return y
 
     def _build_ex(self, ex):
+        """Find the token span of the answer in the context for this example."""
         if 'text' not in ex:
             return
-        """Find the token span of the answer in the context for this example.
-        """
         inputs = dict()
         inputs['question'] = ex['text']
         if 'labels' in ex:
@@ -83,11 +119,11 @@ class EnsembleInsultsAgent(Agent):
         return inputs
 
     def act(self):
-        # call batch_act with this batch of one
+        """Call batch act with batch of one sample."""
         return self.batch_act([self.observation])[0]
 
     def batch_act(self, observations):
-
+        """Train model or predict for given batch of observations."""
         if self.is_shared:
             raise RuntimeError("Parallel act is not supported.")
 
@@ -114,16 +150,35 @@ class EnsembleInsultsAgent(Agent):
         return batch_reply
 
     def weighted_sum(self, predictions):
+        """Train model or predict for given batch of observations."""
         result = 0
         for j in range(len(predictions)):
             result += self.model_coefs[j] * predictions[j]
         result = result / sum(self.model_coefs)
         return result
+
 
 class BoostEnsembleInsultsAgent(Agent):
+    """BoostEnsembleInsultsAgent
+
+    Class that gets the observations from teacher and
+    trains several models, gives weighted predictions.
+
+    Attributes:
+        id: agent name
+        episode_done: flag is episode done
+        is_shared: flag is parallel computations
+        word_dict: dictionary of words
+        num_ngrams: number of considered ngrams (for sklearn models)
+        models: list of chosen models to ensemble
+        model_coefs: list of cefficients to sum models predictions with
+        n_examples: number of samples
+        observation: gathered text observations (samples)
+    """
 
     @staticmethod
     def add_cmdline_args(argparser):
+        """Add arguments from command line."""
         config.add_cmdline_args(argparser)
         ensemble = argparser.add_argument_group('Ensemble parameters')
         ensemble.add_argument('--model_files', type=str, default=None, nargs='+',
@@ -134,6 +189,7 @@ class BoostEnsembleInsultsAgent(Agent):
                               help='list of all the model coefs for the ensemble')
 
     def __init__(self, opt, shared=None):
+        """Initialize the class according to the given parameters in opt."""
         self.id = 'InsultsAgent'
         self.episode_done = True
         super().__init__(opt, shared)
@@ -167,6 +223,7 @@ class BoostEnsembleInsultsAgent(Agent):
         self.n_examples = 0
 
     def observe(self, observation):
+        """Gather obtained observation (sample) with previous observations."""
         observation = copy.deepcopy(observation)
         if not self.episode_done:
             # if the last example wasn't the end of an episode, then we need to
@@ -178,18 +235,19 @@ class BoostEnsembleInsultsAgent(Agent):
         return observation
 
     def _predictions2text(self, predictions):
+        """Convert float predictions to text labels."""
         y = ['Insult' if ex > 0.5 else 'Non-insult' for ex in predictions]
         return y
 
     def _text2predictions(self, predictions):
+        """Convert text labels to integer class labels."""
         y = [1 if ex == 'Insult' else 0 for ex in predictions]
         return y
 
     def _build_ex(self, ex):
+        """Find the token span of the answer in the context for this example."""
         if 'text' not in ex:
             return
-        """Find the token span of the answer in the context for this example.
-        """
         inputs = dict()
         inputs['question'] = ex['text']
         if 'labels' in ex:
@@ -198,11 +256,11 @@ class BoostEnsembleInsultsAgent(Agent):
         return inputs
 
     def act(self):
-        # call batch_act with this batch of one
+        """Call batch act with batch of one sample."""
         return self.batch_act([self.observation])[0]
 
     def batch_act(self, observations):
-
+        """Train model or predict for given batch of observations."""
         if self.is_shared:
             raise RuntimeError("Parallel act is not supported.")
 
@@ -229,19 +287,39 @@ class BoostEnsembleInsultsAgent(Agent):
         return batch_reply
 
     def weighted_sum(self, predictions):
+        """Sum predictions by chosen models with given coefficients."""
         result = 0
         for j in range(len(predictions)):
             result += self.model_coefs[j] * predictions[j]
         result = result / sum(self.model_coefs)
         return result
 
+
 class InsultsAgent(Agent):
+    """insultsAgent
+
+    Class that gets the observations from teacher and
+    trains model, gives predictions.
+
+    Attibutes:
+        id: agent name
+        episode_done: flag is episode done
+        is_shared: flag is parallel computations
+        model_name: name of chosen model to fit
+        word_dict: dictionary of words
+        num_ngrams: number of considered ngrams (for sklearn models)
+        model: chosen model to fit
+        n_examples: number of samples
+        observation: gathered text observations (samples)
+    """
 
     @staticmethod
     def add_cmdline_args(argparser):
+        """Add arguments from command line."""
         config.add_cmdline_args(argparser)
 
     def __init__(self, opt, shared=None):
+        """Initialize the class according to given parameters from opt."""
         self.id = 'InsultsAgent'
         self.episode_done = True
         super().__init__(opt, shared)
@@ -271,6 +349,7 @@ class InsultsAgent(Agent):
             self.model.vectorizers, self.model.selectors = get_vectorizer_selector(self.opt['model_file'],  self.num_ngrams)
 
     def observe(self, observation):
+        """Gather obtained observation (sample) with previous observations."""
         observation = copy.deepcopy(observation)
         if not self.episode_done:
             # if the last example wasn't the end of an episode, then we need to
@@ -282,10 +361,11 @@ class InsultsAgent(Agent):
         return observation
 
     def act(self):
-        # call batch_act with this batch of one
+        """Call batch act with batch of one sample."""
         return self.batch_act([self.observation])[0]
 
     def batch_act(self, observations):
+        """Train model or predict for given batch of observations."""
         if self.is_shared:
             raise RuntimeError("Parallel act is not supported.")
 
@@ -315,10 +395,9 @@ class InsultsAgent(Agent):
         return batch_reply
 
     def _build_ex(self, ex):
+        """Find the token span of the answer in the context for this example."""
         if 'text' not in ex:
             return
-        """Find the token span of the answer in the context for this example.
-        """
         inputs = dict()
         inputs['question'] = ex['text']
         if 'labels' in ex:
@@ -326,16 +405,18 @@ class InsultsAgent(Agent):
 
         return inputs
 
-
     def _predictions2text(self, predictions):
+        """Convert float predictions to text labels."""
         y = ['Insult' if ex > 0.5 else 'Non-insult' for ex in predictions]
         return y
 
     def _text2predictions(self, predictions):
+        """Convert text labels to integer class labels."""
         y = [1 if ex == 'Insult' else 0 for ex in predictions]
         return y
 
     def report(self):
+        """Return report."""
         report = dict()
         report['updates'] = self.model.updates
         report['n_examples'] = self.n_examples
@@ -345,17 +426,31 @@ class InsultsAgent(Agent):
         return report
 
     def save(self):
+        """Save trained model."""
         self.model.save()
 
 
 class OneEpochAgent(InsultsAgent):
+    """OneEpochAgent
 
+    Child class for class InsultsAgent.
+    Class collects all the train data, vectorizes it, selects features,
+    trains n-gram models from sklearn such SVC and LogisticRegression.
+
+    Attibutes:
+        observation:
+        observations_: all the train data
+        model: model to fit
+        opt: given parameters
+    """
     def __init__(self, opt, shared=None):
+        """Initialize the class."""
         super().__init__(opt, shared)
         self.observation = ''
         self.observations_ = []
 
     def batch_act(self, observations):
+        """Collect train observations, do not train."""
         self.observations_ += observations
 
         if self.is_shared:
@@ -380,6 +475,7 @@ class OneEpochAgent(InsultsAgent):
         return batch_reply
 
     def save(self):
+        """Create features, train and save model."""
         if not self.is_shared:
             train_data = [observation['text'] for observation in self.observations_ if 'text' in observation.keys()]
             train_labels = self._text2predictions([observation['labels'][0] for observation in self.observations_ if 'labels' in observation.keys()])
@@ -403,10 +499,3 @@ class OneEpochAgent(InsultsAgent):
                 return
 
         return
-
-
-
-
-
-
-

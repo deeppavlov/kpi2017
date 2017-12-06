@@ -1,3 +1,18 @@
+# Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 import os
 import random
 import urllib
@@ -9,6 +24,7 @@ from tqdm import tqdm
 
 
 def download_embeddings(url, embeddings_path):
+    """downloads embeddings from url and puts to embeddings_path"""
     print('Loading embeddings: {}'.format(embeddings_path))
     if not os.path.isfile(embeddings_path):
         print('There is no such file: {}\nDownloading from {} ...'.format(embeddings_path, url))
@@ -20,10 +36,43 @@ def download_embeddings(url, embeddings_path):
 
 
 def extract_data_from_conll(conll_lines):
-    '''
-    conll_lines: list of lines in conll file (result of .readlines())
-    returns dict representation of conll
-    '''
+    """
+
+    Args:
+        conll_lines: list of lines in conll file (result of readlines())
+
+    Returns:
+        dict representation of conll file; For example:
+        {
+        "doc_name": "wb/a2e/00/a2e_0000",
+        "parts": {
+            "0": {
+                "text": [
+                    "Fist line",
+                    "Second line",
+                ],
+                "chains": {
+                    "3": {
+                        "chain_id": "id",
+                        "mentions": [
+                            {
+                            "sentence_id": 0,
+                            "start_id": 1,
+                            "end_id": 1,
+                            "start_line_id": 0,
+                            "end_line_id": 0,
+                            "mention": "line",
+                            "POS": [
+                                "NN"
+                            ],
+                            "mention_id": "some_id",
+                            "mention_index": 0
+                            },
+                        ]
+                    }
+                }
+        }
+    """
 
     # filename, parts: [{text: [sentence, ...], chains}, ...]
     data = {'doc_name': None, 'parts': dict()}
@@ -108,7 +157,12 @@ def extract_data_from_conll(conll_lines):
     return data
 
 
-def generate_simple_features(data, window_size=5):
+def generate_simple_features(data):
+    """method for generating non-embeddings features
+
+    Args:
+        data: dict representation of conll file
+    """
     features = dict()
     for part_id, part in data['parts'].items():
         mentions_count = sum(map(lambda x: len(x), part['chains'].values()))
@@ -140,6 +194,16 @@ def generate_simple_features(data, window_size=5):
 
 
 def generate_emb_features(data, ft_model, window_size=5):
+    """method for generating embeddings features
+
+    Args:
+        data: dict representation of conll file
+        ft_model: fasttext embeddings
+        window_size: how many neighbors to use
+
+    Returns:
+        dict: key: mention_id value: embedding_features
+    """
     embeddings_features = dict()
     # TODO get embeddings dim
     zeros = np.zeros_like(ft_model['тест'])
@@ -184,8 +248,8 @@ def generate_emb_features(data, ft_model, window_size=5):
 
 
 def distance_to_buckets(d):
+    """converts distance to one-hot vector"""
     ohe = [0] * 10
-    bins = [0, 1, 2, 3, 4, 5, 8, 16, 32, 64]
     if d == 0:
         ohe[0] = 1
     elif d == 1:
@@ -210,8 +274,12 @@ def distance_to_buckets(d):
     return ohe
 
 
-class DataLoader():
+class DataLoader:
+    """Help class to load and preprocess conll datafiles"""
+
     def __init__(self, datas, data_embs, data_smpls):
+        """DataLoader parameters initialization"""
+
         # documents [[{chain_id: [mention_id, ...]}, {...}, ...], ...]
         # list of documents
         # document is a dict of chains
@@ -278,14 +346,12 @@ class DataLoader():
             self.features.update(data_smpl)
 
     def _generate_all_features(self):
-        '''
-            method generates all features for all mentions
+        """
+            generates all features for all mentions
             and frees from memory: self.embeddings and self.features
             
             pregenerate all feature vectors to increase get_batch speed
-            uses ~4Gb RAM on train set (without pregeneration: ~3Gb but SLOWER!)
-
-        '''
+        """
         print('DataLoader: generating all features')
         # self.mention_features = {m: self._make_mention_features(m) for ms in self.document_mentions for m in ms}
         assert self.embeddings is not None
@@ -310,7 +376,10 @@ class DataLoader():
 
 
 class MentionPairsBatchGenerator():
+    """Object for generation batches of pairs of mentions"""
+
     def __init__(self, datas, data_embs, data_smpls):
+        """MentionPairsBatchGenerator parameters initialization"""
         # batch iterator index
         self.current_doc_id = 0
         self.epoch = 0
@@ -321,6 +390,7 @@ class MentionPairsBatchGenerator():
         self.features_size = self.dl.features_size
 
     def _mention_to_features(self, m):
+        """building features for single mention"""
         features = self.dl.features[m]
         res = [
             features['has_PRP'],
@@ -332,6 +402,7 @@ class MentionPairsBatchGenerator():
         return res
 
     def _pair_features(self, A, B):
+        """Building features for pair of mentions"""
         AB_f = []
         for a, b in zip(A, B):
             a_f = self.dl.features[a]
@@ -345,6 +416,18 @@ class MentionPairsBatchGenerator():
         return AB_f
 
     def get_batch(self, batch_size=64):
+        """Builds data samples of size batch_size
+        score(A, B)
+        A: left arguments
+        B: right arguments
+
+        Args:
+            batch_size: size of batch
+
+        Returns:
+            feature representation of mentions and labels
+
+        """
         mentions = []
         while len(mentions) < batch_size * 2:
             mentions.extend(self.dl.get_all_mentions_from_doc(self.current_doc_id))
@@ -369,6 +452,14 @@ class MentionPairsBatchGenerator():
         return np.vstack(A), np.stack(A_f), np.vstack(B), np.stack(B_f), np.stack(AB_f), np.stack(labels)
 
     def get_document_batch(self, doc_id):
+        """builds batch of all mention pairs in one document
+
+        Args:
+            doc_id: id of document
+
+        Returns:
+            feature representation of mentions and labels
+        """
         mentions = self.dl.get_all_mentions_from_doc(doc_id)
         if len(mentions) == 0:
             return None, None
@@ -384,14 +475,24 @@ class MentionPairsBatchGenerator():
         B = [self.dl.mention_features[m] for m in B]
         return np.vstack(A), np.stack(A_f), np.vstack(B), np.stack(B_f), np.stack(AB_f)
 
+    def reset(self):
+        self.current_doc_id = 0
+        self.epoch = 0
+
 
 def make_prediction_file(conll_lines, data, path_to_save, chains, write=True):
-    '''
-    makes prediction file based on source conll file
-    chains only for one document
-    chains = [[[mention_id, ...], [...], ...], [...], ...]
-    '''
-    # dict: mention_id -> mention features
+    """makes prediction file based on source conll file
+
+    Args:
+        conll_lines: source conll file
+        data: dict representation of conll file
+        path_to_save: where to save predicted conll file
+        chains: predicted chains for this document
+        write: write output to file or just return list of strings
+    Returns:
+        list of string == predicted conll file
+    """
+
     lines_to_write = []
     mentions = dict()
     for part_id in data['parts']:
@@ -400,9 +501,6 @@ def make_prediction_file(conll_lines, data, path_to_save, chains, write=True):
             for m in chain['mentions']:
                 mentions[m['mention_id']] = m
 
-    # chain labels in document lines
-    # start_pos
-    # end_pos
     start_labels = dict()
     end_labels = dict()
     # opens and closes in the same place
@@ -477,6 +575,17 @@ def make_prediction_file(conll_lines, data, path_to_save, chains, write=True):
 
 
 def build_clusters(predicted_scores, method='centroid'):
+    """agglomerative clustering using predicted scores as distances
+
+    Args:
+        predicted_scores: predicted scores for all mentions in documents
+        method: methods for calculating distance between clusters
+            look at scipy.cluster.hierarchy.linkage documentation
+
+    Returns:
+        clustering, min_score and max_score in predicted_scores
+
+    """
     print('building clusters')
     min_score = 1e10
     max_score = 0
@@ -497,6 +606,16 @@ def build_clusters(predicted_scores, method='centroid'):
 
 
 def build_chains(clustering, mentions, threshold=1.0):
+    """build coreference chains for one document
+
+    Args:
+        clustering: result of build_clusters method
+        mentions: mentions of one document
+        threshold: min score when to merge two clusters
+
+    Returns:
+        coreference chains
+    """
     chains = [[m] for m in mentions]
     for i in range(len(clustering)):
         if clustering[i, 2] > threshold:
@@ -508,8 +627,17 @@ def build_chains(clustering, mentions, threshold=1.0):
     return chains
 
 
-def make_dendrogram_predictions(dl, clustering, threshold):
-    # print('Making dendrogram predictions: {}'.format(output_path))
+def make_clustering_predictions(dl, clustering, threshold):
+    """build coreference chains for all documents in dl
+
+    Args:
+        dl: dataloader to use
+        clustering: result of build_clusters method
+        threshold: min score when to merge two clusters
+
+    Returns:
+        coreference chains for documents in dl
+    """
     doc_to_chains = dict()
     for doc_id, ms in enumerate(dl.document_mentions):
         # one document
@@ -526,10 +654,9 @@ def make_dendrogram_predictions(dl, clustering, threshold):
 
 
 def split_on_batches(data, batch_size):
-    '''
-    splits array data on batches of size batch_size
-    last batch can be with size less then batch_size
-    '''
+    """splits array data on batches of size batch_size
+    last batch can be of size less then batch_size
+    """
     data_batched = []
     for i in range(data.shape[0] // batch_size):
         data_batched.append(data[i * batch_size:(i + 1) * batch_size])

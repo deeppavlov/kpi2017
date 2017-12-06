@@ -1,18 +1,19 @@
-"""
-Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+# Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+import shutil
 
 import parlai.core.build_data as build_data
 import os
@@ -23,6 +24,9 @@ from ...utils import coreference_utils
 
 
 def build(opt):
+    """prepares datasets and other dependencies for CoreferenceTeacher"""
+
+
     # get path to data directory and create folders tree
     dpath = join(opt['datapath'])
     # define version if any, and languages
@@ -46,7 +50,6 @@ def build(opt):
         build_data.make_dir(dpath)
         build_data.make_dir(join(dpath, 'report', 'response_files'))
         build_data.make_dir(join(dpath, 'report', 'results'))
-        build_data.make_dir(join(dpath, 'scorer'))
         build_data.make_dir(join(dpath, 'train'))
         build_data.make_dir(join(dpath, 'test'))
         build_data.make_dir(join(dpath, 'valid'))
@@ -58,25 +61,35 @@ def build(opt):
         # download the conll-2012 scorer v 8.1
         start = time.time()
 
-        print('[Downloading the conll-2012 scorer]...')
-        build_data.download(scorer_url, join(dpath, 'scorer'), 'reference-coreference-scorers.v8.01.tar.gz')
-        build_data.untar(join(dpath, 'scorer'), 'reference-coreference-scorers.v8.01.tar.gz')
-        print('[Scorer was downloaded]...')
+        dataset_path = None
+        scorer_path = join(dpath, 'scorer')
+        raw_dataset_path = opt['raw_dataset_path']
+        if raw_dataset_path is not None and os.path.isdir(opt['raw_dataset_path']):
+            print('[Using previously downloaded dataset and scorer] ...')
+            scorer_src_path = join(raw_dataset_path, 'scorer')
+            shutil.copytree(scorer_src_path, scorer_path)
+            dataset_path = join(raw_dataset_path, 'dataset')
+        else:
+            print('[Downloading the conll-2012 scorer]...')
+            build_data.make_dir(scorer_path)
+            build_data.download(scorer_url, scorer_path, 'reference-coreference-scorers.v8.01.tar.gz')
+            build_data.untar(scorer_path, 'reference-coreference-scorers.v8.01.tar.gz')
+            print('[Scorer was downloaded]...')
 
-        fname = 'rucoref_29.10.2015.zip'
-        if not os.path.isdir(join(dpath, 'rucoref_29.10.2015')):
-            print('[Downloading the rucoref dataset]...')
-            build_data.make_dir(join(dpath, 'rucoref_29.10.2015'))
-            build_data.download(dataset_url, join(dpath, 'rucoref_29.10.2015'), fname)
-            # uncompress it
-            build_data.untar(join(dpath, 'rucoref_29.10.2015'), 'rucoref_29.10.2015.zip')
-            print('End of downloading: took {0:.3f}s'.format(time.time() - start))
+            fname = 'rucoref_29.10.2015.zip'
+            if not os.path.isdir(join(dpath, 'rucoref_29.10.2015')):
+                print('[Downloading the rucoref dataset]...')
+                dataset_path = join(dpath, 'dataset')
+                build_data.make_dir(dataset_path)
+                build_data.download(dataset_url, dataset_path, fname)
+                # uncompress it
+                build_data.untar(dataset_path, fname)
+                print('End of downloading: took {0:.3f}s'.format(time.time() - start))
 
         # Convertation rucorpus files in conll files
         conllpath = join(dpath, 'ru_conll')
         build_data.make_dir(conllpath)
-        coreference_utils.RuCoref2CoNLL(
-            join(dpath, 'rucoref_29.10.2015'), conllpath, language)
+        coreference_utils.RuCoref2CoNLL(dataset_path, conllpath, language)
 
         # splits conll files
         start = time.time()

@@ -1,15 +1,17 @@
-"""
-Copyright 2017 Neural Networks and Deep Learning lab, MIPT
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-    http://www.apache.org/licenses/LICENSE-2.0
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 
 import os
 from multiprocessing import Pool
@@ -27,6 +29,9 @@ from ...utils import coreference_utils
 
 
 class EchoAgent(Agent):
+    """EchoAgent sends back input message
+    can be used for debug purpose
+    """
     def __init__(self, opt):
         self.observation = None
         self.id = 'EchoAgent'
@@ -42,8 +47,13 @@ class EchoAgent(Agent):
 
 
 class CoreferenceAgent(Agent):
+    """Coreference agent for coreference resolution task.
+
+    Agent works with standard conll format from CoNLL-2012 Shared Task
+    """
     @staticmethod
     def add_cmdline_args(argparser):
+        """parameters of agent"""
         group = argparser.add_argument_group('Coreference Agent')
 
         group.add_argument('--batch_size', type=int, default=128, help='batch size')
@@ -74,6 +84,7 @@ class CoreferenceAgent(Agent):
                            help='path to tensorboard logs')
 
     def __init__(self, opt):
+        """Initialize the parameters for CoreferenceAgent"""
         print(opt)
         self.opt = opt
         self.last_observation = None
@@ -134,6 +145,12 @@ class CoreferenceAgent(Agent):
         print('run_path: {}'.format(self.run_path))
 
     def act(self):
+        """trains scorer model on train data in observation
+        and then uses valid data to select threshold for linking two mentions
+
+        Returns:
+            dict with predictions
+        """
         if self.last_observation is None:
             return {'text': 'Nothing to answer yet.'}
 
@@ -153,7 +170,7 @@ class CoreferenceAgent(Agent):
             pool_args = []
             for t in tqdm(np.linspace(min_score, max_score, self.threshold_steps)):
                 output_path = '{}_{:.2f}'.format(os.path.join(self.tmp_folder, 'output'), t)
-                doc_to_chains = utils.make_dendrogram_predictions(self.valid_bg.dl, clustering, threshold=t)
+                doc_to_chains = utils.make_clustering_predictions(self.valid_bg.dl, clustering, threshold=t)
                 pool_args.append((self.scorer_path, self.valid_path, output_path))
                 for doc in doc_to_chains:
                     utils.make_prediction_file(self.data_valid_conll[doc], self.data_valid[doc], output_path,
@@ -184,7 +201,7 @@ class CoreferenceAgent(Agent):
             clustering, min_score, max_score = utils.build_clusters(predicted_scores, method=self.linkage_method)
         print('Making conll predictions on dataset with threshold: {:.2f} and conll-F-1: {:.3f} on valid'.format(
             self.best_threshold, self.best_conll_f1))
-        doc_to_chains = utils.make_dendrogram_predictions(self.valid_bg.dl, clustering, threshold=self.best_threshold)
+        doc_to_chains = utils.make_clustering_predictions(self.valid_bg.dl, clustering, threshold=self.best_threshold)
         pred_conll_lines = [
             utils.make_prediction_file(self.data_valid_conll[doc], self.data_valid[doc], None, doc_to_chains[doc],
                                        write=False) for doc in doc_to_chains]
@@ -192,6 +209,7 @@ class CoreferenceAgent(Agent):
         return {'id': self.id, 'valid_conll': pred_conll_lines}
 
     def observe(self, observation):
+        """receives observation and prepares received data"""
         self.last_observation = observation
         # extract data from conll
         print('Preprocessing observation')
@@ -223,6 +241,7 @@ class CoreferenceAgent(Agent):
 
         # create model
         if self.model is None:
+            tf.reset_default_graph()
             self.model = MentionScorerModel(hidden_size=self.opt['dense_hidden_size'], lr=self.opt['lr'],
                                             keep_prob_input=self.opt['keep_prob_input'],
                                             keep_prob_dense=self.opt['keep_prob_dense'],
@@ -240,6 +259,7 @@ class CoreferenceAgent(Agent):
                     self.best_conll_f1 = float(fin.readline().strip().split()[-1])
 
     def save(self):
+        """saves model and current best threshold"""
         if self.session is not None:
             saver = tf.train.Saver()
             saver.save(self.session, os.path.join(self.agent_dir, 'model'))
@@ -248,9 +268,11 @@ class CoreferenceAgent(Agent):
                 fout.write('conll-f-1: {:.5f}\n'.format(self.best_conll_f1))
 
     def shutdown(self):
+        """free resources"""
         tf.reset_default_graph()
 
     def _train_scorer(self):
+        """trains scorer model on observation"""
         summary_writer = tf.summary.FileWriter(self.run_path, graph=self.session.graph)
         saver = tf.train.Saver(max_to_keep=None)
 
@@ -291,9 +313,14 @@ class CoreferenceAgent(Agent):
             self.global_step += 1
 
     def _get_scorer_predictions(self, bg):
-        '''
-        bg: batch generator to use to make predictions; get_document_batch is called
-        '''
+        """makes scorer predictions for all pairs of mentions
+
+        Args:
+            bg: batch generator to use to make predictions; get_document_batch method is called
+
+        Returns:
+            square matrix of predicted scores
+        """
         predicted_scores = []
         for doc_id in tqdm(range(bg.max_doc_id)):
             A, A_f, B, B_f, AB_f = bg.get_document_batch(doc_id)

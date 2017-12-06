@@ -1,15 +1,17 @@
-"""
-Copyright 2017 Neural Networks and Deep Learning lab, MIPT
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-    http://www.apache.org/licenses/LICENSE-2.0
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
+# Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 
 import os
 import random
@@ -24,8 +26,11 @@ from ...utils import coreference_utils
 
 
 class CoreferenceTeacher(Teacher):
+    """Teacher for coreference resolution task"""
+
     @staticmethod
     def add_cmdline_args(argparser):
+        """Parameters of agent and default values"""
         group = argparser.add_argument_group('Coreference Teacher')
         group.add_argument('--language', type=str, default='ru')
         group.add_argument('--predictions_folder', type=str, default='predicts',
@@ -37,8 +42,13 @@ class CoreferenceTeacher(Teacher):
         group.add_argument('--test_ratio', type=float,
                            default=0.2, help='test_set ratio')
         group.add_argument('--teacher_seed', type=int, default=42, help='seed')
+        group.add_argument('--raw-dataset-path', type=str, default=None,
+                             help='Path to folder with two subfolders: dataset and scorer. '
+                                  'These two folders are extracted rucoref_29.10.2015.zip and '
+                                  'reference-coreference-scorers.v8.01.tar.gz')
 
     def __init__(self, opt, shared=None):
+        """Initialize the parameters for CoreferenceTeacher"""
         super().__init__(opt, shared)
         self.last_observation = None
         self.id = 'two-step-coref'
@@ -78,16 +88,19 @@ class CoreferenceTeacher(Teacher):
         self._epoch_done = False
 
     def act(self):
+        """reads all documents and returns them"""
         self._epoch_done = True
         train_conll = [open(os.path.join(self.train_path, file), 'r').readlines() for file in self.train_documents]
         valid_conll = [open(os.path.join(self.valid_path, file), 'r').readlines() for file in self.valid_documents]
         return {'id': self.id, 'conll': train_conll, 'valid_conll': valid_conll}
 
     def observe(self, observation):
+        """saves observation"""
         self.last_observation = observation
         self.epoch += 1
 
     def report(self):
+        """calls scorer on last observation and reports result"""
         utils.save_observations(self.last_observation['valid_conll'], self.predictions_folder)
         res = coreference_utils.score(self.scorer_path, self.valid_path, self.predictions_folder)
         return {'f1': res['conll-F-1']}

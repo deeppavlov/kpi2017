@@ -1,18 +1,17 @@
-"""
-Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+# Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
 
 import os
 import copy
@@ -22,7 +21,18 @@ import fasttext
 
 
 class EmbeddingsDict(object):
+    """EmbeddingsDict
+
+    Class provides embeddings for fasttext model.
+
+    Attributes:
+        tok2emb: dictionary gives embedding vector for token (word)
+        embedding_dim: dimension of embeddings
+        opt: given parameters
+        fasttext_model_file: file contains fasttext binary model
+    """
     def __init__(self, opt, embedding_dim):
+        """Initialize the class according to given parameters."""
         self.tok2emb = {}
         self.embedding_dim = embedding_dim
         self.opt = copy.deepcopy(opt)
@@ -46,6 +56,7 @@ class EmbeddingsDict(object):
         self.fasttext_model = fasttext.load_model(self.fasttext_model_file)
 
     def add_items(self, sentence_li):
+        """Add new items to tok2emb dictionary from given text."""
         for sen in sentence_li:
             tokens = sen.split(' ')
             tokens = [el for el in tokens if el != '']
@@ -54,6 +65,7 @@ class EmbeddingsDict(object):
                     self.tok2emb[tok] = self.fasttext_model[tok]
 
     def save_items(self, fname):
+        """Save dictionary tok2emb to file."""
         if self.opt.get('fasttext_embeddings_dict') is not None:
             fname = self.opt['fasttext_embeddings_dict']
         else:
@@ -64,6 +76,7 @@ class EmbeddingsDict(object):
         f.close()
 
     def emb2str(self, vec):
+        """Return string corresponding to the given embedding vectors"""
         string = ' '.join([str(el) for el in vec])
         return string
 

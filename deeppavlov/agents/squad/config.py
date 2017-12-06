@@ -1,8 +1,24 @@
+# Copyright 2017 Neural Networks and Deep Learning lab, MIPT
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 import os
-import sys
-import logging
+
 
 def add_cmdline_args(parser):
+    """Add parameters from command line."""
+
     # Runtime environment
     agent = parser.add_argument_group('Paraphraser Arguments')
     agent.add_argument('--random_seed', type=int, default=1013)
@@ -95,6 +111,8 @@ def add_cmdline_args(parser):
 
 
 def set_defaults(opt):
+    """Checks that either embedding_file or embedding_dim is specified."""
+
     # Embeddings options
     if opt.get('embedding_file'):
         if not os.path.isfile(opt['embedding_file']):
@@ -107,6 +125,8 @@ def set_defaults(opt):
                             'needs to be specified.'))
 
 def override_args(opt, override_opt):
+    """Resets major model arguments in opt variable to the values provided in override_opt."""
+
     # Major model args are reset to the values in override_opt.
     # Non-architecture args (like dropout) are kept.
     args = set(['embedding_file', 'embedding_dim', 'hidden_size', 'doc_layers',
