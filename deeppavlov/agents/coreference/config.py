@@ -14,6 +14,14 @@
 
 
 def add_cmdline_args(parser):
+    """
+    Add parameters from command line.
+    Args:
+        parser: parameters parser
+
+    Returns:
+        nothing
+    """
     # Runtime environment
     agent = parser.add_argument_group('Coreference Arguments')
 

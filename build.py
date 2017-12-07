@@ -263,9 +263,11 @@ def train_coreference(project):
                         '--log-every-n-epochs', '1',
                         '--log-every-n-secs', '-1',
                         '--chosen-metric', 'conll-F-1',
-                        '--validation-patience', '20',
+                        '--validation-patience', '15',
                         '--train_on_gold', 'True',
-                        '--random_seed', '5'
+                        '--random_seed', '5',
+                        '--emb_format', 'vec',
+                        '--embedding_size', '100'
                         ])
     return metrics
 
