@@ -18,7 +18,6 @@ from os.path import join
 import copy
 import random
 from parlai.core.agents import Teacher
-# from parlai.core.dialog_teacher import DialogTeacher
 
 
 from .build import build
@@ -114,13 +113,17 @@ class CoreferenceTeacher(Teacher):
         return self.observation
 
     def report(self):
-        """calls scorer on last observation and reports result"""
+        """calls coreference and anaphora scorer on last observation and reports result"""
         scorer = self.scorer_path
         predicts_path = os.path.join(self.reports_datapath, 'response_files')
         keys_path = self.datapath
+
         r = coreference_utils.score(scorer, keys_path, predicts_path)
+        r['anaphora_precision'], r['anaphora_recall'], r['anaphora_F1'] = utils.anaphora_score(keys_path, predicts_path)
+
         step = self.observation['iteration']
-        summary_dict = {'f1': r['conll-F-1'], 'avg-F-1': r['avg-F-1']}
+        summary_dict = {'f1': r['conll-F-1'], 'avg-F-1': r['avg-F-1'], 'anaphora_F1': r['anaphora_F1']}
+
         utils.summary(summary_dict, step, self.writer)
         
         resp_list = os.listdir(predicts_path)

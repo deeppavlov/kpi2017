@@ -225,14 +225,8 @@ class CoreferenceAgent(Agent):
 
     def report(self):
         """Create dictionary for parlai report."""
-        self.iterations += self.rep_iter
-        n = self.nitr*100 - self.iterations
-        t = time.time() - self.start
-        r_time = n*(t/self.rep_iter)
-        hours = int(r_time/(60**2))
-        minutes = int(r_time/60 - hours*60)
-        self.start = time.time()
-        s = '[Loss: {0:.3f} | Remaining Time: {1} hours {2} minutes]'.format(self.tf_loss, hours, minutes)
+
+        s = '[Loss: {0:.3f} | ]'.format(self.tf_loss)
         rep = dict()
         rep['info'] = s
         return rep
