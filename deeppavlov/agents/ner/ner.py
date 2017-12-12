@@ -21,7 +21,7 @@ from . import config
 from .dictionary import NERDictionaryAgent
 from .ner_tagger import NERTagger
 from .dictionary import get_char_dict
-
+import re
 
 CHAR_DICT = get_char_dict()
 
@@ -120,7 +120,7 @@ class NERAgent(Agent):
         for observation in observations:
             if 'text' in observation:
                 text = observation['text']
-
+                text = ' '.join(re.findall(r"[\w]+|[‑–—“”€№…’\"#$%&\'()+,-./:;<>?]", text))
                 current_char_list = []
                 tokens = text.split()
                 for token in tokens:
@@ -173,5 +173,3 @@ class NERAgent(Agent):
         # Reset the model
         if not self.is_shared:
             self.network.shutdown()
-
-
