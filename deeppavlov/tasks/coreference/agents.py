@@ -18,7 +18,7 @@ from os.path import join
 import copy
 import random
 from parlai.core.agents import Teacher
-
+from shutil import copy as cp
 
 from .build import build
 from . import utils
@@ -119,19 +119,31 @@ class CoreferenceTeacher(Teacher):
         keys_path = self.datapath
 
         r = coreference_utils.score(scorer, keys_path, predicts_path)
-        r['anaphora_precision'], r['anaphora_recall'], r['anaphora_F1'] = utils.anaphora_score(keys_path, predicts_path)
+        z = utils.anaphora_score(keys_path, predicts_path)
+        r['anaphora_precision'] = z['precision']
+        r['anaphora_recall'] = z['recall']
+        r['anaphora_F1'] = z['F1']
 
         step = self.observation['iteration']
         summary_dict = {'f1': r['conll-F-1'], 'avg-F-1': r['avg-F-1'], 'anaphora_F1': r['anaphora_F1']}
 
         utils.summary(summary_dict, step, self.writer)
-        
+
         resp_list = os.listdir(predicts_path)
         resu_list = os.listdir(os.path.join(self.reports_datapath, 'results'))
-        for x in resp_list:
-            os.remove(os.path.join(predicts_path, x))
+        pred_old_list = os.listdir(os.path.join(self.reports_datapath, 'predictions'))
+
+        for x in pred_old_list:
+            os.remove(os.path.join(self.reports_datapath, 'predictions', x))
+
         for x in resu_list:
             os.remove(os.path.join(self.reports_datapath, 'results', x))
+
+        for x in resp_list:
+            if x.endswith('conll'):
+                cp(os.path.join(predicts_path, x), os.path.join(self.reports_datapath, 'predictions'))
+            else:
+                os.remove(os.path.join(predicts_path, x))
 
         return r
     

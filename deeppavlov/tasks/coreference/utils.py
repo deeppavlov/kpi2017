@@ -715,7 +715,7 @@ def anaphora_score(keys_path, predicts_path):
     key_files = list(filter(lambda x: x.endswith('conll'), os.listdir(keys_path)))
     pred_files = list(filter(lambda x: x.endswith('conll'), os.listdir(predicts_path)))
 
-    assert len(key_files) == len(pred_files), ('The number of visible files is not equal.')
+    # assert len(key_files) == len(pred_files), ('The number of visible files is not equal.')
 
     results = dict()
     results['precision'] = list()

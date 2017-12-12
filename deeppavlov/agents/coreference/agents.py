@@ -140,7 +140,6 @@ class CoreferenceAgent(Agent):
         self.start = time.time()
         self.tf_loss = None
         self.rep_iter = opt['rep_iter']
-        self.nitr = opt['nitr']
         self.model = CorefModel(opt)
         self.saver = tf.train.Saver()
         if self.opt['pretrained_model']:
