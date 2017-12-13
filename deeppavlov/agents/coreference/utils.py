@@ -112,7 +112,7 @@ def shape(x, dim):
 
 #  Networks
 def ffnn(inputs, num_hidden_layers, hidden_size, output_size, dropout,
-         output_weights_initializer=tf.contrib.layers.xavier_initializer(dtype=tf.float64)):
+         output_weights_initializer=tf.contrib.layers.xavier_initializer(dtype=tf.float32)):
     """
     Creates fully_connected network graph with needed parameters.
     Args:
@@ -134,8 +134,8 @@ def ffnn(inputs, num_hidden_layers, hidden_size, output_size, dropout,
         current_inputs = inputs
 
     for i in range(num_hidden_layers):
-        hidden_weights = tf.get_variable("hidden_weights_{}".format(i), [shape(current_inputs, 1), hidden_size], dtype=tf.float64)
-        hidden_bias = tf.get_variable("hidden_bias_{}".format(i), [hidden_size], dtype=tf.float64)
+        hidden_weights = tf.get_variable("hidden_weights_{}".format(i), [shape(current_inputs, 1), hidden_size], dtype=tf.float32)
+        hidden_bias = tf.get_variable("hidden_bias_{}".format(i), [hidden_size], dtype=tf.float32)
 
         current_outputs = tf.nn.relu(tf.matmul(current_inputs, hidden_weights) + hidden_bias)
 
@@ -144,10 +144,10 @@ def ffnn(inputs, num_hidden_layers, hidden_size, output_size, dropout,
         current_inputs = current_outputs
 
     output_weights = tf.get_variable("output_weights", [shape(current_inputs, 1), output_size],
-                                     dtype=tf.float64)
-    output_bias = tf.get_variable("output_bias", [output_size], dtype=tf.float64)
+                                     dtype=tf.float32)
+    output_bias = tf.get_variable("output_bias", [output_size], dtype=tf.float32)
     outputs = tf.matmul(current_inputs, output_weights) + output_bias
-    # outputs = tf.cast(outputs, tf.float64)
+    # outputs = tf.cast(outputs, tf.float32)
     if len(inputs.get_shape()) == 3:
         outputs = tf.reshape(outputs, [shape(inputs, 0), shape(inputs, 1), output_size])
     elif len(inputs.get_shape()) > 3:
@@ -175,9 +175,9 @@ def cnn(inputs, filter_sizes, num_filters):
     for i, filter_size in enumerate(filter_sizes):
         with tf.variable_scope("conv_{}".format(i)):
             w = tf.get_variable("w", [filter_size, input_size, num_filters])
-            b = tf.get_variable("b", [num_filters], dtype=tf.float64)
-        conv = tf.nn.conv1d(tf.cast(inputs, tf.float32), w, stride=1, padding="VALID")  # [num_words, num_chars - filter_size, num_filters]
-        h = tf.nn.relu(tf.nn.bias_add(tf.cast(conv, tf.float64), b))  # [num_words, num_chars - filter_size, num_filters]
+            b = tf.get_variable("b", [num_filters], dtype=tf.float32)
+        conv = tf.nn.conv1d(inputs, w, stride=1, padding="VALID")  # [num_words, num_chars - filter_size, num_filters]
+        h = tf.nn.relu(tf.nn.bias_add(conv, b))  # [num_words, num_chars - filter_size, num_filters]
         pooled = tf.reduce_max(h, 1)  # [num_words, num_filters]
         outputs.append(pooled)
     return tf.concat(outputs, 1)  # [num_words, num_filters * len(filter_sizes)]
@@ -189,10 +189,10 @@ class CustomLSTMCell(tf.contrib.rnn.RNNCell):
         """Initialize graph"""
         self._num_units = num_units
         self._dropout = dropout
-        self._dropout_mask = tf.nn.dropout(tf.ones([batch_size, self.output_size], dtype=tf.float64), dropout)
+        self._dropout_mask = tf.nn.dropout(tf.ones([batch_size, self.output_size], dtype=tf.float32), dropout)
         self._initializer = self._block_orthonormal_initializer([self.output_size] * 3)
-        initial_cell_state = tf.get_variable("lstm_initial_cell_state", [1, self.output_size], dtype=tf.float64)
-        initial_hidden_state = tf.get_variable("lstm_initial_hidden_state", [1, self.output_size], dtype=tf.float64)
+        initial_cell_state = tf.get_variable("lstm_initial_cell_state", [1, self.output_size], dtype=tf.float32)
+        initial_hidden_state = tf.get_variable("lstm_initial_hidden_state", [1, self.output_size], dtype=tf.float32)
         self._initial_state = tf.contrib.rnn.LSTMStateTuple(initial_cell_state, initial_hidden_state)
 
     @property
@@ -225,9 +225,9 @@ class CustomLSTMCell(tf.contrib.rnn.RNNCell):
             return new_h, new_state
 
     def _orthonormal_initializer(self, scale=1.0):
-        def _initializer(shape, dtype=tf.float64, partition_info=None):
-            M1 = np.random.randn(shape[0], shape[0]).astype(np.float64)
-            M2 = np.random.randn(shape[1], shape[1]).astype(np.float64)
+        def _initializer(shape, dtype=tf.float32, partition_info=None):
+            M1 = np.random.randn(shape[0], shape[0]).astype(np.float32)
+            M2 = np.random.randn(shape[1], shape[1]).astype(np.float32)
             Q1, R1 = np.linalg.qr(M1)
             Q2, R2 = np.linalg.qr(M2)
             Q1 = Q1 * np.sign(np.diag(R1))
@@ -239,7 +239,7 @@ class CustomLSTMCell(tf.contrib.rnn.RNNCell):
         return _initializer
 
     def _block_orthonormal_initializer(self, output_sizes):
-        def _initializer(shape, dtype=np.float64, partition_info=None):
+        def _initializer(shape, dtype=np.float32, partition_info=None):
             assert len(shape) == 2
             assert sum(output_sizes) == shape[1]
             initializer = self._orthonormal_initializer()
