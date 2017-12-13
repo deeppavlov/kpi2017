@@ -88,10 +88,12 @@ class CorefModel(object):
         self.input_tensors = queue.dequeue()
 
         # train type trigger
-        if self.opt['train_on_gold']:
+        if self.opt['train_on_gold'] == 'yes':
             self.predictions, self.loss = self.get_predictions_and_loss_on_gold(*self.input_tensors)
-        else:
+        elif self.opt['train_on_gold'] == 'no':
             self.predictions, self.loss = self.get_predictions_and_loss(*self.input_tensors)
+        else:
+            raise ValueError('Not supported mode {}'.format(self.opt['train_on_gold']))
 
         self.global_step = tf.Variable(0, name="global_step", trainable=False)
         self.reset_global_step = tf.assign(self.global_step, 0)
@@ -559,7 +561,7 @@ class CorefModel(object):
         if self.opt["char_embedding_size"] > 0:
             char_emb = tf.gather(
                 tf.get_variable("char_embeddings", [len(self.char_dict), self.opt["char_embedding_size"]]),
-                char_index, tf.float64)  # [num_sentences, max_sentence_length, max_word_length, emb]
+                char_index)  # [num_sentences, max_sentence_length, max_word_length, emb]
             flattened_char_emb = tf.reshape(char_emb, [num_sentences * max_sentence_length, utils.shape(char_emb, 2),
                                                        utils.shape(char_emb, 3)])
             # [num_sentences * max_sentence_length, max_word_length, emb]
@@ -744,11 +746,12 @@ class CorefModel(object):
         """
         self.start_enqueue_thread(batch, False)
 
-        if self.opt['train_on_gold']:
+        if self.opt['train_on_gold'] == 'yes':
             _, mention_starts, mention_ends, antecedents, antecedent_scores = self.sess.run(self.predictions)
-
-        else:
+        elif self.opt['train_on_gold'] == 'no':
             _, _, _, mention_starts, mention_ends, antecedents, antecedent_scores = self.sess.run(self.predictions)
+        else:
+            raise ValueError('Not supported mode {}'.format(self.opt['train_on_gold']))
 
         predicted_antecedents = self.get_predicted_antecedents(antecedents, antecedent_scores)
 

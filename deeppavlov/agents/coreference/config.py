@@ -61,5 +61,5 @@ def add_cmdline_args(parser):
     agent.add_argument('--emb_lowercase', type='bool', default=False)
     agent.add_argument('--name', type=str, default='main')
     agent.add_argument('--rep_iter', type=int, default=144)
-    agent.add_argument('--train_on_gold', default=False)
+    agent.add_argument('--train_on_gold', type=str, default='yes')
     agent.add_argument('--random_seed', type=int, default=0)

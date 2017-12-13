@@ -252,7 +252,7 @@ def train_coreference(project):
                         '-m', 'deeppavlov.agents.coreference.agents:CoreferenceAgent',
                         '-mf', mf,
                         '--language', 'russian',
-                        '--name', 'gold_main',
+                        '--name', 'main',
                         '--pretrained_model', 'False',
                         '-dt', 'train:ordered',
                         '--batchsize', '1',
@@ -263,7 +263,7 @@ def train_coreference(project):
                         '--log-every-n-secs', '-1',
                         '--chosen-metric', 'conll-F-1',
                         '--validation-patience', '15',
-                        '--train_on_gold', 'True',
+                        '--train_on_gold', 'yes',
                         '--random_seed', '5',
                         '--emb_format', 'bin',
                         '--embedding_size', '300'
