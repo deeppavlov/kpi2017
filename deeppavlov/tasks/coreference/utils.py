@@ -532,172 +532,85 @@ def ana_doc_score(g_file, p_file):
         precision, recall, F1-metrics
     """
 
+    main = {}
+
     g_data = extract_data(g_file)
     p_data = extract_data(p_file)
-    g_dict = dict()
-    p_dict = dict()
+    pnames = list(p_data['parts'][0]['chains'].keys())
+    gnames = list(g_data['parts'][0]['chains'].keys())
 
-    for y in [g_data, p_data]:
-        total_chains = 0
-        total_mentions = 0
-        total_tokens = 0
+    if len(pnames) != len(gnames):
+        print('In documents, a different number of clusters.'
+              ' {0} in gold file and {1} in predicted file.'.format(len(gnames), len(pnames)))
+    else:
+        print('The documents have the same number of clusters.')
 
-        for part in y['parts'].values():
-            total_chains += len(part['chains'])
-            total_mentions += sum(map(lambda x: len(x['mentions']), part['chains'].values()))
-            total_tokens += sum(map(lambda x: len(x.split()), part['text']))
+    for x in [p_data, g_data]:
+        for y in x['parts'][0]['chains'].keys():
+            for z in x['parts'][0]['chains'][y]['mentions']:
+                if not z['start_line_id'] != z['end_line_id'] and z['POS'][0].startswith('P'):
+                    c = (z['start_line_id'], z['end_line_id'])
+                    if (z['start_line_id'], z['end_line_id']) not in main:
+                        main[c] = dict()
+                        main[c]['pred'] = list()
+                        main[c]['gold'] = list()
+                        if x is g_data:
+                            main[c]['g_clus'] = gnames.index(y)
+                            main[c]['g_clus_real'] = y
+                        else:
+                            main[c]['p_clus'] = pnames.index(y)
+                            main[c]['p_clus_real'] = y
+                    else:
+                        if x is g_data:
+                            main[c]['g_clus'] = gnames.index(y)
+                            main[c]['g_clus_real'] = y
+                        else:
+                            main[c]['p_clus'] = pnames.index(y)
+                            main[c]['p_clus_real'] = y
 
-    # build dict with gold anaphoras
-    for x in g_data['parts'][0]['chains'].keys():
-        antecedents = list()
-        anaphoras = list()
-        for y in g_data['parts'][0]['chains'][x]['mentions']:
-            if y['start_id'] != y['end_id']:
-                antecedents.append(y['mention_index'])
-            elif not y['POS'][0].startswith('P'):
-                antecedents.append(y['mention_index'])
-            elif y['POS'][0].startswith('P'):
-                anaphoras.append(y['mention_index'])
+    for x in main:
+        for y in g_data['parts'][0]['chains'][main[x]['g_clus_real']]['mentions']:
+            if y['start_line_id'] < x[0] and y['end_line_id'] < x[1]:
+                main[x]['gold'].append((y['start_line_id'], y['end_line_id']))
+            elif y['start_line_id'] < x[0] and y['end_line_id'] == x[1]:
+                main[x]['gold'].append((y['start_line_id'], y['end_line_id']))
 
-        g_dict[x] = dict()
-        g_dict[x]['ana'] = anaphoras
-        g_dict[x]['ant'] = antecedents
-        if len(anaphoras) != 0:
-            for i in range(len(antecedents)):
-                g_dict[x][antecedents[i]] = list()
-                if i == len(antecedents) - 1:
-                    for a in anaphoras:
-                        if a > antecedents[i]:
-                            g_dict[x][antecedents[i]].append(a)
-                else:
-                    for a in anaphoras:
-                        if (a > antecedents[i]) and (a < antecedents[i + 1]):
-                            g_dict[x][antecedents[i]].append(a)
-
-    # build dict with predict anaphoras
-    for x in p_data['parts'][0]['chains'].keys():
-        antecedents = list()
-        anaphoras = list()
-        for y in p_data['parts'][0]['chains'][x]['mentions']:
-            if y['start_id'] != y['end_id']:
-                antecedents.append(y['mention_index'])
-            elif not y['POS'][0].startswith('P'):
-                antecedents.append(y['mention_index'])
-            elif y['POS'][0].startswith('P'):
-                anaphoras.append(y['mention_index'])
-
-        p_dict[x] = dict()
-        p_dict[x]['ana'] = anaphoras
-        p_dict[x]['ant'] = antecedents
-        if len(anaphoras) != 0:
-            for i in range(len(antecedents)):
-                p_dict[x][antecedents[i]] = list()
-                if i == len(antecedents) - 1:
-                    for a in anaphoras:
-                        if a > antecedents[i]:
-                            p_dict[x][antecedents[i]].append(a)
-                else:
-                    for a in anaphoras:
-                        if (a > antecedents[i]) and (a < antecedents[i + 1]):
-                            p_dict[x][antecedents[i]].append(a)
-
-    # NEW
-    g_ana = dict()
-    p_ana = dict()
-
-    for x in g_dict.keys():
-        g_ana[x] = dict()
-        if len(g_dict[x]['ana']) != 0 and len(g_dict[x]['ant']) != 0:
-            for a in g_dict[x]['ana']:
-                g_ana[x][a] = list()
-                for b in g_dict[x]['ant']:
-                    if b < a:
-                        g_ana[x][a].append((b, a))
-                for b in g_dict[x]['ana']:
-                    if b < a:
-                        g_ana[x][a].append((b, a))
-        elif len(g_dict[x]['ana']) != 0:
-            for a in g_dict[x]['ana']:
-                g_ana[x][a] = list()
-                for b in g_dict[x]['ana']:
-                    if b < a:
-                        g_ana[x][a].append((b, a))
-
-    for x in p_dict.keys():
-        p_ana[x] = dict()
-        if len(p_dict[x]['ana']) != 0 and len(p_dict[x]['ant']) != 0:
-            for a in p_dict[x]['ana']:
-                p_ana[x][a] = list()
-                for b in p_dict[x]['ant']:
-                    if b < a:
-                        p_ana[x][a].append((b, a))
-                for b in p_dict[x]['ana']:
-                    if b < a:
-                        p_ana[x][a].append((b, a))
-        elif len(p_dict[x]['ana']) != 0:
-            for a in p_dict[x]['ana']:
-                p_ana[x][a] = list()
-                for b in p_dict[x]['ana']:
-                    if b < a:
-                        p_ana[x][a].append((b, a))
+        for y in p_data['parts'][0]['chains'][main[x]['p_clus_real']]['mentions']:
+            if y['start_line_id'] < x[0] and y['end_line_id'] < x[1]:
+                main[x]['pred'].append((y['start_line_id'], y['end_line_id']))
+            elif y['start_line_id'] < x[0] and y['end_line_id'] == x[1]:
+                main[x]['pred'].append((y['start_line_id'], y['end_line_id']))
 
     # compute F1 score
-    precigion = list()
-    recall = list()
-    f1 = list()
+    score = 0
+    fn = 0
+    fp = 0
 
-    pnames = list(p_ana.keys())
-    gnames = list(g_ana.keys())
-
-    for i in range(abs(len(pnames) - len(gnames))):
-        precigion.append(0)
-        recall.append(0)
-        f1.append(0)
-
-    # Проверить правильность
-    for i, p in enumerate(pnames):
-        score = 0
-        if i < len(gnames):
-            if len(p_ana[p]) != 0:
-                for a in p_ana[p].keys():
-                    if a in g_ana[gnames[i]]:
-                        if len(g_ana[gnames[i]][a]) == 0:
-                            score += 1
-                        for b in p_ana[p][a]:
-                            if b in g_ana[gnames[i]][a]:
-                                score += 1
-                                break
-                            else:
-                                continue
-                    else:
-                        continue
-            else:
-                continue
-
-            prec = score / len(p_ana[p])
-            if len(g_ana[gnames[i]]) == 0:
-                rec = 0
-            else:
-                rec = score / len(g_ana[gnames[i]])
-
-            precigion.append(prec)
-            recall.append(rec)
-            if prec == 0 and rec == 0:
-                f1.append(0)
-            else:
-                f1.append(2 * rec * prec / (prec + rec))
+    for x in main:
+        k = 0
+        if len(main[x]['pred']) != 0 and len(main[x]['gold']) != 0:
+            for y in main[x]['pred']:
+                if y in main[x]['gold']:
+                    score += 1
+                    k += 1
+                    continue
+            if k == 0:
+                if main[x]['g_clus'] == main[x]['p_clus']:
+                    fn += 1
+                    # print('fn', fn)
+                    # print(main[x])
+                else:
+                    fp += 1
+                    # print('fp', fp)
+                    # print(main[x])
         else:
-            break
+            continue
 
-    precigion = np.array(precigion)
-    recall = np.array(recall)
-    f1 = np.array(f1)
+    precision = score / (score + fp)
+    recall = score / (score + fn)
+    f1 = 2 * precision * recall / (precision + recall)
 
-    precigion = precigion.sum() / len(precigion)
-    recall = recall.sum() / len(recall)
-    f1 = f1.sum() / len(f1)
-
-    return precigion, recall, f1
+    return precision, recall, f1
 
 
 def anaphora_score(keys_path, predicts_path):
