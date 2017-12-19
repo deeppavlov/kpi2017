@@ -682,9 +682,21 @@ def true_ana_score(g_file, p_file):
                 if y not in main[x]['pred']:
                     fn += 1
 
-        p = tp / (tp + fp)
-        r = tp / (tp + fn)
-        f = 2 * p * r / (p + r)
+        if (tp + fp) == 0:
+            p = 0
+        else:
+            p = tp / (tp + fp)
+
+        if (tp + fn) == 0:
+            r = 0
+        else:
+            r = tp / (tp + fn)
+
+        if (p+r) != 0:
+            f = 2 * p * r / (p + r)
+        else:
+            f = 0
+
         prec.append(p)
         rec.append(r)
         f_1.append(f)
