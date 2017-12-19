@@ -193,6 +193,24 @@ def generate_simple_features(data):
     return features
 
 
+def get_norm_word_vec(ft_model, word):
+    zeros = np.zeros_like(ft_model['тест'])
+    try:
+        vec = ft_model[word.lower()] / np.linalg.norm(ft_model[word.lower()])
+    except KeyError:
+        vec = zeros
+    return vec
+
+
+def get_word_vec(ft_model, word):
+    zeros = np.zeros_like(ft_model['тест'])
+    try:
+        vec = ft_model[word.lower()]
+    except KeyError:
+        vec = zeros
+    return vec
+
+
 def generate_emb_features(data, ft_model, window_size=5):
     """method for generating embeddings features
 
@@ -215,7 +233,7 @@ def generate_emb_features(data, ft_model, window_size=5):
                 start_id = mention['start_id']
                 end_id = mention['end_id']
                 mention_id = mention['mention_id']
-                embs = np.array([ft_model[word.lower()] / np.linalg.norm(ft_model[word.lower()]) for word in
+                embs = np.array([get_word_vec(ft_model, word) for word in
                                  mention['mention'].split()])
                 if len(embs) == 0:
                     # TODO it is a bug in dataset, wrong tokenization and wrong split on sentences
@@ -225,8 +243,8 @@ def generate_emb_features(data, ft_model, window_size=5):
                 assert len(part['text']) > sentence_id, (data['doc_name'], part_id, sentence_id)
                 sentence = part['text'][sentence_id].split()
                 prev_embs = np.array(
-                    [ft_model[word.lower()] for word in sentence[max(0, start_id - window_size):start_id]])
-                next_embs = np.array([ft_model[word.lower()] for word in sentence[end_id + 1:end_id + window_size + 1]])
+                    [get_word_vec(ft_model, word) for word in sentence[max(0, start_id - window_size):start_id]])
+                next_embs = np.array([get_word_vec(ft_model, word) for word in sentence[end_id + 1:end_id + window_size + 1]])
                 prev_embs_mean = np.mean(prev_embs, axis=0) if len(prev_embs) > 0 else zeros
                 next_embs_mean = np.mean(next_embs, axis=0) if len(next_embs) > 0 else zeros
 

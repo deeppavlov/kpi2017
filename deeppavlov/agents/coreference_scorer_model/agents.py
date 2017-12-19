@@ -17,6 +17,7 @@ import os
 from multiprocessing import Pool
 
 import fasttext
+import gensim
 import numpy as np
 import tensorflow as tf
 from parlai.core.agents import Agent
@@ -118,7 +119,8 @@ class CoreferenceAgent(Agent):
 
         utils.download_embeddings(self.embeddings_url, self.embeddings_path)
 
-        self.embeddings = fasttext.load_model(self.embeddings_path)
+        #self.embeddings = fasttext.load_model(self.embeddings_path)
+        self.embeddings = gensim.models.wrappers.FastText.load_fasttext_format(self.embeddings_path)
 
         self.data = None
         self.data_valid = None
