@@ -801,8 +801,9 @@ class CorefModel(object):
         if self.opt["char_embedding_size"] > 0:
             char_emb = tf.gather(
                 tf.get_variable("char_embeddings", [len(self.char_dict), self.opt["char_embedding_size"]],
-                                dtype=tf.float64),
-                char_index)  # [num_sentences, max_sentence_length, max_word_length, emb]
+                                dtype=tf.float64), char_index)
+            # [num_sentences, max_sentence_length, max_word_length, emb]
+
             flattened_char_emb = tf.reshape(char_emb, [num_sentences * max_sentence_length, utils.shape(char_emb, 2),
                                                        utils.shape(char_emb,
                                                                    3)])

@@ -67,6 +67,7 @@ class CoreferenceTeacher(Teacher):
         self.epoch = 0
         self.episode_done = False
         self.epochDone = False
+        self.ana_score = opt['anaphora']
         self.writer = tf.summary.FileWriter(join(opt['log_root'], self.language, 'agent', 'logs', opt['name']))
         super().__init__(opt, shared)
     
@@ -119,7 +120,7 @@ class CoreferenceTeacher(Teacher):
         keys_path = self.datapath
 
         r = coreference_utils.score(scorer, keys_path, predicts_path)
-        z = utils.anaphora_score(keys_path, predicts_path)
+        z = utils.anaphora_score(keys_path, predicts_path, self.ana_score)
         r['anaphora_precision'] = z['precision']
         r['anaphora_recall'] = z['recall']
         r['anaphora_F1'] = z['F1']

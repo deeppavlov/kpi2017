@@ -63,3 +63,4 @@ def add_cmdline_args(parser):
     agent.add_argument('--rep_iter', type=int, default=144)
     agent.add_argument('--train_on_gold', type=str, default='yes')
     agent.add_argument('--random_seed', type=int, default=0)
+    agent.add_argument('--anaphora', type=str, default='full')

@@ -542,8 +542,8 @@ def ana_doc_score(g_file, p_file):
     if len(pnames) != len(gnames):
         print('In documents, a different number of clusters.'
               ' {0} in gold file and {1} in predicted file.'.format(len(gnames), len(pnames)))
-    else:
-        print('The documents have the same number of clusters.')
+    # else:
+    #     print('The documents have the same number of clusters.')
 
     for x in [p_data, g_data]:
         for y in x['parts'][0]['chains'].keys():
@@ -569,17 +569,25 @@ def ana_doc_score(g_file, p_file):
                             main[c]['p_clus_real'] = y
 
     for x in main:
-        for y in g_data['parts'][0]['chains'][main[x]['g_clus_real']]['mentions']:
-            if y['start_line_id'] < x[0] and y['end_line_id'] < x[1]:
-                main[x]['gold'].append((y['start_line_id'], y['end_line_id']))
-            elif y['start_line_id'] < x[0] and y['end_line_id'] == x[1]:
-                main[x]['gold'].append((y['start_line_id'], y['end_line_id']))
+        try:
+            for y in g_data['parts'][0]['chains'][main[x]['g_clus_real']]['mentions']:
+                if y['start_line_id'] < x[0] and y['end_line_id'] < x[1]:
+                    main[x]['gold'].append((y['start_line_id'], y['end_line_id']))
+                elif y['start_line_id'] < x[0] and y['end_line_id'] == x[1]:
+                    main[x]['gold'].append((y['start_line_id'], y['end_line_id']))
+        except KeyError:
+            print("In gold file {0} absent cluster {1}".format(g_file, x))
+            continue
 
-        for y in p_data['parts'][0]['chains'][main[x]['p_clus_real']]['mentions']:
-            if y['start_line_id'] < x[0] and y['end_line_id'] < x[1]:
-                main[x]['pred'].append((y['start_line_id'], y['end_line_id']))
-            elif y['start_line_id'] < x[0] and y['end_line_id'] == x[1]:
-                main[x]['pred'].append((y['start_line_id'], y['end_line_id']))
+        try:
+            for y in p_data['parts'][0]['chains'][main[x]['p_clus_real']]['mentions']:
+                if y['start_line_id'] < x[0] and y['end_line_id'] < x[1]:
+                    main[x]['pred'].append((y['start_line_id'], y['end_line_id']))
+                elif y['start_line_id'] < x[0] and y['end_line_id'] == x[1]:
+                    main[x]['pred'].append((y['start_line_id'], y['end_line_id']))
+        except KeyError:
+            print("In predicted file {0} absent cluster {1}".format(p_file, x))
+            continue
 
     # compute F1 score
     score = 0
@@ -624,8 +632,8 @@ def true_ana_score(g_file, p_file):
     if len(pnames) != len(gnames):
         print('In documents, a different number of clusters.'
               ' {0} in gold file and {1} in predicted file.'.format(len(gnames), len(pnames)))
-    else:
-        print('The documents have the same number of clusters.')
+    # else:
+    #     print('The documents have the same number of clusters.')
 
     for x in [p_data, g_data]:
         for y in x['parts'][0]['chains'].keys():
@@ -651,17 +659,25 @@ def true_ana_score(g_file, p_file):
                             main[c]['p_clus_real'] = y
 
     for x in main:
-        for y in g_data['parts'][0]['chains'][main[x]['g_clus_real']]['mentions']:
-            if y['start_line_id'] < x[0] and y['end_line_id'] < x[1]:
-                main[x]['gold'].append((y['start_line_id'], y['end_line_id']))
-            elif y['start_line_id'] < x[0] and y['end_line_id'] == x[1]:
-                main[x]['gold'].append((y['start_line_id'], y['end_line_id']))
+        try:
+            for y in g_data['parts'][0]['chains'][main[x]['g_clus_real']]['mentions']:
+                if y['start_line_id'] < x[0] and y['end_line_id'] < x[1]:
+                    main[x]['gold'].append((y['start_line_id'], y['end_line_id']))
+                elif y['start_line_id'] < x[0] and y['end_line_id'] == x[1]:
+                    main[x]['gold'].append((y['start_line_id'], y['end_line_id']))
+        except KeyError:
+            print("In gold file {0} absent cluster {1}".format(g_file, x))
+            continue
 
-        for y in p_data['parts'][0]['chains'][main[x]['p_clus_real']]['mentions']:
-            if y['start_line_id'] < x[0] and y['end_line_id'] < x[1]:
-                main[x]['pred'].append((y['start_line_id'], y['end_line_id']))
-            elif y['start_line_id'] < x[0] and y['end_line_id'] == x[1]:
-                main[x]['pred'].append((y['start_line_id'], y['end_line_id']))
+        try:
+            for y in p_data['parts'][0]['chains'][main[x]['p_clus_real']]['mentions']:
+                if y['start_line_id'] < x[0] and y['end_line_id'] < x[1]:
+                    main[x]['pred'].append((y['start_line_id'], y['end_line_id']))
+                elif y['start_line_id'] < x[0] and y['end_line_id'] == x[1]:
+                    main[x]['pred'].append((y['start_line_id'], y['end_line_id']))
+        except KeyError:
+            print("In predicted file {0} absent cluster {1}".format(p_file, x))
+            continue
 
     # compute F1 score
     tp = 0
@@ -708,7 +724,157 @@ def true_ana_score(g_file, p_file):
     return precision, recall, f1
 
 
-def anaphora_score(keys_path, predicts_path):
+def pos_ana_score(g_file, p_file):
+    main = {}
+    reflexive_p = ['себя', 'себе', 'собой', 'собою', 'свой', 'своя', 'своё', 'свои',
+                   'своего', 'своей', 'своего', 'своих', 'своему', 'своей', 'своему',
+                   'своим', 'своего', 'свою', 'своего', 'своих', 'своим', 'своей', 'своим',
+                   'своими', 'своём', 'своей', 'своём', 'своих']
+    relative_p = ['кто', 'что', 'какой', 'каков', 'который', 'чей', 'сколько', 'где', 'куда', 'когда',
+                  'откуда', 'почему', 'зачем', 'как']
+
+    g_data = extract_data(g_file)
+    p_data = extract_data(p_file)
+    pnames = list(p_data['parts'][0]['chains'].keys())
+    gnames = list(g_data['parts'][0]['chains'].keys())
+
+    if len(pnames) != len(gnames):
+        print('In documents, a different number of clusters.'
+              ' {0} in gold file and {1} in predicted file.'.format(len(gnames), len(pnames)))
+    # else:
+    #     print('The documents have the same number of clusters.')
+
+    for x in [p_data, g_data]:
+        for y in x['parts'][0]['chains'].keys():
+            for z in x['parts'][0]['chains'][y]['mentions']:
+                if not z['start_line_id'] != z['end_line_id']:
+                    if z['POS'][0].startswith('P-3'):
+                        c = (z['start_line_id'], z['end_line_id'])
+                        if (z['start_line_id'], z['end_line_id']) not in main:
+                            main[c] = dict()
+                            main[c]['pred'] = list()
+                            main[c]['gold'] = list()
+                            if x is g_data:
+                                main[c]['g_clus'] = gnames.index(y)
+                                main[c]['g_clus_real'] = y
+                            else:
+                                main[c]['p_clus'] = pnames.index(y)
+                                main[c]['p_clus_real'] = y
+                        else:
+                            if x is g_data:
+                                main[c]['g_clus'] = gnames.index(y)
+                                main[c]['g_clus_real'] = y
+                            else:
+                                main[c]['p_clus'] = pnames.index(y)
+                                main[c]['p_clus_real'] = y
+
+                    elif z['mention'] in relative_p:
+                        c = (z['start_line_id'], z['end_line_id'])
+                        if (z['start_line_id'], z['end_line_id']) not in main:
+                            main[c] = dict()
+                            main[c]['pred'] = list()
+                            main[c]['gold'] = list()
+                            if x is g_data:
+                                main[c]['g_clus'] = gnames.index(y)
+                                main[c]['g_clus_real'] = y
+                            else:
+                                main[c]['p_clus'] = pnames.index(y)
+                                main[c]['p_clus_real'] = y
+                        else:
+                            if x is g_data:
+                                main[c]['g_clus'] = gnames.index(y)
+                                main[c]['g_clus_real'] = y
+                            else:
+                                main[c]['p_clus'] = pnames.index(y)
+                                main[c]['p_clus_real'] = y
+
+                    elif z['mention'] in reflexive_p:
+                        c = (z['start_line_id'], z['end_line_id'])
+                        if (z['start_line_id'], z['end_line_id']) not in main:
+                            main[c] = dict()
+                            main[c]['pred'] = list()
+                            main[c]['gold'] = list()
+                            if x is g_data:
+                                main[c]['g_clus'] = gnames.index(y)
+                                main[c]['g_clus_real'] = y
+                            else:
+                                main[c]['p_clus'] = pnames.index(y)
+                                main[c]['p_clus_real'] = y
+                        else:
+                            if x is g_data:
+                                main[c]['g_clus'] = gnames.index(y)
+                                main[c]['g_clus_real'] = y
+                            else:
+                                main[c]['p_clus'] = pnames.index(y)
+                                main[c]['p_clus_real'] = y
+
+    for x in main:
+        try:
+            for y in g_data['parts'][0]['chains'][main[x]['g_clus_real']]['mentions']:
+                if y['start_line_id'] < x[0] and y['end_line_id'] < x[1]:
+                    main[x]['gold'].append((y['start_line_id'], y['end_line_id']))
+                elif y['start_line_id'] < x[0] and y['end_line_id'] == x[1]:
+                    main[x]['gold'].append((y['start_line_id'], y['end_line_id']))
+        except KeyError:
+            print("In gold file {0} absent cluster {1}".format(g_file, x))
+            continue
+
+        try:
+            for y in p_data['parts'][0]['chains'][main[x]['p_clus_real']]['mentions']:
+                if y['start_line_id'] < x[0] and y['end_line_id'] < x[1]:
+                    main[x]['pred'].append((y['start_line_id'], y['end_line_id']))
+                elif y['start_line_id'] < x[0] and y['end_line_id'] == x[1]:
+                    main[x]['pred'].append((y['start_line_id'], y['end_line_id']))
+        except KeyError:
+            print("In predicted file {0} absent cluster {1}".format(p_file, x))
+            continue
+
+    # compute F1 score
+    tp = 0
+    fn = 0
+    fp = 0
+    prec = list()
+    rec = list()
+    f_1 = list()
+
+    for x in main:
+        if len(main[x]['pred']) != 0 and len(main[x]['gold']) != 0:
+            for y in main[x]['pred']:
+                if y in main[x]['gold']:
+                    tp += 1
+                else:
+                    fp += 1
+            for y in main[x]['gold']:
+                if y not in main[x]['pred']:
+                    fn += 1
+
+        if (tp + fp) == 0:
+            p = 0
+        else:
+            p = tp / (tp + fp)
+
+        if (tp + fn) == 0:
+            r = 0
+        else:
+            r = tp / (tp + fn)
+
+        if (p + r) == 0:
+            f = 0
+        else:
+            f = 2 * p * r / (p + r)
+
+        prec.append(p)
+        rec.append(r)
+        f_1.append(f)
+
+    precision = np.mean(prec)
+    recall = np.mean(rec)
+    f1 = np.mean(f_1)
+
+    return precision, recall, f1
+
+
+def anaphora_score(keys_path, predicts_path, type):
     """Anaphora scores predicted files.
     A weak criterion for antecedent identification is used.
 
@@ -735,7 +901,16 @@ def anaphora_score(keys_path, predicts_path):
     for file in tqdm(pred_files):
         predict_file = os.path.join(predicts_path, file)
         gold_file = os.path.join(keys_path, file)
-        p, r, f1 = true_ana_score(gold_file, predict_file)
+
+        if type == 'full':
+            p, r, f1 = true_ana_score(gold_file, predict_file)
+        elif type == 'semi':
+            p, r, f1 = ana_doc_score(gold_file, predict_file)
+        elif type == 'pos':
+            p, r, f1 = pos_ana_score(gold_file, predict_file)
+        else:
+            raise ValueError('Non supported type of anaphora scorer. {}'.format(type))
+
         results['precision'].append(p)
         results['recall'].append(r)
         results['F1'].append(f1)
