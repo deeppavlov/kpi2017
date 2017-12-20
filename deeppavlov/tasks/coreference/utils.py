@@ -521,8 +521,10 @@ def extract_data(infile):
 
 
 def ana_doc_score(g_file, p_file):
-    """Anaphora scores from gold and predicted files.
-    A weak criterion for antecedent identification is used.
+    """
+    The function takes two files at the input, analyzes them and calculates anaphora score. A weak criterion
+    for antecedent identification is used.
+    In the document, all the pronouns are used.
 
     Args:
         g_file: path to ground truth conll file
@@ -725,6 +727,19 @@ def true_ana_score(g_file, p_file):
 
 
 def pos_ana_score(g_file, p_file):
+    """
+    Anaphora scores from gold and predicted files.
+    A weak criterion for antecedent identification is used. In documents only used 3d-person pronouns,
+    reflexive pronouns and relative pronouns.
+
+    Args:
+        g_file: path to ground truth conll file
+        p_file: path to predicted conll file
+
+    Returns:
+        precision, recall, F1-metrics
+    """
+
     main = {}
     reflexive_p = ['себя', 'себе', 'собой', 'собою', 'свой', 'своя', 'своё', 'свое', 'свои',
                    'своего', 'своей', 'своего', 'своих', 'своему', 'своей', 'своему',
@@ -875,12 +890,18 @@ def pos_ana_score(g_file, p_file):
 
 
 def anaphora_score(keys_path, predicts_path, type):
-    """Anaphora scores predicted files.
+    """
+    Anaphora scores predicted files.
     A weak criterion for antecedent identification is used.
+    The function takes the input to the path to the folder containing the key files, and the path to the folder
+    containing the predicted files and the scorer type. It calculates the anaphora score for each file in folders,
+    and averages the results. The number of files in the packs must be the same, otherwise the function
+    will generate an error.
 
     Args:
         keys_path: path to ground truth conll files
         predicts_path: path to predicted conll files
+        type: a trigger that selects the type of scorer to be used
 
     Returns:
         dict with scores
