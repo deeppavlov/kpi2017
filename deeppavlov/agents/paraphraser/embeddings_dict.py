@@ -72,7 +72,10 @@ class EmbeddingsDict(object):
             tokens = [el for el in tokens if el != '']
             for tok in tokens:
                 if self.tok2emb.get(tok) is None:
-                    self.tok2emb[tok] = self.fasttext_model[tok]
+                    try:
+                        self.tok2emb[tok] = self.fasttext_model[tok]
+                    except KeyError:
+                        self.tok2emb[tok] = [0] * len(self.fasttext_model['слово'])
 
     def save_items(self, fname):
         """Save the dictionary tok2emb to the file."""
