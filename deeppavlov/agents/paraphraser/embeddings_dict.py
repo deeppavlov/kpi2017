@@ -18,6 +18,7 @@ import copy
 import numpy as np
 import urllib.request
 import fasttext
+import gensim
 import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
 
@@ -58,7 +59,8 @@ class EmbeddingsDict(object):
             except Exception as e:
                 raise RuntimeError('Looks like the `EMBEDDINGS_URL` variable is set incorrectly', e)
 
-        self.fasttext_model = fasttext.load_model(self.fasttext_model_file)
+        #self.fasttext_model = fasttext.load_model(self.fasttext_model_file)
+        self.fasttext_model = gensim.models.wrappers.FastText.load_fasttext_format(self.fasttext_model_file)
 
     def add_items(self, sentence_li):
         """Add new items to the tok2emb dictionary from a given text."""
