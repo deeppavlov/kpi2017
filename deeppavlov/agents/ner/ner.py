@@ -120,7 +120,7 @@ class NERAgent(Agent):
         for observation in observations:
             if 'text' in observation:
                 text = observation['text']
-                text = ' '.join(re.findall(r"[\w]+|[‑–—“”€№…’\"#$%&\'()+,-./:;<>?]", text))
+                # text = ' '.join(re.findall(r"[\w]+|[‑–—“”€№…’\"#$%&\'()+,-./:;<>?]", text))
                 current_char_list = []
                 tokens = text.split()
                 for token in tokens:
