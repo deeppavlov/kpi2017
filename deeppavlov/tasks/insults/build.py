@@ -32,7 +32,7 @@ def data_preprocessing(f):
         preprocessed list of text samples
     """
     f = [x.lower() for x in f]
-    f = [x[1:-1] for x in f]
+    f = [re.sub(r'^"|"$', '', x) for x in f]
     f = [x.replace("\\n", " ") for x in f]
     f = [x.replace("\\t", " ") for x in f]
     f = [x.replace("\\xa0", " ") for x in f]
